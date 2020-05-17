@@ -33,7 +33,14 @@ class SegmentationDataset(torch.utils.data.Dataset):
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
 
     def __getitem__(self, index):
-        return self.dcm_paths[index], self.label_paths[index]
+        
+        if isinstance(index, slice):
+            return [self[ii] for ii in range(*index.indices(len(self)))]
+
+        dcm = path_2dcm(self.dcm_paths[index])
+        label = path_2label(self.label_paths[index])
+
+        return dcm, label
 
     def __len__(self):
         return len(self.dcm_paths)
