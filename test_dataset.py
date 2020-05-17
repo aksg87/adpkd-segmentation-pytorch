@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from data_set.datasets import SegmentationDataset
-from data.data_utils import make_dcmdicts, get_labeled
+from data.data_utils import make_dcmdicts, get_labeled, masks_to_colorimg, display_sample
 from data.link_data import makelinks
 
 # %%
