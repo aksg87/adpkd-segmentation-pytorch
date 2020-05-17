@@ -43,6 +43,20 @@ def get_y_Path(x):
 
     return y
 
+def path_2dcm(fname):
+
+    if not isinstance(fname, str):
+        fname = str(fname)
+    dcm = pydicom.dcmread(fname)
+    return dcm.pixel_array.astype(dtype=np.float32)
+
+def path_2label(fname):
+
+    if not isinstance(fname, str):
+        fname = str(fname)
+    label = Image.open(fname)
+    return np.array(label)
+
 def dcm_attributes(dcm):
 
     attribs = {}
