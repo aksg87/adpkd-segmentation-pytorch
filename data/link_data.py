@@ -38,4 +38,3 @@ def makelinks():
             raise Exception('Unlabeled dcm [{}] contains a mask.'.format(dcm))
 
         symlink_force(dcm, 'unlabeled/'+ os.path.basename(dcm))
-        symlink_force(mask, 'unlabeled/'+ os.path.basename(mask))
