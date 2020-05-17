@@ -22,6 +22,14 @@ def get_dcms_paths(dir_list):
 
     return all_files
 
+def get_labeled():
+    dcms = glob.glob('{}/*.dcm'.format('labeled'))
+    return dcms
+
+def get_unlabeled():
+    dcms = glob.glob('{}/*.dcm'.format('unlabeled'))
+    return dcms
+
 def get_y_Path(x):
     """Get label path from dicom path"""    
 
