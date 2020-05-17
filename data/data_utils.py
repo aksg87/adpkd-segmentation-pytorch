@@ -3,6 +3,9 @@ import glob
 import os
 from pathlib import Path
 import numpy as np
+import pydicom
+from PIL import Image
+from collections import defaultdict
 #%%
 
 def get_dcms_paths(dir_list):
@@ -30,6 +33,43 @@ def get_y_Path(x):
     y = Path(y)
 
     return y
+
+def dcm_attributes(dcm):
+
+    attribs = {}
+
+    # dicom header attribs
+    pdcm = pydicom.dcmread(dcm)
+    attribs["patient"] = pdcm.PatientID[:-3]
+    attribs["MR"] = pdcm.PatientID[-3:]
+    attribs["seq"] = pdcm.SeriesDescription
+
+    # pixels in mask --> kidney
+    label = np.array(Image.open(get_y_Path(dcm)))
+    pos_pixels = np.sum(label>0)
+    attribs["kidney_pixels"] = pos_pixels
+
+    return attribs
+
+def make_dcmdicts(dcms):
+    """creates two dictionares with dcm attributes
+
+    Arguments:
+        dcms (str): list of dicoms
+
+    Returns:
+        dcm2attribs (dict), pt2dcm (dict): Dictionaries with dcms to attribs and patients to dcms
+    """     
+
+    dcm2attribs = defaultdict(tuple)
+    pt2dcm = defaultdict(list)
+
+    for dcm in dcms:
+        attribs = dcm_attributes(dcm)
+        dcm2attribs[dcm] = attribs
+        pt2dcm[attribs["patient"]].append(dcm)
+        
+    return dcm2attribs, pt2dcm
 
 def mask2label(mask, data_set_name="ADPKD"):
     """converts mask png to one-hot-encoded label"""    
