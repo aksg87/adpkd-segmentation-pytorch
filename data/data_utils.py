@@ -161,3 +161,15 @@ def display_sample(sample):
     ax1.imshow(dcm, cmap='gray')
     ax2.imshow(dcm, cmap='gray')
     ax2.imshow(masks_to_colorimg(mask), alpha=0.5)
+
+def display_verbose_sample(verbose_sample):
+
+    (dcm, mask), path, attribs = verbose_sample
+
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.imshow(dcm, cmap='gray')
+    ax2.imshow(dcm, cmap='gray')
+    ax2.imshow(masks_to_colorimg(mask), alpha=0.5)
+
+    print("\nPath: {}".format(path))
+    print("\nAttribs: {}".format(attribs))

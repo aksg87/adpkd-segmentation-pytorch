@@ -44,3 +44,11 @@ class SegmentationDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.dcm_paths)
+
+    def get_verbose(self, index):
+
+        sample = self[index]
+        dcm_path = self.dcm_paths[index]
+        attribs = self.dcm2attribs[dcm_path]
+
+        return sample, dcm_path, attribs
