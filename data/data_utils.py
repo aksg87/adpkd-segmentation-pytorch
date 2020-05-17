@@ -7,6 +7,8 @@ import pydicom
 from PIL import Image
 from collections import defaultdict
 import functools
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 #%%
 
 def get_dcms_paths(dir_list):
@@ -150,3 +152,12 @@ def masks_to_colorimg(masks):
                 colorimg[y, x, :] = np.mean(selected_colors, axis=0)
             
     return colorimg.astype(np.uint8)
+
+def display_sample(sample):
+
+    dcm, mask = sample
+
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.imshow(dcm, cmap='gray')
+    ax2.imshow(dcm, cmap='gray')
+    ax2.imshow(masks_to_colorimg(mask), alpha=0.5)
