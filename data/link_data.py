@@ -18,30 +18,24 @@ def mkdir_force(dir):
         shutil.rmtree(dir)
     os.makedirs(dir)
 # %%
-labeled_dcms = get_dcms_paths(labeled_dirs)
+def makelinks():
 
-unlabeled_dcms = get_dcms_paths(unlabeled_dirs)
-# %%
-mkdir_force('labeled')
+    mkdir_force('labeled')
+    mkdir_force('unlabeled')
 
-mkdir_force('unlabeled')
- # %%
-for dcm in labeled_dcms:
-    mask = get_y_Path(dcm)
+    for dcm in get_dcms_paths(labeled_dirs):
+        mask = get_y_Path(dcm)
+        if not mask.exists():
+            raise Exception('Labeled dcm [{}] does not have mask.'.format(dcm))
 
-    if not mask.exists():
-        raise Exception('Labeled dcm [{}] does not have mask.'.format(dcm))
+        symlink_force(dcm, 'labeled/'+ os.path.basename(dcm))
+        symlink_force(mask, 'labeled/'+ os.path.basename(mask))
 
-    symlink_force(dcm, 'labeled/'+ os.path.basename(dcm))
-    symlink_force(mask, 'labeled/'+ os.path.basename(mask))
- # %%
-for dcm in unlabeled_dcms:
-    mask = get_y_Path(dcm)
+    for dcm in get_dcms_paths(unlabeled_dirs):
+        mask = get_y_Path(dcm)
 
-    if mask.exists():
-        raise Exception('Unlabeled dcm [{}] contains a mask.'.format(dcm))
+        if mask.exists():
+            raise Exception('Unlabeled dcm [{}] contains a mask.'.format(dcm))
 
-    symlink_force(dcm, 'unlabeled/'+ os.path.basename(dcm))
-    symlink_force(mask, 'unlabeled/'+ os.path.basename(mask))
-
-# %%
+        symlink_force(dcm, 'unlabeled/'+ os.path.basename(dcm))
+        symlink_force(mask, 'unlabeled/'+ os.path.basename(mask))
