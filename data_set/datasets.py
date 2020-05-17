@@ -29,7 +29,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
         for p in self.patients:
             patient_dcms.extend(patient2dcm[p])
         
-        self.dcm_paths = patient_dcms
+        self.dcm_paths = sorted(patient_dcms)
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
 
     def __getitem__(self, index):
