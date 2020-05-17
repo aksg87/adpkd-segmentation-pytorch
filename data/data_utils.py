@@ -76,14 +76,14 @@ def make_dcmdicts(dcms):
         dcms = list(dcms)
 
     dcm2attribs = defaultdict(tuple)
-    pt2dcm = defaultdict(list)
+    patient2dcm = defaultdict(list)
 
     for dcm in dcms:
         attribs = dcm_attributes(dcm)
         dcm2attribs[dcm] = attribs
-        pt2dcm[attribs["patient"]].append(dcm)
+        patient2dcm[attribs["patient"]].append(dcm)
         
-    return dcm2attribs, pt2dcm
+    return dcm2attribs, patient2dcm
 
 def mask2label(mask, data_set_name="ADPKD"):
     """converts mask png to one-hot-encoded label"""    
