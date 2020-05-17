@@ -124,6 +124,9 @@ def mask2label(mask, data_set_name="ADPKD"):
 def masks_to_colorimg(masks):
     """converts mask png grayscale to color encoded image""" 
 
+    if np.ndim(masks) == 2:
+        masks = np.expand_dims(masks, 0)
+
     # color codes for mask .png labels
     colors = [(201, 58, 64), #Red
             (242, 207, 1), #Yellow
