@@ -6,6 +6,7 @@ import numpy as np
 import pydicom
 from PIL import Image
 from collections import defaultdict
+import functools
 #%%
 
 def get_dcms_paths(dir_list):
@@ -59,15 +60,20 @@ def dcm_attributes(dcm):
 
     return attribs
 
+@functools.lru_cache()
 def make_dcmdicts(dcms):
     """creates two dictionares with dcm attributes
 
     Arguments:
-        dcms (str): list of dicoms
+        dcms (tuple): tuple of dicoms. Note, tuple is used, rather than a string, so the input is hashable for LRU.
 
     Returns:
         dcm2attribs (dict), pt2dcm (dict): Dictionaries with dcms to attribs and patients to dcms
     """     
+
+    # convert tuple back to list 
+    if not isinstance(dcms, list):
+        dcms = list(dcms)
 
     dcm2attribs = defaultdict(tuple)
     pt2dcm = defaultdict(list)
