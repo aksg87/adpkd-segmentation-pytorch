@@ -101,28 +101,6 @@ def make_dcmdicts(dcms):
         
     return dcm2attribs, patient2dcm
 
-def mask2label(mask, data_set_name="ADPKD"):
-    """converts mask png to one-hot-encoded label"""    
-
-    #unique_vals corespond to mask class values after transforms        
-    if(data_set_name == "ADPKD"):
-        L_KIDNEY = 0.5019608
-        R_KIDNEY = 0.7490196
-        unique_vals = [R_KIDNEY, L_KIDNEY]
-
-    mask = mask.squeeze()
-    
-    s = mask.shape
-
-    ones, zeros = np.ones(s), np.zeros(s)
-
-    one_hot_map = [np.where(mask == unique_vals[targ], ones, zeros)
-                   for targ in range(len(unique_vals))]
-
-    one_hot_map = np.stack(one_hot_map, axis=0).astype(np.uint8)
-
-    return one_hot_map
-
 def masks_to_colorimg(masks):
     """converts mask png grayscale to color encoded image""" 
 
@@ -153,6 +131,7 @@ def masks_to_colorimg(masks):
             
     return colorimg.astype(np.uint8)
 
+
 def display_sample(sample):
 
     dcm, mask = sample
@@ -173,3 +152,15 @@ def display_verbose_sample(verbose_sample):
 
     print("\nPath: {}".format(path))
     print("\nAttribs: {}".format(attribs))
+
+def display_traindata(inputs, labels):
+
+    for index in range(0, inputs.shape[0]):
+        f, axarr = plt.subplots(1, 2)
+        axarr[0].imshow(inputs[index][1], cmap='gray')
+        
+        axarr[1].imshow(inputs[index][1], cmap='gray')  # background for mask
+        axarr[1].imshow(masks_to_colorimg(labels[index]), alpha=0.5)
+
+        img = inputs[index][0]
+        lb = masks_to_colorimg(labels[index])

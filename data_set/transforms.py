@@ -1,0 +1,40 @@
+from torchvision import transforms
+from PIL import Image
+
+import numpy as np
+
+def mask2label(mask, data_set_name="ADPKD"):
+    """converts mask png to one-hot-encoded label"""    
+
+    #unique_vals corespond to mask class values after transforms        
+    if(data_set_name == "ADPKD"):
+        L_KIDNEY = 0.5019608
+        R_KIDNEY = 0.7490196
+        unique_vals = [R_KIDNEY, L_KIDNEY]
+
+    mask = mask.squeeze()
+    
+    s = mask.shape
+
+    ones, zeros = np.ones(s), np.zeros(s)
+
+    one_hot_map = [np.where(mask == unique_vals[targ], ones, zeros)
+                   for targ in range(len(unique_vals))]
+
+    one_hot_map = np.stack(one_hot_map, axis=0).astype(np.uint8)
+
+    return one_hot_map
+
+T_x = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((128, 128), interpolation=Image.CUBIC),
+    transforms.ToTensor(),
+    transforms.Lambda(lambda x: x.view(x.shape).expand(3, -1, -1))
+])
+
+T_y = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((128, 128), interpolation=Image.CUBIC),
+    transforms.ToTensor(),
+    transforms.Lambda(lambda x: mask2label(x))
+])

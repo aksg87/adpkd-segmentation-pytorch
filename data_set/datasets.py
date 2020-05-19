@@ -7,10 +7,11 @@ from data import *
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
-    def __init__(self, patient_IDS=None, hyperparams=None, transform=None):
+    def __init__(self, patient_IDS=None, hyperparams=None, transform_x=None, transform_y=None):
 
         super(SegmentationDataset, self).__init__()
-
+        self.transform_x = transform_x
+        self.transform_y = transform_y
         makelinks()
         
         dcms_paths = get_labeled()
@@ -39,6 +40,9 @@ class SegmentationDataset(torch.utils.data.Dataset):
 
         dcm = path_2dcm(self.dcm_paths[index])
         label = path_2label(self.label_paths[index])
+
+        dcm = self.transform_x(dcm)
+        label = self.transform_y(label)
 
         return dcm, label
 
