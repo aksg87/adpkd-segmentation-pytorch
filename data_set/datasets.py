@@ -7,11 +7,12 @@ from data import *
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
-    def __init__(self, patient_IDS=None, hyperparams=None, transform_x=None, transform_y=None):
+    def __init__(self, patient_IDS=None, hyperparams=None, transform_x=None, transform_y=None, preprocessing=None):
 
         super(SegmentationDataset, self).__init__()
         self.transform_x = transform_x
         self.transform_y = transform_y
+        self.preprocessing = preprocessing # --> for segmentation-models-pytorch
         makelinks()
         
         dcms_paths = get_labeled()
@@ -43,6 +44,10 @@ class SegmentationDataset(torch.utils.data.Dataset):
 
         dcm = self.transform_x(dcm)
         label = self.transform_y(label)
+
+        if self.preprocessing: # required for segmentation-models-pytorch --> essentially normalizes data for encoder, and transforms label to float32 dtype
+            sample = self.preprocessing(image=dcm, mask=label)
+            dcm, label = sample['image'], sample['mask'] 
 
         return dcm, label
 

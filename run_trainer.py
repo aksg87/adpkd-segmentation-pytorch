@@ -16,6 +16,8 @@ from data.link_data import makelinks
 from data_set.datasets import *
 from data_set.transforms import T_x, T_y 
 from trainer.trainer import *
+from model.models import model
+from model.model_utils import get_preprocessing, preprocessing_fn
 
 # %%
 makelinks()
@@ -30,11 +32,15 @@ train_IDS, test_IDS = train_test_split(all_IDS, test_size=0.15, random_state=1)
 train_IDS, val_IDS = train_test_split(train_IDS, test_size=0.176, random_state=1)
 
 # %%
-dataset_train = SegmentationDataset(patient_IDS=train_IDS, transform_x=T_x, transform_y=T_y)
-dataset_val = SegmentationDataset(patient_IDS=val_IDS, transform_x=T_x, transform_y=T_y)
+dataset_train = SegmentationDataset(patient_IDS=train_IDS, transform_x=T_x, transform_y=T_y, preprocessing=get_preprocessing(preprocessing_fn))
+dataset_val = SegmentationDataset(patient_IDS=val_IDS, transform_x=T_x, transform_y=T_y, preprocessing=get_preprocessing(preprocessing_fn))
 
 # %%
+x, y = dataset_train[50]
+print("image -> shape {},  dtype {}".format(x.shape, x.dtype))
+print("mask -> shape {},  dtype {}".format(y.shape, y.dtype))
 
+# %%
 # *** Needs Fix *** - dataset transforms break sample display
 # display_sample(dataset_train[160])
 # display_verbose_sample(dataset_train.get_verbose(160))
@@ -46,10 +52,15 @@ dataloaders = {
 }
 # %%
 data_iter = iter(dataloaders["train"])
-
 # %%
 for inputs, labels in data_iter:
 
     display_traindata(inputs, labels)
     break
+# %%
+optimizer_ft = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()))
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+training_loop(model, criterion, optimizer_ft, 30, dataloaders, device)
+
 # %%
