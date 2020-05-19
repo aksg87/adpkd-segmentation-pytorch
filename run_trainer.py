@@ -24,3 +24,12 @@ makelinks()
 _, patient2dcm = make_dcmdicts(tuple(get_labeled()))
 all_IDS = range(len(patient2dcm))
 
+# %%
+# train, val, test split--> 85 / 15 / 15. Note: Applied to patients not dcm images.
+train_IDS, test_IDS = train_test_split(all_IDS, test_size=0.15, random_state=1)
+train_IDS, val_IDS = train_test_split(train_IDS, test_size=0.176, random_state=1)
+
+# %%
+dataset_train = SegmentationDataset(patient_IDS=train_IDS, transform_x=T_x, transform_y=T_y)
+dataset_val = SegmentationDataset(patient_IDS=val_IDS, transform_x=T_x, transform_y=T_y)
+
