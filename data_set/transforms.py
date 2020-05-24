@@ -30,7 +30,7 @@ def mask2label(mask, data_set_name="ADPKD", show_vals = True):
 
 T_x = transforms.Compose([
     transforms.ToPILImage(),
-    transforms.Resize((128, 128), interpolation=Image.CUBIC),
+    transforms.Resize((96, 96), interpolation=Image.CUBIC),
     transforms.ToTensor(),
     transforms.Lambda(lambda x: x.view(x.shape).expand(3, -1, -1))
 ])
