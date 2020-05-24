@@ -3,7 +3,7 @@ from PIL import Image
 
 import numpy as np
 
-def mask2label(mask, data_set_name="ADPKD", show_vals = True):
+def mask2label(mask, data_set_name="ADPKD", show_vals = False):
     """converts mask png to one-hot-encoded label"""    
 
     if show_vals:

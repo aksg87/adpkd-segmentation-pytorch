@@ -36,11 +36,6 @@ dataset_train = SegmentationDataset(patient_IDS=train_IDS, transform_x=T_x, tran
 dataset_val = SegmentationDataset(patient_IDS=val_IDS, transform_x=T_x, transform_y=T_y, preprocessing=get_preprocessing(preprocessing_fn))
 
 # %%
-for i in range (5, 3000, 100):
-    x, y = dataset_train[i]
-    print("Index #{}: image -> shape {},  dtype {}".format(i, x.shape, x.dtype))
-    print("Index #{}: mask -> shape {},  dtype {}\n".format(i, y.shape, y.dtype))
-
 print("image -> shape {},  dtype {}".format(x.shape, x.dtype))
 print("mask -> shape {},  dtype {}".format(y.shape, y.dtype))
 
