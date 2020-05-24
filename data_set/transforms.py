@@ -3,9 +3,12 @@ from PIL import Image
 
 import numpy as np
 
-def mask2label(mask, data_set_name="ADPKD"):
+def mask2label(mask, data_set_name="ADPKD", show_vals = True):
     """converts mask png to one-hot-encoded label"""    
 
+    if show_vals:
+        print("unique values ", np.unique(mask)) 
+ 
     #unique_vals corespond to mask class values after transforms        
     if(data_set_name == "ADPKD"):
         L_KIDNEY = 0.5019608
@@ -34,7 +37,7 @@ T_x = transforms.Compose([
 
 T_y = transforms.Compose([
     transforms.ToPILImage(),
-    transforms.Resize((128, 128), interpolation=Image.CUBIC),
+    transforms.Resize((96, 96), interpolation=Image.NEAREST),# "non-nearest" interpolation breaks mask --> one-hot-encode
     transforms.ToTensor(),
     transforms.Lambda(lambda x: mask2label(x))
 ])
