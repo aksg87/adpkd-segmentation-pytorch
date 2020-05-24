@@ -7,7 +7,7 @@ import numpy as np
 
 import segmentation_models_pytorch as smp
 
-from .model_utils import params
+from model.model_utils import params
 
 # %%
 

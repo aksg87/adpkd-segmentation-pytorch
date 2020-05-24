@@ -3,7 +3,8 @@ import torch
 from torchvision import datasets, transforms
 import torchvision.transforms.functional as TF
 
-from data import *
+from data.data_utils import get_dcms_paths, get_labeled, make_dcmdicts, path_2dcm, path_2label
+from data.link_data import makelinks
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
