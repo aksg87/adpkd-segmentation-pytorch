@@ -10,12 +10,13 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from data_set.datasets import SegmentationDataset
-from data.data_utils import *
+from data.data_utils import make_dcmdicts, get_labeled
 from data.link_data import makelinks
 
-from data_set.datasets import *
+from data_set.datasets import SegmentationDataset
 from data_set.transforms import T_x, T_y 
-from trainer.trainer import *
+from trainer.trainer import training_loop
+from trainer.losses import criterion
 from model.models import model
 from model.model_utils import get_preprocessing, preprocessing_fn
 

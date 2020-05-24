@@ -4,8 +4,8 @@ import glob
 import ntpath  
 import shutil
 
-from .data_utils import get_dcms_paths, get_y_Path, make_dcmdicts, get_labeled, get_labeled
-from .data_config import labeled_dirs, unlabeled_dirs # define data sources in data_config.py
+from data.data_utils import get_dcms_paths, get_y_Path, make_dcmdicts, get_labeled, get_labeled
+from data.data_config import labeled_dirs, unlabeled_dirs # define data sources in data_config.py
 #%%
 def symlink_force(target, link_name):
     try:
