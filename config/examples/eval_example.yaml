@@ -1,0 +1,18 @@
+---
+_MODEL_CONFIG:
+  "smp_name": "Unet"
+  "smp_params":
+    encoder_name: "efficientnet-b6"
+    encoder_weights: "imagenet"
+    activation: null
+    classes: 2
+  _CLASS_INFO:
+    _MODULE_NAME: "new_models.models"
+    _CLASS_NAME: "BaselineModelGetter"
+
+_LOSS_CONFIG:
+  "dice_smooth": 1e-8,
+  "bce_weight": 0.5
+  _CLASS_INFO:
+    _MODULE_NAME: "loss_utils.losses"
+    _CLASS_NAME: BaselineLoss
