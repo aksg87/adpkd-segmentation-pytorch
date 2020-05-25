@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from data_set.datasets import SegmentationDataset
-from data.data_utils import make_dcmdicts, get_labeled, display_traindata
+from data.data_utils import make_dcmdicts, get_labeled, display_traindata, filter_dcm2attribs
 from data.link_data import makelinks
 
 from data_set.datasets import SegmentationDataset
