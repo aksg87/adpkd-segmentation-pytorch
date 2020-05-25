@@ -1,4 +1,8 @@
-"""Model evaluation script"""
+"""
+Model evaluation script
+
+python -m evaluate --config path_to_config_yaml
+"""
 
 import argparse
 import yaml
@@ -10,7 +14,7 @@ def evaluate(config):
     loss_criterion_config = config["_LOSS_CRITERION_CONFIG"]
 
     model = get_object_instance(model_config)()
-    loss_criterion = get_object_instance(loss_config)
+    loss_criterion = get_object_instance(loss_criterion_config)
 
     # do something with `model` and `loss_criterion`
 

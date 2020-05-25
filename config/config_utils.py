@@ -48,10 +48,13 @@ def get_object_instance(object_config):
     module_name = class_info["_MODULE_NAME"]
     class_name = class_info["_CLASS_NAME"]
 
-    for key, item in object_config.items():
+    for key, value in object_config.items():
+        #  special info key is not to be used inside `get_simple_instance`
+        if key == "_CLASS_INFO":
+            continue
         # not a config for another nested object
-        if not is_object_config(item):
-            processed_params[key] = item
+        if not is_object_config(value):
+            processed_params[key] = value
         # recursive process of the object config if it is
         else:
             processed_params[key] = get_object_instance(object_config)

@@ -10,7 +10,7 @@ _MODEL_CONFIG:
     _MODULE_NAME: "new_models.models"
     _CLASS_NAME: "BaselineModelGetter"
 
-_LOSS_CONFIG:
+_LOSS_CRITERION_CONFIG:
   "dice_smooth": 1e-8,
   "bce_weight": 0.5
   _CLASS_INFO:
