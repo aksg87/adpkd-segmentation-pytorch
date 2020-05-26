@@ -16,21 +16,3 @@ _LOSS_CRITERION_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.losses"
     _CLASS_NAME: BaselineLoss
-
-_DATASET_CONFIG:
-  "dataset_type": "train"
-  "dataset_params":
-    patient_IDs: "patient_IDS"
-    hyperparams: "hyperparams"
-    transform_x: "transform_x" #Convert to Object?
-    transform_y: "transform_y" #Convert to Object?
-    preprocessing: "preprocessing"
-
-  _CLASS_INFO:
-    _MODULE_NAME: "new_datasets.datasets"
-    _CLASS_NAME: "BaselineDatasetGetter"
-
-_TRANSFORMS_CONFIG:
-  _CLASS_INFO:
-    _MODULE_NAME: "data_set.transforms"
-    _CLASS_NAME: BaselineTransforms
