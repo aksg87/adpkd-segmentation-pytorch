@@ -3,41 +3,45 @@ from PIL import Image
 
 import numpy as np
 
-def mask2label(mask, data_set_name="ADPKD", show_vals = False):
-    """converts mask png to one-hot-encoded label"""    
+class BaselineTransforms():
 
-    if show_vals:
-        print("unique values ", np.unique(mask)) 
- 
-    #unique_vals corespond to mask class values after transforms        
-    if(data_set_name == "ADPKD"):
-        L_KIDNEY = 0.5019608
-        R_KIDNEY = 0.7490196
-        unique_vals = [R_KIDNEY, L_KIDNEY]
+    def __init__(self):
+        self.T_x = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((96, 96), interpolation=Image.CUBIC),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x.view(x.shape).expand(3, -1, -1))
+        ])
 
-    mask = mask.squeeze()
+        self.T_y = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((96, 96), interpolation=Image.NEAREST),# "non-nearest" interpolation breaks mask --> one-hot-encode
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: mask2label(x))
+        ])        
+
+    @staticmethod
+    def mask2label(mask, data_set_name="ADPKD", show_vals = False):
+        """converts mask png to one-hot-encoded label"""    
+
+        if show_vals:
+            print("unique values ", np.unique(mask)) 
     
-    s = mask.shape
+        #unique_vals corespond to mask class values after transforms        
+        if(data_set_name == "ADPKD"):
+            L_KIDNEY = 0.5019608
+            R_KIDNEY = 0.7490196
+            unique_vals = [R_KIDNEY, L_KIDNEY]
 
-    ones, zeros = np.ones(s), np.zeros(s)
+        mask = mask.squeeze()
+        
+        s = mask.shape
 
-    one_hot_map = [np.where(mask == unique_vals[targ], ones, zeros)
-                   for targ in range(len(unique_vals))]
+        ones, zeros = np.ones(s), np.zeros(s)
 
-    one_hot_map = np.stack(one_hot_map, axis=0).astype(np.uint8)
+        one_hot_map = [np.where(mask == unique_vals[targ], ones, zeros)
+                    for targ in range(len(unique_vals))]
 
-    return one_hot_map
+        one_hot_map = np.stack(one_hot_map, axis=0).astype(np.uint8)
 
-T_x = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.Resize((96, 96), interpolation=Image.CUBIC),
-    transforms.ToTensor(),
-    transforms.Lambda(lambda x: x.view(x.shape).expand(3, -1, -1))
-])
-
-T_y = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.Resize((96, 96), interpolation=Image.NEAREST),# "non-nearest" interpolation breaks mask --> one-hot-encode
-    transforms.ToTensor(),
-    transforms.Lambda(lambda x: mask2label(x))
-])
+        return one_hot_map
