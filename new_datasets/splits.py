@@ -29,6 +29,9 @@ class GenSplit():
         self.val_idxs = val_idxs
         self.test_idxs = test_idxs
 
-    def __call__(self):
+    def __call__(self, type="train"):
         
-        return self.train_idxs, self.val_idxs, self.test_idxs
+        if type=="train":
+            return self.train_idxs
+        else:
+            return self.train_idxs, self.val_idxs, self.test_idxs
