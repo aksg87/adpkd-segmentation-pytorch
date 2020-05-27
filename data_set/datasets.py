@@ -1,10 +1,8 @@
-#%%
+# %%
 import torch
-from torchvision import datasets, transforms
-import torchvision.transforms.functional as TF
 
-from data.data_utils import get_dcms_paths, get_labeled, make_dcmdicts, path_2dcm, path_2label, get_y_Path
-from data.link_data import makelinks
+from data.data_utils import get_labeled, make_dcmdicts, path_2dcm, path_2label, get_y_Path
+
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
@@ -14,8 +12,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
         self.transform_x = transform_x
         self.transform_y = transform_y
         self.preprocessing = preprocessing # --> for segmentation-models-pytorch
-        makelinks()
-        
+
         dcms_paths = get_labeled()
 
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
@@ -27,16 +24,16 @@ class SegmentationDataset(torch.utils.data.Dataset):
         # select subset of data for train, val, test split
         if patient_IDS:
             self.patients = [self.patients[i] for i in patient_IDS]
-        
+
         patient_dcms = []
         for p in self.patients:
             patient_dcms.extend(patient2dcm[p])
-        
+
         self.dcm_paths = sorted(patient_dcms)
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
 
     def __getitem__(self, index):
-        
+
         if isinstance(index, slice):
             return [self[ii] for ii in range(*index.indices(len(self)))]
 
@@ -48,7 +45,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
 
         if self.preprocessing: # required for segmentation-models-pytorch --> essentially normalizes data for encoder, and transforms label to float32 dtype
             sample = self.preprocessing(image=dcm, mask=label)
-            dcm, label = sample['image'], sample['mask'] 
+            dcm, label = sample['image'], sample['mask']
 
         return dcm, label
 

@@ -1,20 +1,15 @@
-# %% 
+# %%
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision import transforms
 
-import numpy as np
 from sklearn.model_selection import train_test_split
 
 from data_set.datasets import SegmentationDataset
-from data.data_utils import make_dcmdicts, get_labeled, display_traindata, filter_dcm2attribs
+from data.data_utils import make_dcmdicts, get_labeled, display_traindata
 from data.link_data import makelinks
 
-from data_set.datasets import SegmentationDataset
-from data_set.transforms import T_x, T_y 
+from data_set.transforms import T_x, T_y
 from trainer.trainer import training_loop, criterion
 from model.models import model
 from model.model_utils import get_preprocessing, preprocessing_fn
