@@ -12,7 +12,7 @@ class BaselineDatasetGetter(torch.utils.data.Dataset):
     def __init__(self, params):
         super().__init__()
         self.idxs = params["idxs"]
-        self.hyperparam = params["hyperparam"]
+        self.hyperparams = params["hyperparams"]
         self.transform_x = params["transform_x"]
         self.transform_y = params["transform_y"]
         self.preprocess_func = params["proprocessing_func"]
@@ -24,7 +24,7 @@ class BaselineDatasetGetter(torch.utils.data.Dataset):
             self.idxs = self.idxs()
         
         if callable(self.hyperparam_gen):
-            self.hyperparam = self.hyperparam()
+            self.hyperparam = self.hyperparams()
 
         if callable(self.transform_x):
             self.transform_x = self.transform_x()
@@ -32,5 +32,5 @@ class BaselineDatasetGetter(torch.utils.data.Dataset):
         if callable(self.transform_y):
             self.transform_y = self.transform_y()
 
-        return ds(patient_IDS=self.idxs, hyperparams=self.hyperparam, transform_x = self.transform_x, transform_y =self.transform_x, processing = self.preprocess_func)
+        return ds.SegmentationDataset(patient_IDS=self.idxs, hyperparams=self.hyperparams, transform_x = self.transform_x, transform_y =self.transform_x, processing = self.preprocess_func)
         
