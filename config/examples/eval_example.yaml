@@ -18,12 +18,33 @@ _LOSS_CRITERION_CONFIG:
     _CLASS_NAME: BaselineLoss
 
 _DATASET_CONFIG:
-  "params":
-    idxs: "_SPLITS_CONFIG"
-    hyperparams: None
-    transform_x: "_TRANFORM_X_CONFIG"
-    transform_y: "_TRANFORM_Y_CONFIG"
-    proprocessing_func: None
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.datasets"
+    _CLASS_NAME: "BaselineDatasetGetter"
+  "splitter":
+    _CLASS_INFO:
+      _MODULE_NAME: "new_datasets.splits"
+      _CLASS_NAME: "GenSplit"
+    "train": 0.7
+    "val": 0.15
+    "test": 0.15
+    "seed": 1
+  "transform_x":
+    _CLASS_INFO:
+      _MODULE_NAME: "new_datasets.transforms"
+      _CLASS_NAME: "Transform_X"
+    "dim": 96
+  "transform_y":
+      _CLASS_INFO:
+        _MODULE_NAME: "new_datasets.transforms"
+        _CLASS_NAME: "Transform_Y"
+      "dim": 96
+      "mask2label":
+        _CLASS_INFO:
+          _MODULE_NAME: "new_datasets.transforms"
+          _CLASS_NAME: "BaselineMaskEncode"
+
+  "preprocess_func": null
 
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.datasets"
@@ -33,14 +54,23 @@ _SPLITS_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.splits"
     _CLASS_NAME: "GenSplit"
+  "train": 0.7
+  "val": 0.15
+  "test": 0.15
+  "seed": 1
 
 _TRANFORM_X_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.transforms"
     _CLASS_NAME: "Transform_X"
+  "dim": 96
 
 _TRANFORM_Y_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.transforms"
     _CLASS_NAME: "Transform_Y"
-  
+  "dim": 96
+  "mask2label":
+    _CLASS_INFO:
+      _MODULE_NAME: "new_datasets.transforms"
+      _CLASS_NAME: "BaselineMaskEncode"
