@@ -52,7 +52,7 @@ class Transform_Y():
         super().__init__()
         self.mask2label = mask2label
 
-        T_y = transforms.Compose([
+        self.T_y = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((dim, dim), interpolation=Image.NEAREST),# "non-nearest" interpolation breaks mask --> one-hot-encode
             transforms.ToTensor(),
