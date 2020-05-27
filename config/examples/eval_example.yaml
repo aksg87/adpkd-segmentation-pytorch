@@ -16,3 +16,31 @@ _LOSS_CRITERION_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.losses"
     _CLASS_NAME: BaselineLoss
+
+_DATASET_CONFIG:
+  "params":
+    idxs: "_SPLITS_CONFIG"
+    hyperparams: None
+    transform_x: "_TRANFORM_X_CONFIG"
+    transform_y: "_TRANFORM_Y_CONFIG"
+    proprocessing_func: None
+
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.datasets"
+    _CLASS_NAME: "BaselineDatasetGetter"
+
+_SPLITS_CONFIG:
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.splits"
+    _CLASS_NAME: "GenSplit"
+
+_TRANFORM_X_CONFIG:
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.transforms"
+    _CLASS_NAME: "Transform_X"
+
+_TRANFORM_Y_CONFIG:
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.transforms"
+    _CLASS_NAME: "Transform_Y"
+  
