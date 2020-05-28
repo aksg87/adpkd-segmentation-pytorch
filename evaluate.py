@@ -13,9 +13,11 @@ from config.config_utils import get_object_instance
 def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
     loss_criterion_config = config["_LOSS_CRITERION_CONFIG"]
+    dataset_criterion_config = config["_DATASET_CONFIG"]
 
     model = get_object_instance(model_config)()
     loss_criterion = get_object_instance(loss_criterion_config)
+    dataset = get_object_instance(dataset_criterion_config)
 
     # do something with `model` and `loss_criterion`
 
