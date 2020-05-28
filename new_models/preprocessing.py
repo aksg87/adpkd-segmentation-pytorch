@@ -12,6 +12,7 @@ def get_tensor(x, **kwargs):
 
 def to_tensor(x, **kwargs):
     """helper function for get_preprocessing"""
+    return x.transpose(2, 0, 1).astype("float32")
 
 
 class BaselinePreprocessGetter:
