@@ -8,6 +8,9 @@ python -m evaluate --config path_to_config_yaml
 import argparse
 import yaml
 from config.config_utils import get_object_instance
+import matplotlib.pyplot as plt
+
+from data.data_utils import masks_to_colorimg
 
 
 def evaluate(config):
@@ -19,7 +22,11 @@ def evaluate(config):
     loss_criterion = get_object_instance(loss_criterion_config)
     dataset = get_object_instance(dataset_criterion_config)
 
-    # do something with `model` and `loss_criterion`
+    return (
+        model,
+        loss_criterion,
+        dataset,
+    )  # add return types for debugging/testing
 
 
 # %%
@@ -44,6 +51,32 @@ with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 # %%
-evaluate(config)
+model, loss_criterion, dataset = evaluate(config)
 
 # %%
+print("Model:\n\n{}\n....\n".format(repr(model)[0:500]))
+
+# %%
+print("Loss: {}".format(loss_criterion))
+
+# %%
+img_idx = 772
+
+train = dataset()[0]
+x, y = train[img_idx]
+print("Training Dataset Length: {}".format(len(train)))
+print("image -> shape {},  dtype {}".format(x.shape, x.dtype))
+print("mask -> shape {},  dtype {}".format(y.shape, y.dtype))
+
+# %%
+print("Image and Mask: \n")
+
+dcm, mask = x[0, ...], y
+
+f, (ax1, ax2) = plt.subplots(1, 2)
+ax1.imshow(dcm, cmap="gray")
+ax2.imshow(dcm, cmap="gray")
+ax2.imshow(masks_to_colorimg(mask), alpha=0.5)
+# %%
+x, y, attribs = train.get_verbose(img_idx)
+print("Image Attributes: \n\n{}".format(attribs))
