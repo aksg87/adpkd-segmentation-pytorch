@@ -34,7 +34,7 @@ class BaselineMaskEncode:
 
 class Transform_X:
     def __init__(self, dim=96):
-        self.Tx = transforms.Compose(
+        self.T_x = transforms.Compose(
             [
                 transforms.ToPILImage(),
                 transforms.Resize((dim, dim), interpolation=Image.CUBIC),
@@ -44,7 +44,7 @@ class Transform_X:
         )
 
     def __call__(self):
-        return self.Tx
+        return self.T_x
 
 
 class Transform_Y:
@@ -64,4 +64,4 @@ class Transform_Y:
         )
 
     def __call__(self):
-        return self.Ty
+        return self.T_y
