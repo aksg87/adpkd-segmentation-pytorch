@@ -20,8 +20,7 @@ def get_simple_instance(module_name, class_name, processed_params):
 
 
 def is_object_config(object_config):
-    return (isinstance(object_config, dict) and
-            "_CLASS_INFO" in object_config)
+    return isinstance(object_config, dict) and "_CLASS_INFO" in object_config
 
 
 def get_object_instance(object_config):
