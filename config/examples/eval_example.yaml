@@ -43,5 +43,9 @@ _DATASET_CONFIG:
       _CLASS_INFO:
         _MODULE_NAME: "new_datasets.transforms"
         _CLASS_NAME: "BaselineMaskEncode"
-  "preprocess_func": null
-
+  "preprocess_func":
+    "encoder_name": "efficientnet-b6"
+    "encoder_weights": "imagenet"
+    _CLASS_INFO:
+      _MODULE_NAME: "new_models.preprocessing"
+      _CLASS_NAME: "BaselinePreprocessGetter"
