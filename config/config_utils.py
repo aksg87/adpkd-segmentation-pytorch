@@ -57,6 +57,6 @@ def get_object_instance(object_config):
             processed_params[key] = value
         # recursive process of the object config if it is
         else:
-            processed_params[key] = get_object_instance(object_config)
+            processed_params[key] = get_object_instance(value)
 
     return get_simple_instance(module_name, class_name, processed_params)
