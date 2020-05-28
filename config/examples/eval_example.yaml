@@ -50,27 +50,3 @@ _DATASET_CONFIG:
     _MODULE_NAME: "new_datasets.datasets"
     _CLASS_NAME: "BaselineDatasetGetter"
 
-_SPLITS_CONFIG:
-  _CLASS_INFO:
-    _MODULE_NAME: "new_datasets.splits"
-    _CLASS_NAME: "GenSplit"
-  "train": 0.7
-  "val": 0.15
-  "test": 0.15
-  "seed": 1
-
-_TRANFORM_X_CONFIG:
-  _CLASS_INFO:
-    _MODULE_NAME: "new_datasets.transforms"
-    _CLASS_NAME: "Transform_X"
-  "dim": 96
-
-_TRANFORM_Y_CONFIG:
-  _CLASS_INFO:
-    _MODULE_NAME: "new_datasets.transforms"
-    _CLASS_NAME: "Transform_Y"
-  "dim": 96
-  "mask2label":
-    _CLASS_INFO:
-      _MODULE_NAME: "new_datasets.transforms"
-      _CLASS_NAME: "BaselineMaskEncode"
