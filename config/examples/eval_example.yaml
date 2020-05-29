@@ -11,7 +11,7 @@ _MODEL_CONFIG:
     _CLASS_NAME: "BaselineModelGetter"
 
 _LOSS_CRITERION_CONFIG:
-  "dice_smooth": 1e-8,
+  "dice_smooth": 1.0E-8
   "bce_weight": 0.5
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.losses"
