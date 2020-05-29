@@ -11,11 +11,11 @@ _MODEL_CONFIG:
     _CLASS_NAME: "BaselineModelGetter"
 
 _LOSS_CRITERION_CONFIG:
-  "dice_smooth": 1e-8,
+  "dice_smooth": 1.0E-8
   "bce_weight": 0.5
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.losses"
-    _CLASS_NAME: BaselineLoss
+    _CLASS_NAME: "BaselineLoss"
 
 _DATASET_CONFIG:
   _CLASS_INFO:
@@ -49,3 +49,66 @@ _DATASET_CONFIG:
     _CLASS_INFO:
       _MODULE_NAME: "new_models.preprocessing"
       _CLASS_NAME: "BaselinePreprocessGetter"
+
+_DATALOADER_CONFIG:
+  _CLASS_INFO:
+    _MODULE_NAME: "new_datasets.dataloader"
+    _CLASS_NAME: "BaselineDataloaderGetter"
+  "batchsize": 64
+  "shuffle": False
+  "datasets":
+    _CLASS_INFO:
+      _MODULE_NAME: "new_datasets.datasets"
+      _CLASS_NAME: "BaselineDatasetGetter"
+    "splitter":
+      _CLASS_INFO:
+        _MODULE_NAME: "new_datasets.splits"
+        _CLASS_NAME: "GenSplit"
+      "train": 0.7
+      "val": 0.15
+      "test": 0.15
+      "seed": 1
+    "transform_x":
+      _CLASS_INFO:
+        _MODULE_NAME: "new_datasets.transforms"
+        _CLASS_NAME: "Transform_X"
+      "dim": 96
+    "transform_y":
+      _CLASS_INFO:
+        _MODULE_NAME: "new_datasets.transforms"
+        _CLASS_NAME: "Transform_Y"
+      "dim": 96
+      "mask2label":
+        _CLASS_INFO:
+          _MODULE_NAME: "new_datasets.transforms"
+          _CLASS_NAME: "BaselineMaskEncode"
+    "preprocess_func":
+      "encoder_name": "efficientnet-b6"
+      "encoder_weights": "imagenet"
+      _CLASS_INFO:
+        _MODULE_NAME: "new_models.preprocessing"
+        _CLASS_NAME: "BaselinePreprocessGetter"
+
+_LOSSES_METRICS_CONFIG:
+  "criterions_dict":
+    "loss_baseline":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 0.5
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+    "loss_dice":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 0.0
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+    "loss_bce":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 1.0
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+  _CLASS_INFO:
+    _MODULE_NAME: "loss_utils.criterions"
+    _CLASS_NAME: "LossesMetrics"

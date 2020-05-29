@@ -11,7 +11,7 @@ class BaselineDataloaderGetter:
             batchsize {int}
             shuffle {boolean}
         """
-        self.datasets = datasets
+        self.datasets = datasets()
         self.batchsize = batchsize
         self.shuffle = shuffle
 
