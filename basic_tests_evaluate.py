@@ -24,17 +24,20 @@ def evaluate(config):
     loss_criterion_config = config["_LOSS_CRITERION_CONFIG"]
     dataset_criterion_config = config["_DATASET_CONFIG"]
     dataloader_config = config["_DATALOADER_CONFIG"]
+    loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
 
     model = get_object_instance(model_config)()
     loss_criterion = get_object_instance(loss_criterion_config)
     datasets = get_object_instance(dataset_criterion_config)()
     dataloaders = get_object_instance(dataloader_config)()
+    loss_metric = get_object_instance(loss_metric_config)()
 
     return (
         model,
         loss_criterion,
         datasets,
         dataloaders,
+        loss_metric,
     )  # add return types for debugging/testing
 
 
@@ -61,7 +64,7 @@ with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 # %%
-model, loss_criterion, datasets, dataloaders = evaluate(config)
+model, loss_criterion, datasets, dataloaders, loss_metric = evaluate(config)
 
 # %%
 print("Model:\n\n{}\n....\n".format(repr(model)[0:500]))
@@ -101,5 +104,8 @@ for inputs, labels in data_iter:
 
     display_traindata(inputs[:12], labels[:12])
     break
+
+# %%
+loss_metric(labels, model(inputs))
 
 # %%
