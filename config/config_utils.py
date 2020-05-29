@@ -42,11 +42,6 @@ def get_object_instance(object_config):
     """
     processed_params = {}
 
-    if "_CLASS_INFO" in object_config:
-        class_info = object_config["_CLASS_INFO"]
-        module_name = class_info["_MODULE_NAME"]
-        class_name = class_info["_CLASS_NAME"]
-
     for key, value in object_config.items():
         #  special info key is not to be used inside `get_simple_instance`
         if key == "_CLASS_INFO":
@@ -58,7 +53,10 @@ def get_object_instance(object_config):
         else:
             processed_params[key] = value
 
-    if "_CLASS_INFO" in object_config:
+    if is_object_config(object_config):
+        class_info = object_config["_CLASS_INFO"]
+        module_name = class_info["_MODULE_NAME"]
+        class_name = class_info["_CLASS_NAME"]
         return get_simple_instance(module_name, class_name, processed_params)
 
     return processed_params
