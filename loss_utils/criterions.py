@@ -16,7 +16,7 @@ class LossesMetrics:
             res = {}
 
             for key, criterion in self.criterions_dict.items():
-                res[key] = criterion(y, y_hat)
+                res[key] = criterion(y_hat, y)
 
             return res
 
