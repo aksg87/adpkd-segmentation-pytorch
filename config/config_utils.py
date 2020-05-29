@@ -40,22 +40,23 @@ def get_object_instance(object_config):
         `object_1_config` and `object_3_config` are also dicts of the same type
         as `object_config` (must include "_CLASS_INFO")
     """
-    assert isinstance(object_config, dict)
-    assert "_CLASS_INFO" in object_config
     processed_params = {}
-    class_info = object_config["_CLASS_INFO"]
-    module_name = class_info["_MODULE_NAME"]
-    class_name = class_info["_CLASS_NAME"]
 
     for key, value in object_config.items():
         #  special info key is not to be used inside `get_simple_instance`
         if key == "_CLASS_INFO":
             continue
-        # not a config for another nested object
-        if not is_object_config(value):
-            processed_params[key] = value
-        # recursive process of the object config if it is
-        else:
+        # nested object
+        if isinstance(value, dict):
             processed_params[key] = get_object_instance(value)
+        # value is a leaf
+        else:
+            processed_params[key] = value
 
-    return get_simple_instance(module_name, class_name, processed_params)
+    if is_object_config(object_config):
+        class_info = object_config["_CLASS_INFO"]
+        module_name = class_info["_MODULE_NAME"]
+        class_name = class_info["_CLASS_NAME"]
+        return get_simple_instance(module_name, class_name, processed_params)
+
+    return processed_params
