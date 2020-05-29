@@ -15,7 +15,7 @@ _LOSS_CRITERION_CONFIG:
   "bce_weight": 0.5
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.losses"
-    _CLASS_NAME: BaselineLoss
+    _CLASS_NAME: "BaselineLoss"
 
 _DATASET_CONFIG:
   _CLASS_INFO:
