@@ -1,7 +1,5 @@
 """Dictionary of criterions"""
 
-from config.config_utils import get_object_instance
-
 
 class LossesMetrics:
     """ Produces function to generate dict of keys: losses/metrics for batch"""
@@ -9,14 +7,9 @@ class LossesMetrics:
     def __init__(self, criterions_dict):
         """
         Arguments:
-            criterions_dict {dict} -- key (str) : loss_configs (yaml config)
+            criterions_dict {dict} -- key (str) : criterion_losses
         """
-
-        self.criterions_dict = {}
-
-        # generates object for loss configs
-        for key, value in criterions_dict.items():
-            self.criterions_dict[key] = get_object_instance(value)
+        self.criterions_dict = criterions_dict
 
     def __call__(self):
         def losses_dict(y, y_hat):
