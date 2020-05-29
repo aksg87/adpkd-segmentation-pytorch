@@ -88,3 +88,27 @@ _DATALOADER_CONFIG:
       _CLASS_INFO:
         _MODULE_NAME: "new_models.preprocessing"
         _CLASS_NAME: "BaselinePreprocessGetter"
+
+_LOSSES_METRICS_CONFIG:
+  "criterions_dict":
+    "loss_baseline":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 0.5
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+    "loss_dice":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 0.0
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+    "loss_bce":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 1.0
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
+  _CLASS_INFO:
+    _MODULE_NAME: "loss_utils.criterions"
+    _CLASS_NAME: "LossesMetrics"
