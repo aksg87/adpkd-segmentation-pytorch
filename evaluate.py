@@ -54,7 +54,7 @@ def evaluate(config):
 
     for key, value in all_losses_and_metrics.items():
         all_losses_and_metrics[key] = (
-            torch.sum(all_losses_and_metrics[key]) / num_examples
+            torch.sum(torch.stack(all_losses_and_metrics[key])) / num_examples
         )
 
     with open("{}/data.json".format(results_path), "w") as fp:
