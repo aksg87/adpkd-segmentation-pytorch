@@ -5,10 +5,10 @@ python -m train --config path_to_config_yaml
 """
 
 # %%
-from collections import defaultdict
 import argparse
+import json
+import os
 import yaml
-import pickle
 
 import torch
 import torch.optim as optim
@@ -16,8 +16,6 @@ import torch.optim as optim
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 
-# %%
-makelinks()
 
 # %%
 def train(config):
@@ -41,50 +39,37 @@ def train(config):
         filter(lambda p: p.requires_grad, model.parameters())
     )  # TODO move to config
 
-    # TODO: add as a config option
     # train, val, test ordering
-    dataloader_index = 1
-    dataloader = dataloaders[dataloader_index]
+    train_loader = dataloaders[0]
+    val_loader = dataloaders[1]
 
     model = model.to(device)
     model.train()
-    all_losses_and_metrics = defaultdict(list)
-
-    num_examples = 0
-    num_epochs = 30
+    num_epochs = 2  # TODO config
 
     for epoch in range(num_epochs):
-        for x_batch, y_batch in dataloader:
-
-            model.train()
-
+        for x_batch, y_batch in train_loader:
+            optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
             y_batch_hat = model(x_batch)
-
-            batch_size = y_batch.size(0)
-            num_examples += batch_size
             losses_and_metrics = loss_metric(y_batch_hat, y_batch)
-
-            for key, value in losses_and_metrics.items():
-                all_losses_and_metrics[key].append(value * batch_size)
-
-            loss = torch.mean(
-                torch.stack(all_losses_and_metrics[loss_key])
-            )  # TODO: Double check this
-            loss.backward()  # FIXME: RuntimeError: Trying to backward through the graph a second time, but the buffers have already been freed.
+            loss = losses_and_metrics[loss_key]
+            loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
+            # print(loss.item())
+            # we want to print all in `losses_and_metrics`
+            # let's add batch indexing, so for e.g. every 1000th batch
 
-    for key, value in all_losses_and_metrics.items():
-        all_losses_and_metrics[key] = (
-            torch.sum(torch.stack(all_losses_and_metrics[key]))
-            / num_examples  # TODO, use torch.mean?
-        )
+        # done with one epoch
+        # let's validate (use code from the validation script)
 
-    with open("{}/train_results.pickle".format(results_path), "wb") as fp:
-        print("{}/train_results.pickle")
-        pickle.dump(all_losses_and_metrics, fp)
+        # save the model if best by some validation metric
+        # save best validation stats in json
+
+        # learning rate schedule step at the end of epoch
+
+
 
 
 # %%
@@ -98,13 +83,15 @@ if __name__ == "__main__":
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
+    # %%
+    makelinks()
     train(config)
 
 # uncomment and run for a quick check
 # %%
-path = "./config/examples/eval_example.yaml"
-with open(path, "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-train(config)
+# makelinks()
+# path = "./config/examples/eval_example.yaml"
+# with open(path, "r") as f:
+#     config = yaml.load(f, Loader=yaml.FullLoader)
 
-# %%
+# train(config)
