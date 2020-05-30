@@ -60,7 +60,6 @@ def evaluate(config):
             torch.sum(torch.stack(all_losses_and_metrics[key])) / num_examples
         )
 
-    # TODO: Pickle vs JSON for this dict
     with open("{}/val_results.pickle".format(results_path), "wb") as fp:
         pickle.dump(all_losses_and_metrics, fp)
 
