@@ -8,7 +8,7 @@ python -m evaluate --config path_to_config_yaml
 from collections import defaultdict
 import argparse
 import yaml
-import json
+import pickle
 
 import torch
 
@@ -57,8 +57,8 @@ def evaluate(config):
             torch.sum(torch.stack(all_losses_and_metrics[key])) / num_examples
         )
 
-    with open("{}/data.json".format(results_path), "w") as fp:
-        json.dump(all_losses_and_metrics, fp)
+    with open("{}/val_results.pickle".format(results_path), "wb") as fp:
+        pickle.dump(all_losses_and_metrics, fp)
 
 
 # %%
@@ -76,7 +76,10 @@ if __name__ == "__main__":
 
 # uncomment and run for a quick check
 # %%
-# path = "./config/examples/eval_example.yaml"
-# with open(path, "r") as f:
-#   config = yaml.load(f, Loader=yaml.FullLoader)
-# evaluate(config)
+path = "./config/examples/eval_example.yaml"
+with open(path, "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+evaluate(config)
+
+
+# %%
