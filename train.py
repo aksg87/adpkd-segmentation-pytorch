@@ -15,6 +15,24 @@ import torch.optim as optim
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
+from evaluate import validate
+
+
+# %%
+def get_losses_str(losses_and_metrics):
+    out = []
+    for k, v in losses_and_metrics.items():
+        out.append("{}:{:.5f}".format(k, v.item()))
+    return ", ".join(out)
+
+
+def is_better(current, previous, metric_type):
+    if metric_type == "low":
+        return current < previous
+    elif metric_type == "high":
+        return current > previous
+    else:
+        raise Exception("unknown metric_type")
 
 
 # %%
@@ -24,8 +42,7 @@ def train(config):
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     results_path = config["_RESULTS_PATH"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
-
-    loss_key = "loss_baseline"  # TODO move to config
+    loss_key = config["_OPTIMIZATION_LOSS"]
 
     model = get_object_instance(model_config)()
     model.load_state_dict(torch.load(saved_checkpoint))
@@ -35,9 +52,13 @@ def train(config):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    # TODO move to config
+    optim_param_dict = {"lr": 0.001}
     optimizer = optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters())
-    )  # TODO move to config
+        filter(
+            lambda p: p.requires_grad, model.parameters(), **optim_param_dict
+        )
+    )
 
     # train, val, test ordering
     train_loader = dataloaders[0]
@@ -45,10 +66,15 @@ def train(config):
 
     model = model.to(device)
     model.train()
-    num_epochs = 2  # TODO config
+    # TODO config
+    num_epochs = 2
+    batch_log_interval = 100
+    best_metric_type = "low"  # "high" or "low"
+    saving_metric = "baseline_loss"
+    previous = float("inf") if best_metric_type == "low" else float("-inf")
 
     for epoch in range(num_epochs):
-        for x_batch, y_batch in train_loader:
+        for idx, (x_batch, y_batch) in enumerate(train_loader):
             optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
@@ -57,19 +83,24 @@ def train(config):
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()
-            # print(loss.item())
-            # we want to print all in `losses_and_metrics`
-            # let's add batch indexing, so for e.g. every 1000th batch
+            if (idx + 1) % batch_log_interval == 0:
+                print(get_losses_str(losses_and_metrics))
 
         # done with one epoch
         # let's validate (use code from the validation script)
-
-        # save the model if best by some validation metric
-        # save best validation stats in json
+        model.eval()
+        all_losses_and_metrics = validate(
+            val_loader, model, loss_metric, device
+        )
+        model.train()
+        current = all_losses_and_metrics[saving_metric]
+        if is_better(current, previous, best_metric_type):
+            previous = current
+            # TODO
+            # save the model
+            # store validation stats in json
 
         # learning rate schedule step at the end of epoch
-
-
 
 
 # %%
@@ -90,7 +121,7 @@ if __name__ == "__main__":
 # uncomment and run for a quick check
 # %%
 # makelinks()
-# path = "./config/examples/eval_example.yaml"
+# path = "./config/examples/train_example.yaml"
 # with open(path, "r") as f:
 #     config = yaml.load(f, Loader=yaml.FullLoader)
 

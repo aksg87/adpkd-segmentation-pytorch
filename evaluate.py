@@ -17,6 +17,29 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 
 
+def validate(dataloader, model, loss_metric, device):
+    all_losses_and_metrics = defaultdict(list)
+    num_examples = 0
+
+    for x_batch, y_batch in dataloader:
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+        with torch.no_grad():
+            y_batch_hat = model(x_batch)
+
+        batch_size = y_batch.size(0)
+        num_examples += batch_size
+        losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+        for key, value in losses_and_metrics.items():
+            all_losses_and_metrics[key].append(value.item() * batch_size)
+
+    for key, value in all_losses_and_metrics.items():
+        all_losses_and_metrics[key] = (
+            sum(all_losses_and_metrics[key]) / num_examples
+        )
+    return all_losses_and_metrics
+
+
 # %%
 def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
@@ -39,25 +62,7 @@ def evaluate(config):
 
     model = model.to(device)
     model.eval()
-    all_losses_and_metrics = defaultdict(list)
-    num_examples = 0
-
-    for x_batch, y_batch in dataloader:
-        x_batch = x_batch.to(device)
-        y_batch = y_batch.to(device)
-        with torch.no_grad():
-            y_batch_hat = model(x_batch)
-
-        batch_size = y_batch.size(0)
-        num_examples += batch_size
-        losses_and_metrics = loss_metric(y_batch_hat, y_batch)
-        for key, value in losses_and_metrics.items():
-            all_losses_and_metrics[key].append(value.item() * batch_size)
-
-    for key, value in all_losses_and_metrics.items():
-        all_losses_and_metrics[key] = (
-            sum(all_losses_and_metrics[key]) / num_examples
-        )
+    all_losses_and_metrics = validate(dataloader, model, loss_metric, device)
 
     os.makedirs(results_path, exist_ok=True)
     with open("{}/val_results.json".format(results_path), "w") as fp:
