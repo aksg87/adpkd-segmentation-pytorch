@@ -27,6 +27,8 @@ def evaluate(config):
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
 
     model = get_object_instance(model_config)()
+    model.load_state_dict(torch.load(saved_checkpoint))
+
     dataloaders = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
