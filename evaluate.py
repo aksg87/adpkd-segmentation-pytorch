@@ -8,6 +8,7 @@ python -m evaluate --config path_to_config_yaml
 from collections import defaultdict
 import argparse
 import yaml
+import json
 
 import torch
 
@@ -22,6 +23,7 @@ def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
     dataloader_config = config["_DATALOADER_CONFIG"]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
+    results_path = config["_RESULTS_PATH"]
 
     model = get_object_instance(model_config)()
     dataloaders = get_object_instance(dataloader_config)()
@@ -54,6 +56,9 @@ def evaluate(config):
         all_losses_and_metrics[key] = (
             torch.sum(all_losses_and_metrics[key]) / num_examples
         )
+
+    with open("{}/data.json".format(results_path), "w") as fp:
+        json.dump(all_losses_and_metrics, fp)
 
 
 # %%
