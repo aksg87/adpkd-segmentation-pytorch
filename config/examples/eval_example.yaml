@@ -1,5 +1,6 @@
 ---
 _RESULTS_PATH: "./config/examples/results"
+_MODEL_CHECKPOINT: "model_checkpoints/5141105_loss=0.128471.pth"
 
 _MODEL_CONFIG:
   "smp_name": "Unet"

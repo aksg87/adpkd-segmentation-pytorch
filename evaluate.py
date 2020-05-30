@@ -24,6 +24,7 @@ def evaluate(config):
     dataloader_config = config["_DATALOADER_CONFIG"]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     results_path = config["_RESULTS_PATH"]
+    saved_checkpoint = config["_MODEL_CHECKPOINT"]
 
     model = get_object_instance(model_config)()
     dataloaders = get_object_instance(dataloader_config)()
