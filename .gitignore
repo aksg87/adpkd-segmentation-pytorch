@@ -5,3 +5,5 @@ structure_reference.txt
 *.npy
 data/data_config.py
 __pycache__/
+model_checkpoints/5141105_loss=0.128471.pth
+config/examples/results/val_results.pickle
