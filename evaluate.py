@@ -17,6 +17,7 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 
 
+# %%
 def validate(dataloader, model, loss_metric, device):
     all_losses_and_metrics = defaultdict(list)
     num_examples = 0
@@ -71,6 +72,16 @@ def evaluate(config):
 
 
 # %%
+def quick_check(run_makelinks=False):
+    if run_makelinks:
+        makelinks()
+    path = "./config/examples/eval_example.yaml"
+    with open(path, "r") as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    evaluate(config)
+
+
+# %%
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -83,11 +94,3 @@ if __name__ == "__main__":
 
     makelinks()
     evaluate(config)
-
-# uncomment and run for a quick check
-# %%
-makelinks()
-path = "./config/examples/eval_example.yaml"
-with open(path, "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-evaluate(config)
