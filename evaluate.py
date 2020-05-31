@@ -7,16 +7,38 @@ python -m evaluate --config path_to_config_yaml
 # %%
 from collections import defaultdict
 import argparse
+import json
+import os
 import yaml
-import pickle
 
 import torch
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 
-# %%
-makelinks()
+
+def validate(dataloader, model, loss_metric, device):
+    all_losses_and_metrics = defaultdict(list)
+    num_examples = 0
+
+    for x_batch, y_batch in dataloader:
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+        with torch.no_grad():
+            y_batch_hat = model(x_batch)
+
+        batch_size = y_batch.size(0)
+        num_examples += batch_size
+        losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+        for key, value in losses_and_metrics.items():
+            all_losses_and_metrics[key].append(value.item() * batch_size)
+
+    for key, value in all_losses_and_metrics.items():
+        all_losses_and_metrics[key] = (
+            sum(all_losses_and_metrics[key]) / num_examples
+        )
+    return all_losses_and_metrics
+
 
 # %%
 def evaluate(config):
@@ -40,28 +62,12 @@ def evaluate(config):
 
     model = model.to(device)
     model.eval()
-    all_losses_and_metrics = defaultdict(list)
-    num_examples = 0
+    all_losses_and_metrics = validate(dataloader, model, loss_metric, device)
 
-    for x_batch, y_batch in dataloader:
-        x_batch = x_batch.to(device)
-        y_batch = y_batch.to(device)
-        with torch.no_grad():
-            y_batch_hat = model(x_batch)
-
-        batch_size = y_batch.size(0)
-        num_examples += batch_size
-        losses_and_metrics = loss_metric(y_batch_hat, y_batch)
-        for key, value in losses_and_metrics.items():
-            all_losses_and_metrics[key].append(value * batch_size)
-
-    for key, value in all_losses_and_metrics.items():
-        all_losses_and_metrics[key] = (
-            torch.sum(torch.stack(all_losses_and_metrics[key])) / num_examples
-        )
-
-    with open("{}/val_results.pickle".format(results_path), "wb") as fp:
-        pickle.dump(all_losses_and_metrics, fp)
+    os.makedirs(results_path, exist_ok=True)
+    with open("{}/val_results.json".format(results_path), "w") as fp:
+        print(all_losses_and_metrics)
+        json.dump(all_losses_and_metrics, fp, indent=4)
 
 
 # %%
@@ -75,14 +81,13 @@ if __name__ == "__main__":
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
+    makelinks()
     evaluate(config)
 
 # uncomment and run for a quick check
 # %%
-path = "./config/examples/eval_example.yaml"
-with open(path, "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-evaluate(config)
-
-
-# %%
+# makelinks()
+# path = "./config/examples/eval_example.yaml"
+# with open(path, "r") as f:
+#     config = yaml.load(f, Loader=yaml.FullLoader)
+# evaluate(config)
