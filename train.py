@@ -120,9 +120,12 @@ if __name__ == "__main__":
 
 # uncomment and run for a quick check
 # %%
-# makelinks()
-# path = "./config/examples/train_example.yaml"
-# with open(path, "r") as f:
-#     config = yaml.load(f, Loader=yaml.FullLoader)
+makelinks()
+path = "./config/examples/train_example.yaml"
+with open(path, "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
 
-# train(config)
+train(config)
+
+
+# %%

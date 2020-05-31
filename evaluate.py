@@ -86,8 +86,8 @@ if __name__ == "__main__":
 
 # uncomment and run for a quick check
 # %%
-# makelinks()
-# path = "./config/examples/eval_example.yaml"
-# with open(path, "r") as f:
-#     config = yaml.load(f, Loader=yaml.FullLoader)
-# evaluate(config)
+makelinks()
+path = "./config/examples/eval_example.yaml"
+with open(path, "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+evaluate(config)

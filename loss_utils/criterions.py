@@ -12,7 +12,7 @@ class LossesMetrics:
         self.criterions_dict = criterions_dict
 
     def __call__(self):
-        def losses_dict(y, y_hat):
+        def losses_dict(y_hat, y):
             res = {}
 
             for key, criterion in self.criterions_dict.items():
