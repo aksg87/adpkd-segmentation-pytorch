@@ -12,6 +12,7 @@ import yaml
 
 import torch
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
@@ -43,6 +44,7 @@ def is_better(current, previous, metric_type):
         raise Exception("unknown metric_type")
 
 
+# %%
 def save_val_metrics(metrics, results_dir, epoch, global_step):
     with open(
         "{}/val_results_ep_{}_gs_{}.json".format(
@@ -51,6 +53,13 @@ def save_val_metrics(metrics, results_dir, epoch, global_step):
         "w",
     ) as fp:
         json.dump(metrics, fp, indent=4)
+
+
+# %%
+def tf_log_metrics(writer, metrics, global_step, suffix):
+    for k, v in metrics.items():
+        k = k + "/" + "suffix"
+        writer.add_scalar(k, v, global_step)
 
 
 # %%
@@ -83,6 +92,8 @@ def train(config):
     os.makedirs(checkpoints_dir, exist_ok=True)
     os.makedirs(results_dir, exist_ok=True)
     os.makedirs(tf_logs_dir, exist_ok=True)
+
+    writer = SummaryWriter(tf_logs_dir)
 
     # TODO move to config
     optim_param_dict = {"lr": 0.001}
@@ -118,6 +129,9 @@ def train(config):
             global_step += 1
             if global_step % batch_log_interval == 0:
                 print(get_losses_str(losses_and_metrics))
+                tf_log_metrics(
+                    writer, losses_and_metrics, global_step, "train"
+                )
 
         # done with one epoch
         # let's validate (use code from the validation script)
@@ -140,9 +154,10 @@ def train(config):
                 all_losses_and_metrics, results_dir, epoch, global_step
             )
             out_path = os.path.join(
-                checkpoints_dir, "ckp_gs_{}".format(global_step)
+                checkpoints_dir, "ckp_gs_{}.pth".format(global_step)
             )
             save_model_data(out_path, model, global_step)
+            tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
 
         # learning rate schedule step at the end of epoch
         if lr_scheduler_getter.step_type == "use_val":
@@ -151,6 +166,8 @@ def train(config):
             lr_scheduler.step(epoch)
         else:
             lr_scheduler.step()
+
+    writer.close()
 
 
 # %%
