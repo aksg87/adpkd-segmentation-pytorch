@@ -1,6 +1,7 @@
 ---
 _EXPERIMENT_DIR: "./experiments/exp_example/"
 _MODEL_CHECKPOINT: "model_checkpoints/5141105_loss=0.128471.pth"
+_NEW_CKP_FORMAT: false
 
 _MODEL_CONFIG:
   "smp_name": "Unet"

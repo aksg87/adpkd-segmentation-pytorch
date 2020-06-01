@@ -16,6 +16,7 @@ import torch.optim as optim
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
+from train_utils import load_model_data, save_model_data
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -42,6 +43,16 @@ def is_better(current, previous, metric_type):
         raise Exception("unknown metric_type")
 
 
+def save_val_metrics(metrics, results_dir, epoch, global_step):
+    with open(
+        "{}/val_results_ep_{}_gs_{}.json".format(
+            results_dir, epoch, global_step
+        ),
+        "w",
+    ) as fp:
+        json.dump(metrics, fp, indent=4)
+
+
 # %%
 def train(config):
     model_config = config["_MODEL_CONFIG"]
@@ -53,12 +64,16 @@ def train(config):
     tf_logs_dir = os.path.join(experiment_dir, TF_LOGS)
 
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
+    checkpoint_format = config["_NEW_CKP_FORMAT"]
     loss_key = config["_OPTIMIZATION_LOSS"]
     lr_scheduler_config = config["_LR_SCHEDULER"]
 
     model = get_object_instance(model_config)()
-    model.load_state_dict(torch.load(saved_checkpoint))
-
+    global_step = 0
+    if saved_checkpoint is not None:
+        global_step = load_model_data(
+            saved_checkpoint, model, new_format=checkpoint_format
+        )
     dataloaders = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
     lr_scheduler_getter = get_object_instance(lr_scheduler_config)
@@ -100,7 +115,8 @@ def train(config):
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()
-            if (idx + 1) % batch_log_interval == 0:
+            global_step += 1
+            if global_step % batch_log_interval == 0:
                 print(get_losses_str(losses_and_metrics))
 
         # done with one epoch
@@ -120,9 +136,13 @@ def train(config):
                 "at the end of epoch {}".format(epoch)
             )
             previous = current
-            # TODO
-            # save the model
-            # store validation stats in json
+            save_val_metrics(
+                all_losses_and_metrics, results_dir, epoch, global_step
+            )
+            out_path = os.path.join(
+                checkpoints_dir, "ckp_gs_{}".format(global_step)
+            )
+            save_model_data(out_path, model, global_step)
 
         # learning rate schedule step at the end of epoch
         if lr_scheduler_getter.step_type == "use_val":
