@@ -59,9 +59,8 @@ def train(config):
     # TODO move to config
     optim_param_dict = {"lr": 0.001}
     optimizer = optim.Adam(
-        filter(
-            lambda p: p.requires_grad, model.parameters(), **optim_param_dict
-        )
+        filter(lambda p: p.requires_grad, model.parameters()),
+        **optim_param_dict
     )
     lr_scheduler = lr_scheduler_getter(optimizer)
 
@@ -101,8 +100,10 @@ def train(config):
         model.train()
         current = all_losses_and_metrics[saving_metric]
         if is_better(current, previous, best_metric_type):
-            print("Validation metric improved"
-                  "at the end of epoch {}".format(epoch))
+            print(
+                "Validation metric improved"
+                "at the end of epoch {}".format(epoch)
+            )
             previous = current
             # TODO
             # save the model
@@ -137,7 +138,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-
-    # %%
     makelinks()
     train(config)
