@@ -19,10 +19,12 @@ from evaluate import validate
 
 
 # %%
-def get_losses_str(losses_and_metrics):
+def get_losses_str(losses_and_metrics, tensors=True):
     out = []
     for k, v in losses_and_metrics.items():
-        out.append("{}:{:.5f}".format(k, v.item()))
+        if tensors:
+            v = v.item()
+        out.append("{}:{:.5f}".format(k, v))
     return ", ".join(out)
 
 
@@ -43,12 +45,14 @@ def train(config):
     results_path = config["_RESULTS_PATH"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     loss_key = config["_OPTIMIZATION_LOSS"]
+    lr_scheduler_config = config["_LR_SCHEDULER"]
 
     model = get_object_instance(model_config)()
     model.load_state_dict(torch.load(saved_checkpoint))
 
     dataloaders = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
+    lr_scheduler_getter = get_object_instance(lr_scheduler_config)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -59,6 +63,7 @@ def train(config):
             lambda p: p.requires_grad, model.parameters(), **optim_param_dict
         )
     )
+    lr_scheduler = lr_scheduler_getter(optimizer)
 
     # train, val, test ordering
     train_loader = dataloaders[0]
@@ -92,15 +97,34 @@ def train(config):
         all_losses_and_metrics = validate(
             val_loader, model, loss_metric, device
         )
+        print(get_losses_str(all_losses_and_metrics))
         model.train()
         current = all_losses_and_metrics[saving_metric]
         if is_better(current, previous, best_metric_type):
+            print("Validation metric improved"
+                  "at the end of epoch {}".format(epoch))
             previous = current
             # TODO
             # save the model
             # store validation stats in json
 
         # learning rate schedule step at the end of epoch
+        # TODO: generalize to support LR schedulers which use
+        # `.step(epoch)``
+        if config["_LR_SCHEDULER_USE_VAL"]:
+            lr_scheduler.step(all_losses_and_metrics[loss_key])
+        else:
+            lr_scheduler.step()
+
+
+# %%
+def quick_check(run_makelinks=False):
+    if run_makelinks:
+        makelinks()
+    path = "./config/examples/train_example.yaml"
+    with open(path, "r") as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    train(config)
 
 
 # %%
@@ -117,15 +141,3 @@ if __name__ == "__main__":
     # %%
     makelinks()
     train(config)
-
-# uncomment and run for a quick check
-# %%
-makelinks()
-path = "./config/examples/train_example.yaml"
-with open(path, "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-
-train(config)
-
-
-# %%

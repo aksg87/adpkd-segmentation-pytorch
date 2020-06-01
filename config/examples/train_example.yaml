@@ -117,3 +117,16 @@ _LOSSES_METRICS_CONFIG:
     _CLASS_NAME: "LossesMetrics"
 
 _OPTIMIZATION_LOSS: "loss_baseline"
+
+_LR_SCHEDULER:
+  _MODULE_NAME: "train_utils"
+  _CLASS_NAME: "TorchLRScheduler"
+  "name": "ReduceLROnPlateau"
+  "param_dict":
+    "factor": 0.2
+    "patience": 1
+    "verbose": true
+    "threshold": 0.001
+    "cooldown": 1
+
+_LR_SCHEDULER_USE_VAL: true
