@@ -1,5 +1,5 @@
 ---
-_RESULTS_PATH: "./config/examples/results"
+_EXPERIMENT_DIR: "./experiments/exp_example/"
 _MODEL_CHECKPOINT: "model_checkpoints/5141105_loss=0.128471.pth"
 
 _MODEL_CONFIG:
@@ -119,8 +119,9 @@ _LOSSES_METRICS_CONFIG:
 _OPTIMIZATION_LOSS: "loss_baseline"
 
 _LR_SCHEDULER:
-  _MODULE_NAME: "train_utils"
-  _CLASS_NAME: "TorchLRScheduler"
+  _CLASS_INFO:
+    _MODULE_NAME: "train_utils"
+    _CLASS_NAME: "TorchLRScheduler"
   "name": "ReduceLROnPlateau"
   "param_dict":
     "factor": 0.2
@@ -128,5 +129,4 @@ _LR_SCHEDULER:
     "verbose": true
     "threshold": 0.001
     "cooldown": 1
-
-_LR_SCHEDULER_USE_VAL: true
+  "step_type": "use_val"
