@@ -11,8 +11,8 @@ import os
 import yaml
 
 import torch
-import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+from catalyst.contrib.nn import Lookahead
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
@@ -75,7 +75,10 @@ def train(config):
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
     loss_key = config["_OPTIMIZATION_LOSS"]
+    optim_config = config["_OPTIMIZER"]
+    lookahead_config = config["_LOOKAHEAD_OPTIM"]
     lr_scheduler_config = config["_LR_SCHEDULER"]
+    experiment_data = config["_EXPERIMENT_DATA"]
 
     model = get_object_instance(model_config)()
     global_step = 0
@@ -85,6 +88,7 @@ def train(config):
         )
     dataloaders = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
+    optimizer_getter = get_object_instance(optim_config)
     lr_scheduler_getter = get_object_instance(lr_scheduler_config)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -95,12 +99,10 @@ def train(config):
 
     writer = SummaryWriter(tf_logs_dir)
 
-    # TODO move to config
-    optim_param_dict = {"lr": 0.001}
-    optimizer = optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        **optim_param_dict
-    )
+    model_params = filter(lambda p: p.requires_grad, model.parameters())
+    optimizer = optimizer_getter(model_params)
+    if lookahead_config["use_lookahead"]:
+        optimizer = Lookahead(optimizer, **lookahead_config["params"])
     lr_scheduler = lr_scheduler_getter(optimizer)
 
     # train, val, test ordering
@@ -109,10 +111,10 @@ def train(config):
 
     model = model.to(device)
     model.train()
-    # TODO config
-    num_epochs = 2
-    batch_log_interval = 10
-    best_metric_type = "low"  # "high" or "low"
+    num_epochs = experiment_data["num_epochs"]
+    batch_log_interval = experiment_data["batch_log_interval"]
+    # "low" or "high"
+    best_metric_type = experiment_data["best_metric_type"]
     saving_metric = "loss_baseline"
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
