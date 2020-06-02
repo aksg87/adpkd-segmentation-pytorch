@@ -7,3 +7,4 @@ structure_reference.txt
 __pycache__/
 /model_checkpoints/
 /config/examples/results/
+/experiments/

@@ -12,10 +12,16 @@ import yaml
 
 import torch
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
+from train_utils import load_model_data, save_model_data
+
+CHECKPOINTS = "checkpoints"
+RESULTS = "results"
+TF_LOGS = "tf_logs"
 
 
 # %%
@@ -28,6 +34,7 @@ def get_losses_str(losses_and_metrics, tensors=True):
     return ", ".join(out)
 
 
+# %%
 def is_better(current, previous, metric_type):
     if metric_type == "low":
         return current < previous
@@ -38,30 +45,61 @@ def is_better(current, previous, metric_type):
 
 
 # %%
+def save_val_metrics(metrics, results_dir, epoch, global_step):
+    with open(
+        "{}/val_results_ep_{}_gs_{}.json".format(
+            results_dir, epoch, global_step
+        ),
+        "w",
+    ) as fp:
+        json.dump(metrics, fp, indent=4)
+
+
+# %%
+def tf_log_metrics(writer, metrics, global_step, suffix):
+    for k, v in metrics.items():
+        k = k + "/" + suffix
+        writer.add_scalar(k, v, global_step)
+
+
+# %%
 def train(config):
     model_config = config["_MODEL_CONFIG"]
     dataloader_config = config["_DATALOADER_CONFIG"]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
-    results_path = config["_RESULTS_PATH"]
+    experiment_dir = config["_EXPERIMENT_DIR"]
+    checkpoints_dir = os.path.join(experiment_dir, CHECKPOINTS)
+    results_dir = os.path.join(experiment_dir, RESULTS)
+    tf_logs_dir = os.path.join(experiment_dir, TF_LOGS)
+
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
+    checkpoint_format = config["_NEW_CKP_FORMAT"]
     loss_key = config["_OPTIMIZATION_LOSS"]
     lr_scheduler_config = config["_LR_SCHEDULER"]
 
     model = get_object_instance(model_config)()
-    model.load_state_dict(torch.load(saved_checkpoint))
-
+    global_step = 0
+    if saved_checkpoint is not None:
+        global_step = load_model_data(
+            saved_checkpoint, model, new_format=checkpoint_format
+        )
     dataloaders = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
     lr_scheduler_getter = get_object_instance(lr_scheduler_config)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    os.makedirs(checkpoints_dir, exist_ok=True)
+    os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(tf_logs_dir, exist_ok=True)
+
+    writer = SummaryWriter(tf_logs_dir)
+
     # TODO move to config
     optim_param_dict = {"lr": 0.001}
     optimizer = optim.Adam(
-        filter(
-            lambda p: p.requires_grad, model.parameters(), **optim_param_dict
-        )
+        filter(lambda p: p.requires_grad, model.parameters()),
+        **optim_param_dict
     )
     lr_scheduler = lr_scheduler_getter(optimizer)
 
@@ -73,9 +111,9 @@ def train(config):
     model.train()
     # TODO config
     num_epochs = 2
-    batch_log_interval = 100
+    batch_log_interval = 10
     best_metric_type = "low"  # "high" or "low"
-    saving_metric = "baseline_loss"
+    saving_metric = "loss_baseline"
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
     for epoch in range(num_epochs):
@@ -88,8 +126,12 @@ def train(config):
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()
-            if (idx + 1) % batch_log_interval == 0:
+            global_step += 1
+            if global_step % batch_log_interval == 0:
                 print(get_losses_str(losses_and_metrics))
+                tf_log_metrics(
+                    writer, losses_and_metrics, global_step, "train"
+                )
 
         # done with one epoch
         # let's validate (use code from the validation script)
@@ -97,24 +139,35 @@ def train(config):
         all_losses_and_metrics = validate(
             val_loader, model, loss_metric, device
         )
-        print(get_losses_str(all_losses_and_metrics))
+        print("Validation results for epoch {}".format(epoch))
+        print(get_losses_str(all_losses_and_metrics, tensors=False))
         model.train()
+
         current = all_losses_and_metrics[saving_metric]
         if is_better(current, previous, best_metric_type):
-            print("Validation metric improved"
-                  "at the end of epoch {}".format(epoch))
+            print(
+                "Validation metric improved "
+                "at the end of epoch {}".format(epoch)
+            )
             previous = current
-            # TODO
-            # save the model
-            # store validation stats in json
+            save_val_metrics(
+                all_losses_and_metrics, results_dir, epoch, global_step
+            )
+            out_path = os.path.join(
+                checkpoints_dir, "ckp_gs_{}.pth".format(global_step)
+            )
+            save_model_data(out_path, model, global_step)
+        tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
 
         # learning rate schedule step at the end of epoch
-        # TODO: generalize to support LR schedulers which use
-        # `.step(epoch)``
-        if config["_LR_SCHEDULER_USE_VAL"]:
+        if lr_scheduler_getter.step_type == "use_val":
             lr_scheduler.step(all_losses_and_metrics[loss_key])
+        elif lr_scheduler_getter.step_type == "use_epoch":
+            lr_scheduler.step(epoch)
         else:
             lr_scheduler.step()
+
+    writer.close()
 
 
 # %%
@@ -137,7 +190,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-
-    # %%
     makelinks()
     train(config)
