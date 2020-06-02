@@ -58,7 +58,7 @@ def save_val_metrics(metrics, results_dir, epoch, global_step):
 # %%
 def tf_log_metrics(writer, metrics, global_step, suffix):
     for k, v in metrics.items():
-        k = k + "/" + "suffix"
+        k = k + "/" + suffix
         writer.add_scalar(k, v, global_step)
 
 
@@ -111,7 +111,7 @@ def train(config):
     model.train()
     # TODO config
     num_epochs = 2
-    batch_log_interval = 100
+    batch_log_interval = 10
     best_metric_type = "low"  # "high" or "low"
     saving_metric = "loss_baseline"
     previous = float("inf") if best_metric_type == "low" else float("-inf")
@@ -157,7 +157,7 @@ def train(config):
                 checkpoints_dir, "ckp_gs_{}.pth".format(global_step)
             )
             save_model_data(out_path, model, global_step)
-            tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
+        tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
 
         # learning rate schedule step at the end of epoch
         if lr_scheduler_getter.step_type == "use_val":
