@@ -24,7 +24,6 @@ class BaselineLoss(nn.Module):
         self.bce_weight = bce_weight
 
     def __call__(self, pred, target):
-        assert (target >= 0).all().item()
         bce = F.binary_cross_entropy_with_logits(pred, target)
 
         pred = F.sigmoid(pred)
