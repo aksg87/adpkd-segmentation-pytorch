@@ -130,7 +130,7 @@ def train(config):
             optimizer.step()
             global_step += 1
             if global_step % batch_log_interval == 0:
-                print(get_losses_str(losses_and_metrics))
+                print("TRAIN:", get_losses_str(losses_and_metrics))
                 tf_log_metrics(
                     writer, losses_and_metrics, global_step, "train"
                 )
@@ -142,7 +142,7 @@ def train(config):
             val_loader, model, loss_metric, device
         )
         print("Validation results for epoch {}".format(epoch))
-        print(get_losses_str(all_losses_and_metrics, tensors=False))
+        print("VAL:", get_losses_str(all_losses_and_metrics, tensors=False))
         model.train()
 
         current = all_losses_and_metrics[saving_metric]
@@ -155,9 +155,7 @@ def train(config):
             save_val_metrics(
                 all_losses_and_metrics, results_dir, epoch, global_step
             )
-            out_path = os.path.join(
-                checkpoints_dir, "ckp_gs_{}.pth".format(global_step)
-            )
+            out_path = os.path.join(checkpoints_dir, "best_val_checkpoint.pth")
             save_model_data(out_path, model, global_step)
         tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
 
@@ -192,5 +190,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    makelinks()
+    # makelinks()
     train(config)
