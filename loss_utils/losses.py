@@ -56,3 +56,17 @@ class BaselineLoss(nn.Module):
         loss = bce * self.bce_weight + dice * (1 - self.bce_weight)
 
         return loss
+
+
+class SoftDice(nn.Module):
+    "New dice loss criterion callable"
+
+    def __init__(self, epsilon=1e-6):
+        super().__init__()
+        self.epsilon = epsilon
+
+    def __call__(self, pred, target):
+
+        loss = soft_dice_loss(pred, target, epsilon=self.epsilon)
+
+        return loss
