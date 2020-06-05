@@ -95,5 +95,3 @@ def training_loop(model, criterion, optimizer, n_epochs, dataloaders, device):
                 sum(val_dice_losses) / val_samples,
             )
         )
-
-    print(model.state_dict())
