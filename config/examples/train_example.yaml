@@ -1,6 +1,13 @@
 ---
-_RESULTS_PATH: "./config/examples/results"
+_EXPERIMENT_DIR: "./experiments/exp_example/"
 _MODEL_CHECKPOINT: "model_checkpoints/5141105_loss=0.128471.pth"
+_NEW_CKP_FORMAT: false
+
+_EXPERIMENT_DATA:
+  "num_epochs": 2
+  "batch_log_interval": 10
+  "best_metric_type": "low"
+  "saving_metric": "loss_baseline"
 
 _MODEL_CONFIG:
   "smp_name": "Unet"
@@ -115,3 +122,30 @@ _LOSSES_METRICS_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.criterions"
     _CLASS_NAME: "LossesMetrics"
+
+_OPTIMIZATION_LOSS: "loss_baseline"
+
+_LR_SCHEDULER:
+  _CLASS_INFO:
+    _MODULE_NAME: "train_utils"
+    _CLASS_NAME: "TorchLRScheduler"
+  "name": "ReduceLROnPlateau"
+  "param_dict":
+    "factor": 0.2
+    "patience": 1
+    "verbose": true
+    "threshold": 0.001
+    "cooldown": 1
+  "step_type": "use_val"
+
+_OPTIMIZER:
+  _CLASS_INFO:
+    _MODULE_NAME: "train_utils"
+    _CLASS_NAME: "OptimGetter"
+  "module_name": "catalyst.contrib.nn"
+  "name": "RAdam"
+  "param_dict": {"lr": 0.001}
+
+_LOOKAHEAD_OPTIM:
+  "use_lookahead": true
+  "params": {k: 5, alpha: 0.5}
