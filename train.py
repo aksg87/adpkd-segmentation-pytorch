@@ -21,7 +21,7 @@ from train_utils import load_model_data, save_model_data
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
-TF_LOGS = "tf_logs"
+TB_LOGS = "tb_logs"
 
 
 # %%
@@ -56,10 +56,28 @@ def save_val_metrics(metrics, results_dir, epoch, global_step):
 
 
 # %%
-def tf_log_metrics(writer, metrics, global_step, suffix):
+def tb_log_metrics(writer, metrics, global_step):
     for k, v in metrics.items():
-        k = k + "/" + suffix
         writer.add_scalar(k, v, global_step)
+
+
+def plot_image_from_batch(
+    writer, batch, prediction, target, global_step, idx=0
+):
+    image = batch[idx]
+    pred_mask = prediction[idx]
+    mask = target[idx]
+    # plot each of the image channels as a separate grayscale image
+    # (C, 1, H, W) shape to treat each of the channels as a new image
+    image = image.unsqueeze(1)
+    # same approach for mask and prediction
+    mask = mask.unsqueeze(1)
+    pred_mask = pred_mask.unsqueeze(1)
+    writer.add_images("input_images", image, global_step, dataformats="NCHW")
+    writer.add_images("mask_channels", mask, global_step, dataformats="NCHW")
+    writer.add_images(
+        "prediction_channels", pred_mask, global_step, dataformats="NCHW"
+    )
 
 
 # %%
@@ -70,7 +88,8 @@ def train(config):
     experiment_dir = config["_EXPERIMENT_DIR"]
     checkpoints_dir = os.path.join(experiment_dir, CHECKPOINTS)
     results_dir = os.path.join(experiment_dir, RESULTS)
-    tf_logs_dir = os.path.join(experiment_dir, TF_LOGS)
+    tb_logs_dir_train = os.path.join(experiment_dir, TB_LOGS, "train")
+    tb_logs_dir_val = os.path.join(experiment_dir, TB_LOGS, "val")
 
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
@@ -95,9 +114,11 @@ def train(config):
 
     os.makedirs(checkpoints_dir, exist_ok=True)
     os.makedirs(results_dir, exist_ok=True)
-    os.makedirs(tf_logs_dir, exist_ok=True)
+    os.makedirs(tb_logs_dir_train, exist_ok=True)
+    os.makedirs(tb_logs_dir_val, exist_ok=True)
 
-    writer = SummaryWriter(tf_logs_dir)
+    train_writer = SummaryWriter(tb_logs_dir_train)
+    val_writer = SummaryWriter(tb_logs_dir_val)
 
     model_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optimizer_getter(model_params)
@@ -130,9 +151,12 @@ def train(config):
             optimizer.step()
             global_step += 1
             if global_step % batch_log_interval == 0:
-                print(get_losses_str(losses_and_metrics))
-                tf_log_metrics(
-                    writer, losses_and_metrics, global_step, "train"
+                print("TRAIN:", get_losses_str(losses_and_metrics))
+                tb_log_metrics(train_writer, losses_and_metrics, global_step)
+                # TODO: add support for softmax processing
+                prediction = torch.sigmoid(y_batch_hat)
+                plot_image_from_batch(
+                    train_writer, x_batch, prediction, y_batch, global_step
                 )
 
         # done with one epoch
@@ -142,7 +166,7 @@ def train(config):
             val_loader, model, loss_metric, device
         )
         print("Validation results for epoch {}".format(epoch))
-        print(get_losses_str(all_losses_and_metrics, tensors=False))
+        print("VAL:", get_losses_str(all_losses_and_metrics, tensors=False))
         model.train()
 
         current = all_losses_and_metrics[saving_metric]
@@ -155,11 +179,10 @@ def train(config):
             save_val_metrics(
                 all_losses_and_metrics, results_dir, epoch, global_step
             )
-            out_path = os.path.join(
-                checkpoints_dir, "ckp_gs_{}.pth".format(global_step)
-            )
+            out_path = os.path.join(checkpoints_dir, "best_val_checkpoint.pth")
             save_model_data(out_path, model, global_step)
-        tf_log_metrics(writer, all_losses_and_metrics, global_step, "val")
+
+        tb_log_metrics(val_writer, all_losses_and_metrics, global_step)
 
         # learning rate schedule step at the end of epoch
         if lr_scheduler_getter.step_type == "use_val":
@@ -168,8 +191,15 @@ def train(config):
             lr_scheduler.step(epoch)
         else:
             lr_scheduler.step()
+        # plot the learning rate
+        for idx, param_group in enumerate(optimizer.param_groups):
+            key = "lr_param_group_{}".format(idx)
+            value = param_group["lr"]
+            tb_log_metrics(val_writer, {key: value}, global_step)
+            tb_log_metrics(train_writer, {key: value}, global_step)
 
-    writer.close()
+    train_writer.close()
+    val_writer.close()
 
 
 # %%
@@ -188,9 +218,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config", help="YAML config path", type=str, required=True
     )
+    parser.add_argument(
+        "--makelinks", help="Make data links", action="store_true"
+    )
 
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    makelinks()
+    if args.makelinks:
+        makelinks()
     train(config)
