@@ -74,3 +74,6 @@ optimizer_ft = optim.Adam(
     filter(lambda p: p.requires_grad, model.parameters())
 )
 training_loop(model, criterion, optimizer_ft, 30, dataloaders, device)
+
+
+# %%
