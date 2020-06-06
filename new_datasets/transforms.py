@@ -3,13 +3,13 @@ from PIL import Image
 
 import torch
 
+BACKGROUND = 0.0
 L_KIDNEY = 0.5019608
 R_KIDNEY = 0.7490196
 
 
 class BaselineMaskEncode:
-    """
-    Default mask2label function.
+    """Default mask2label function.
 
     The first channel for right kidney vs background,
     and the second one for left kidney vs background.
@@ -22,24 +22,41 @@ class BaselineMaskEncode:
     Returns:
         tensor, (2, H, W) uint8 one-hot encoded label
     """
-    def __call__(self, mask):
-        unique_vals = [R_KIDNEY, L_KIDNEY]
-        mask = mask.squeeze()
-        s = mask.shape
-        ones = torch.ones(s, dtype=torch.uint8)
-        zeros = torch.zeros(s, dtype=torch.uint8)
-        one_hot_map = [
-            torch.where(mask == unique_vals[targ], ones, zeros)
-            for targ in range(len(unique_vals))
-        ]
-        one_hot_map = torch.stack(one_hot_map, dim=0)
 
-        return one_hot_map
+    def __call__(self, mask):
+        r_kidney = (mask == R_KIDNEY).type(torch.uint8)
+        l_kidney = (mask == L_KIDNEY).type(torch.uint8)
+        return torch.cat([r_kidney, l_kidney], dim=0)
 
 
 class SingleChannelMask:
-    def __call__():
-        pass
+    """Sets 1 for kidneys, 0 otherwise.
+
+    Args:
+        mask, (1, H, W) float32 tensor
+
+    Returns:
+        tensor, (1, H, W) uint8 one-hot encoded label
+    """
+    def __call__(self, mask):
+        kidney = torch.bitwise_or(mask == R_KIDNEY, mask == L_KIDNEY)
+        return kidney.type(torch.uint8)
+
+
+class ThreeChannelMask:
+    """One channel for each of the 3 classes.
+
+    Args:
+        mask, (1, H, W) float32 tensor
+
+    Returns:
+        tensor, (3, H, W) uint8 one-hot encoded label
+    """
+    def __call__(self, mask):
+        background = (mask == BACKGROUND).type(torch.unit8)
+        r_kidney = (mask == R_KIDNEY).type(torch.uint8)
+        l_kidney = (mask == L_KIDNEY).type(torch.uint8)
+        return torch.cat([r_kidney, l_kidney, background], dim=0)
 
 
 class Transform_X:

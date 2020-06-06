@@ -39,6 +39,7 @@ def evaluate(config):
         loss_metric,
     )  # add return types for debugging/testing
 
+
 # %%
 # path = "/adpkd-segmentation/config/examples/eval_example.yaml" # noqa
 path = "./config/examples/eval_example.yaml"
