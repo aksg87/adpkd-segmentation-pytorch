@@ -53,7 +53,7 @@ class ThreeChannelMask:
         tensor, (3, H, W) uint8 one-hot encoded label
     """
     def __call__(self, mask):
-        background = (mask == BACKGROUND).type(torch.unit8)
+        background = (mask == BACKGROUND).type(torch.uint8)
         r_kidney = (mask == R_KIDNEY).type(torch.uint8)
         l_kidney = (mask == L_KIDNEY).type(torch.uint8)
         return torch.cat([r_kidney, l_kidney, background], dim=0)
