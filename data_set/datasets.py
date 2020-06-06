@@ -1,21 +1,42 @@
 # %%
 import torch
 
-from data.data_utils import get_labeled, make_dcmdicts, path_2dcm, path_2label, get_y_Path
+from data.data_utils import (
+    get_labeled,
+    make_dcmdicts,
+    path_2dcm,
+    path_2label,
+    get_y_Path,
+    filter_dcm2attribs,
+)
 
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
-    def __init__(self, patient_IDS=None, hyperparams=None, transform_x=None, transform_y=None, preprocessing=None):
+
+    def __init__(
+        self,
+        patient_IDS=None,
+        hyperparams=None,
+        transform_x=None,
+        transform_y=None,
+        preprocessing=None,
+        filters=None,
+    ):
 
         super(SegmentationDataset, self).__init__()
         self.transform_x = transform_x
         self.transform_y = transform_y
-        self.preprocessing = preprocessing # --> for segmentation-models-pytorch
+        self.preprocessing = (
+            preprocessing
+        )  # --> for segmentation-models-pytorch
 
         dcms_paths = get_labeled()
 
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
+
+        if filters:
+            dcm2attribs = filter_dcm2attribs(filters, dcm2attribs)
 
         self.dcm2attribs = dcm2attribs
         self.pt2dcm = patient2dcm
@@ -43,9 +64,11 @@ class SegmentationDataset(torch.utils.data.Dataset):
         dcm = self.transform_x(dcm)
         label = self.transform_y(label)
 
-        if self.preprocessing: # required for segmentation-models-pytorch --> essentially normalizes data for encoder, and transforms label to float32 dtype
+        if (
+            self.preprocessing
+        ):  # required for segmentation-models-pytorch --> essentially normalizes data for encoder, and transforms label to float32 dtype
             sample = self.preprocessing(image=dcm, mask=label)
-            dcm, label = sample['image'], sample['mask']
+            dcm, label = sample["image"], sample["mask"]
 
         return dcm, label
 
