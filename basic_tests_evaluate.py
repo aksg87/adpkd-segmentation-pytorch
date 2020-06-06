@@ -5,7 +5,6 @@ python -m evaluate --config path_to_config_yaml
 """
 
 # %%
-import argparse
 import yaml
 
 import matplotlib.pyplot as plt
@@ -40,21 +39,6 @@ def evaluate(config):
         loss_metric,
     )  # add return types for debugging/testing
 
-
-# %%
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--config",
-#                         help="YAML config path",
-#                         type=str,
-#                         required=True)
-
-#     args = parser.parse_args()
-#     with open(args.config, "r") as f:
-#         config = yaml.load(f, Loader=yaml.FullLoader)
-
-#     evaluate(config)
-
 # %%
 # path = "/adpkd-segmentation/config/examples/eval_example.yaml" # noqa
 path = "./config/examples/eval_example.yaml"
@@ -73,7 +57,7 @@ print("Model:\n\n{}\n....\n".format(repr(model)[0:500]))
 print("Loss: {}".format(loss_criterion))
 
 # %%
-img_idx = 772
+img_idx = 2
 
 train = datasets[0]
 x, y = train[img_idx]

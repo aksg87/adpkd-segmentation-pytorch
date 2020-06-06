@@ -123,7 +123,7 @@ def filter_dcm2attribs(filters, dcm2attribs):
     return dcm2attribs
 
 def masks_to_colorimg(masks):
-    """converts mask png grayscale to color encoded image"""
+    """converts one hot encoded mask to color encoded image"""
 
     if np.ndim(masks) == 2:
         masks = np.expand_dims(masks, 0)
