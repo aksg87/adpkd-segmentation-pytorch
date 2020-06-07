@@ -5,6 +5,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def binarize_thresholds(pred, thresholds):
+    C = len(thresholds)
+    thresholds = torch.tensor(thresholds)
+    thresholds = thresholds.reshape(1, C, 1, 1)
+    thresholds.expand_as(pred)
+    res = pred > thresholds
+
+    return res.float()
+
+
 # copy from trainer.py as example
 def dice_loss(pred, target, smooth=1e-8):
     # flatten label and prediction tensors
