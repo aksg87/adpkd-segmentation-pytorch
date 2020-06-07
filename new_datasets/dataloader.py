@@ -2,26 +2,22 @@ from torch.utils.data import DataLoader
 
 
 class BaselineDataloaderGetter:
-    """create baseline dataloaders"""
+    """create baseline dataloader"""
 
-    def __init__(self, datasets, batchsize, shuffle):
+    def __init__(self, dataset, batchsize, shuffle):
         """
-        Arguments:
-            datasets {list of dataset}
-            batchsize {int}
-            shuffle {boolean}
+        Args:
+            dataset: `SegmentationDataset`
+            batchsize: int, batch size
+            shuffle: bool , whether to shuffle after each epoch
         """
-        self.datasets = datasets()
+        self.dataset = dataset()
         self.batchsize = batchsize
         self.shuffle = shuffle
 
     def __call__(self):
-
-        return [
-            DataLoader(
-                dataset=dataset,
+        return DataLoader(
+                dataset=self.dataset,
                 batch_size=self.batchsize,
                 shuffle=self.shuffle,
             )
-            for dataset in self.datasets
-        ]  # convert to dictionary with names in datasets?

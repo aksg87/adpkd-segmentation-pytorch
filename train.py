@@ -83,7 +83,8 @@ def plot_image_from_batch(
 # %%
 def train(config):
     model_config = config["_MODEL_CONFIG"]
-    dataloader_config = config["_DATALOADER_CONFIG"]
+    train_dataloader_config = config["_TRAIN_DATALOADER_CONFIG"]
+    val_dataloader_config = config["_VAL_DATALOADER_CONFIG"]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     experiment_dir = config["_EXPERIMENT_DIR"]
     checkpoints_dir = os.path.join(experiment_dir, CHECKPOINTS)
@@ -105,7 +106,8 @@ def train(config):
         global_step = load_model_data(
             saved_checkpoint, model, new_format=checkpoint_format
         )
-    dataloaders = get_object_instance(dataloader_config)()
+    train_loader = get_object_instance(train_dataloader_config)()
+    val_loader = get_object_instance(val_dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
     optimizer_getter = get_object_instance(optim_config)
     lr_scheduler_getter = get_object_instance(lr_scheduler_config)
@@ -125,10 +127,6 @@ def train(config):
     if lookahead_config["use_lookahead"]:
         optimizer = Lookahead(optimizer, **lookahead_config["params"])
     lr_scheduler = lr_scheduler_getter(optimizer)
-
-    # train, val, test ordering
-    train_loader = dataloaders[0]
-    val_loader = dataloaders[1]
 
     model = model.to(device)
     model.train()

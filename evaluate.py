@@ -44,22 +44,19 @@ def validate(dataloader, model, loss_metric, device):
 # %%
 def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
-    dataloader_config = config["_DATALOADER_CONFIG"]
+    loader_to_eval = config["_LOADER_TO_EVAL"]
+    dataloader_config = config[loader_to_eval]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     results_path = config["_RESULTS_PATH"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
 
+    # TODO: support new checkpoint types
     model = get_object_instance(model_config)()
     model.load_state_dict(torch.load(saved_checkpoint))
 
-    dataloaders = get_object_instance(dataloader_config)()
+    dataloader = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    # TODO: add as a config option
-    # train, val, test ordering
-    dataloader_index = 1
-    dataloader = dataloaders[dataloader_index]
 
     model = model.to(device)
     model.eval()

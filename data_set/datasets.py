@@ -10,6 +10,7 @@ from data.data_utils import (
     filter_dcm2attribs,
 )
 
+
 # %%
 class SegmentationDataset(torch.utils.data.Dataset):
     """Some Information about SegmentationDataset"""
@@ -17,7 +18,6 @@ class SegmentationDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         patient_IDS=None,
-        hyperparams=None,
         transform_x=None,
         transform_y=None,
         preprocessing=None,
@@ -35,7 +35,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
 
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
 
-        if filters:
+        if filters is not None:
             dcm2attribs = filter_dcm2attribs(filters, dcm2attribs)
 
         self.dcm2attribs = dcm2attribs
@@ -43,7 +43,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
         self.patients = list(patient2dcm.keys())
 
         # select subset of data for train, val, test split
-        if patient_IDS:
+        if patient_IDS is not None:
             self.patients = [self.patients[i] for i in patient_IDS]
 
         patient_dcms = []
