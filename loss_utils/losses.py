@@ -15,6 +15,22 @@ def binarize_thresholds(pred, thresholds):
     return res.float()
 
 
+def binarize_argmax(pred, C=3):
+    """
+    Args:
+        pred: model pred tensor with shape b x c x (X x Y)
+        C: number of channels
+
+    Returns:
+        float tensor: binary values
+    """
+    max_c = torch.argmax(pred, 1)  # argmax across C axis
+    encoded = torch.nn.functional.one_hot(max_c, C)
+    encoded = encoded.permute([0, 3, 1, 2])
+
+    return encoded.float()
+
+
 # copy from trainer.py as example
 def dice_loss(pred, target, smooth=1e-8):
     # flatten label and prediction tensors
