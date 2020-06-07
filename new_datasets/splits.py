@@ -1,5 +1,4 @@
 from sklearn.model_selection import train_test_split
-
 from data.data_utils import make_dcmdicts, get_labeled
 
 
@@ -35,4 +34,8 @@ class GenSplit:
 
     def __call__(self):
 
-        return self.train_idxs, self.val_idxs, self.test_idxs
+        return {
+            "train": self.train_idxs,
+            "val": self.val_idxs,
+            "test": self.test_idxs,
+        }
