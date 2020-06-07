@@ -6,6 +6,15 @@ import torch.nn.functional as F
 
 
 def binarize_thresholds(pred, thresholds):
+    """
+    Args:
+        pred: model pred tensor with shape b x c x (X x Y)
+        thresholds: list of floats i.e. [0.6,0.5,0.4]
+
+    Returns:
+        float tensor: binary values
+    """
+
     C = len(thresholds)
     thresholds = torch.tensor(thresholds)
     thresholds = thresholds.reshape(1, C, 1, 1)
