@@ -19,13 +19,13 @@ class SingleChannelMaskNumpy:
     """Sets 1 for kidneys, 0 otherwise.
 
     Args:
-        mask, (1, H, W) uint8 numpy array
+        label, (1, H, W) uint8 numpy array
 
     Returns:
-        numpy array, (1, H, W) uint8 one-hot encoded label
+        numpy array, (1, H, W) uint8 one-hot encoded mask
     """
-    def __call__(self, mask):
-        kidney = np.bitwise_or(mask == R_KIDNEY_INT, mask == L_KIDNEY_INT)
+    def __call__(self, label):
+        kidney = np.bitwise_or(label == R_KIDNEY_INT, label == L_KIDNEY_INT)
         return kidney.astype(np.uint8)
 
 

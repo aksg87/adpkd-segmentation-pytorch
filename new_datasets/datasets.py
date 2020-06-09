@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 import data_set.datasets as ds
@@ -20,7 +21,7 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         label2mask,
         patient_indices=None,
         augmentation=None,
-        preprocessing=None,
+        smp_preprocessing=None,
         filters=None,
     ):
 
@@ -28,11 +29,10 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         self.label2mask = label2mask
         self.patient_indices = patient_indices
         self.augmentation = augmentation
-        self.preprocessing = preprocessing
+        self.smp_preprocessing = smp_preprocessing
         self.filters = filters
 
         dcms_paths = get_labeled()
-
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
 
         if filters is not None:
@@ -63,20 +63,29 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         label = path_2label(self.label_paths[index])
 
         # numpy uint8, one hot encoded (C, H, W)
-        mask = self.label2mask(label)
+        mask = self.label2mask(label[np.newaxis, ...])
 
         if self.augmentation is not None:
+            # requires (H, W, C) or (H, W)
+            mask = mask.transpose(1, 2, 0)
             sample = self.augmentation(image=image, mask=mask)
-            image, mask = sample['image'], sample['mask']
-
-        # convert to float and stack
-        image = image / 255.0
-        image = np.repeat(image, 3, axis=0)
-
-        # smp preprocessing
-        if self.preprocessing is not None:
-            sample = self.preprocessing(image=image, mask=mask)
             image, mask = sample["image"], sample["mask"]
+            # get back to (C, H, W)
+            mask = mask.transpose(2, 0, 1)
+
+        # convert to float
+        image = (image / 255).astype(np.float32)
+        mask = mask.astype(np.float32)
+
+        # smp preprocessing requires (H, W, 3)
+        if self.smp_preprocessing is not None:
+            image = np.repeat(image[..., np.newaxis], 3, axis=-1)
+            image = self.smp_preprocessing(image).astype(np.float32)
+            # get back to (3, H, W)
+            image = image.transpose(2, 0, 1)
+        else:
+            # stack image to (3, H, W)
+            image = np.repeat(image[np.newaxis, ...], 3, axis=0)
 
         return image, mask
 
@@ -91,34 +100,34 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
 
         return sample, dcm_path, attribs
 
-# WIP
+
 class NewBaselineDatasetGetter:
     """Create baseline segmentation dataset"""
 
     def __init__(
         self,
-        label2mask,
-        patient_indices=None,
-        augmentation=None,
-        preprocessing=None,
-        filters=None,
+        splitter,
         splitter_key,
+        label2mask,
+        augmentation=None,
+        smp_preprocessing=None,
+        filters=None,
     ):
         super().__init__()
         self.splitter = splitter()
-        self.transform_x = transform_x()
-        self.transform_y = transform_y()
-        self.preprocess_func = preprocess_func()
-        self.filters = filters
         self.splitter_key = splitter_key
+        self.label2mask = label2mask
+        self.augmentation = augmentation
+        self.smp_preprocessing = smp_preprocessing
+        self.filters = filters
 
     def __call__(self):
 
-        return ds.SegmentationDataset(
-            patient_IDS=self.splitter[self.splitter_key],
-            transform_x=self.transform_x,
-            transform_y=self.transform_y,
-            preprocessing=self.preprocess_func,
+        return NewSegmentationDataset(
+            label2mask=self.label2mask,
+            patient_indices=self.splitter[self.splitter_key],
+            augmentation=self.augmentation,
+            smp_preprocessing=self.smp_preprocessing,
             filters=self.filters,
         )
 

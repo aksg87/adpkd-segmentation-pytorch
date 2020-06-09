@@ -53,9 +53,9 @@ def process_nested(config):
         processed = []
         for v in config:
             if is_simple_value(v):
-                processed.append[v]
+                processed.append(v)
             else:
-                processed.append[process_nested(v)]
+                processed.append(process_nested(v))
 
     elif is_object_config(config):
         object_params = {}
