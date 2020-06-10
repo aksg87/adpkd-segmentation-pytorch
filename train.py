@@ -134,7 +134,7 @@ def train(config):
     batch_log_interval = experiment_data["batch_log_interval"]
     # "low" or "high"
     best_metric_type = experiment_data["best_metric_type"]
-    saving_metric = "loss_baseline"
+    saving_metric = experiment_data["saving_metric"]
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
     for epoch in range(num_epochs):

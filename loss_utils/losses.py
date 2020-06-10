@@ -1,10 +1,12 @@
 """Loss utilities and definitions"""
 
+# %%
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
+# %%
 def binarize_thresholds(pred, thresholds):
     """
     Args:
@@ -19,28 +21,121 @@ def binarize_thresholds(pred, thresholds):
     thresholds = torch.tensor(thresholds)
     thresholds = thresholds.reshape(1, C, 1, 1)
     thresholds.expand_as(pred)
+    thresholds = thresholds.to(pred.device)
     res = pred > thresholds
 
     return res.float()
 
 
-def binarize_argmax(pred, C=3):
+# %%
+def binarize_argmax(pred):
     """
     Args:
         pred: model pred tensor with shape b x c x (X x Y)
-        C: number of channels
 
     Returns:
         float tensor: binary values
     """
     max_c = torch.argmax(pred, 1)  # argmax across C axis
-    encoded = torch.nn.functional.one_hot(max_c, C)
+    num_classes = pred.shape[1]
+    encoded = torch.nn.functional.one_hot(max_c, num_classes)
     encoded = encoded.permute([0, 3, 1, 2])
 
     return encoded.float()
 
 
-# copy from trainer.py as example
+def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
+    """
+    Dice simmilarity coeficient calculation.
+
+    Assumes the `channels_first` format by default: X_Y = (2, 3)
+    Support binary and soft predictions.
+
+    Separate Dice calculation for each of the class channels, and then
+    averaged over all classes and examples in the batch.
+
+    Numpy reference
+    https://gist.github.com/jeremyjordan/9ea3032a32909f71dd2ab35fe3bacc08
+
+    Args:
+        y_pred: b x c x (X x Y) Prediction (sigmoid or binarized)
+        y_true: b x c x (X x Y) One hot encoding of ground truth
+        epsilon: used for numerical stability to avoid divide by zero errors
+        X_Y: tuple, height and width dimensions
+    """
+
+    numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
+    denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
+
+    # average over classes and batch
+    return torch.mean(numerator / (denominator + epsilon))
+
+
+class SigmoidBinarize:
+    def __init__(self, thresholds):
+        self.thresholds = thresholds
+
+    def __call__(self, pred):
+        # Expects (N, C, H, W) format
+        return binarize_thresholds(torch.sigmoid(pred), self.thresholds)
+
+
+class SoftmaxBinarize:
+    def __call__(self, pred):
+        # Expects (N, C, H, W) format
+        return binarize_argmax(pred)
+
+
+class SoftDice(nn.Module):
+    """"New soft dice loss criterion callable"""
+
+    def __init__(self, pred_process, epsilon=1e-6):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+
+    def __call__(self, pred, target):
+
+        pred = self.pred_process(pred)
+        loss = 1 - calculate_DSC(pred, target, epsilon=self.epsilon)
+
+        return loss
+
+
+class DiceMetric(nn.Module):
+    """Dice metric callable"""
+
+    def __init__(self, binarize_func, epsilon=1e-6):
+        super().__init__()
+        self.binarize_func = binarize_func
+        self.epsilon = epsilon
+
+    def __call__(self, pred, target):
+
+        pred = self.binarize_func(pred)
+        dsc = calculate_DSC(pred, target, epsilon=self.epsilon)
+
+        return dsc
+
+
+class CombinedDiceBCE(nn.Module):
+    """Combined soft Dice and BCE loss"""
+
+    def __init__(self, epsilon=1e-6, bce_weight=0.5):
+        super().__init__()
+        self.epsilon = epsilon
+        self.bce_weight = bce_weight
+        self.soft_dice = SoftDice(pred_process=torch.sigmoid, epsilon=epsilon)
+
+    def __call__(self, pred, target):
+        bce = F.binary_cross_entropy_with_logits(pred, target)
+        dice = self.soft_dice(pred, target)
+        loss = bce * self.bce_weight + dice * (1 - self.bce_weight)
+        return loss
+
+
+# %%
+# old implementation
 def dice_loss(pred, target, smooth=1e-8):
     # flatten label and prediction tensors
     pred = pred.view(-1)
@@ -50,57 +145,8 @@ def dice_loss(pred, target, smooth=1e-8):
     return 1 - dice
 
 
-def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
-    """
-    Soft dice loss calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
-    Assumes the `channels_first` format by default: X_Y = (2, 3)
-
-    # Arguments
-
-        y_pred: b x c x (X x Y) Network output, must sum to 1 over
-        y_true: b x c x (X x Y) One hot encoding of ground truth
-        c channel (such as after softmax)
-        epsilon: Used for numerical stability to avoid divide by zero errors
-
-    # Reference in Numpy
-        https://gist.github.com/jeremyjordan/9ea3032a32909f71dd2ab35fe3bacc08
-    """
-
-    numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
-    denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
-
-    return torch.mean(
-        numerator / (denominator + epsilon)
-    )  # average over classes and batch
-
-
-def soft_dice_loss(**kwargs):
-
-    return 1 - calculate_DSC(**kwargs)
-
-
-# def dice_metric_binarized(y_pred, y_true, tresh=0.5, epsilon=1e-6, X_Y=(2, 3)):
-#     """
-#     Dice metric calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
-#     Assumes the `channels_first` format by default: X_Y = (2, 3)
-
-#     # Arguments
-
-#         y_pred: b x c x (X x Y) Network output, must sum to 1 over
-#         y_true: b x c x (X x Y) One hot encoding of ground truth
-#         c channel (such as after softmax)
-#         epsilon: Used for numerical stability to avoid divide by zero errors
-#     """
-#     y_pred = torch.where(y_pred > tresh, torch.tensor(1), torch.tensor(1))
-#     numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
-#     denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
-
-#     return 1 - torch.mean(
-#         numerator / (denominator + epsilon)
-#     )  # average over classes and batch
-
-
-# current criterion as example
+# %%
+# old implementation
 class BaselineLoss(nn.Module):
     "Baseline loss criterion callable"
 
@@ -115,19 +161,5 @@ class BaselineLoss(nn.Module):
         pred = F.sigmoid(pred)
         dice = dice_loss(pred, target, self.dice_smooth)
         loss = bce * self.bce_weight + dice * (1 - self.bce_weight)
-
-        return loss
-
-
-class SoftDice(nn.Module):
-    "New dice loss criterion callable"
-
-    def __init__(self, epsilon=1e-6):
-        super().__init__()
-        self.epsilon = epsilon
-
-    def __call__(self, pred, target):
-
-        loss = soft_dice_loss(pred, target, epsilon=self.epsilon)
 
         return loss
