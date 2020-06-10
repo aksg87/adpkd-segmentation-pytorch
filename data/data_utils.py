@@ -52,6 +52,13 @@ def path_2dcm(fname):
     dcm = pydicom.dcmread(fname)
     return dcm.pixel_array.astype(dtype=np.float32)
 
+def new_path_2dcm(fname):
+
+    if not isinstance(fname, str):
+        fname = str(fname)
+    dcm = pydicom.dcmread(fname)
+    return dcm.pixel_array.astype(dtype=np.uint8)
+
 def path_2label(fname):
 
     if not isinstance(fname, str):

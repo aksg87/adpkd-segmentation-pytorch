@@ -1,3 +1,5 @@
+import numpy as np
+
 from torchvision import transforms
 from PIL import Image
 
@@ -6,6 +8,25 @@ import torch
 BACKGROUND = 0.0
 L_KIDNEY = 0.5019608
 R_KIDNEY = 0.7490196
+
+BACKGROUND_INT = 0
+L_KIDNEY_INT = 128
+R_KIDNEY_INT = 191
+
+
+# TODO: support for other setups in numpy
+class SingleChannelMaskNumpy:
+    """Sets 1 for kidneys, 0 otherwise.
+
+    Args:
+        label, (1, H, W) uint8 numpy array
+
+    Returns:
+        numpy array, (1, H, W) uint8 one-hot encoded mask
+    """
+    def __call__(self, label):
+        kidney = np.bitwise_or(label == R_KIDNEY_INT, label == L_KIDNEY_INT)
+        return kidney.astype(np.uint8)
 
 
 class BaselineMaskEncode:
