@@ -15,6 +15,8 @@ import torch
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
+from data.data_utils import masks_to_colorimg
+from matplotlib import pyplot as plt
 
 
 # %%
@@ -66,6 +68,25 @@ def evaluate(config):
     with open("{}/val_results.json".format(results_path), "w") as fp:
         print(all_losses_and_metrics)
         json.dump(all_losses_and_metrics, fp, indent=4)
+
+    data_iter = iter(dataloader)
+    inputs, labels = next(data_iter)
+    inputs = inputs.to(device)
+    preds = model(inputs)
+    inputs = inputs.cpu()
+    preds = preds.cpu()
+
+    plot_figure_from_batch(inputs, preds)
+
+
+def plot_figure_from_batch(inputs, preds, target=None, idx=0):
+
+    f, axarr = plt.subplots(1, 2)
+    axarr[0].imshow(inputs[idx][1], cmap="gray")
+    axarr[1].imshow(inputs[idx][1], cmap="gray")  # background for mask
+    axarr[1].imshow(masks_to_colorimg(preds[idx]), alpha=0.5)
+
+    return f
 
 
 # %%
