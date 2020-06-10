@@ -5,6 +5,41 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def binarize_thresholds(pred, thresholds):
+    """
+    Args:
+        pred: model pred tensor with shape b x c x (X x Y)
+        thresholds: list of floats i.e. [0.6,0.5,0.4]
+
+    Returns:
+        float tensor: binary values
+    """
+
+    C = len(thresholds)
+    thresholds = torch.tensor(thresholds)
+    thresholds = thresholds.reshape(1, C, 1, 1)
+    thresholds.expand_as(pred)
+    res = pred > thresholds
+
+    return res.float()
+
+
+def binarize_argmax(pred, C=3):
+    """
+    Args:
+        pred: model pred tensor with shape b x c x (X x Y)
+        C: number of channels
+
+    Returns:
+        float tensor: binary values
+    """
+    max_c = torch.argmax(pred, 1)  # argmax across C axis
+    encoded = torch.nn.functional.one_hot(max_c, C)
+    encoded = encoded.permute([0, 3, 1, 2])
+
+    return encoded.float()
+
+
 # copy from trainer.py as example
 def dice_loss(pred, target, smooth=1e-8):
     # flatten label and prediction tensors
@@ -15,7 +50,7 @@ def dice_loss(pred, target, smooth=1e-8):
     return 1 - dice
 
 
-def soft_dice_loss(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
+def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
     """
     Soft dice loss calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
     Assumes the `channels_first` format by default: X_Y = (2, 3)
@@ -34,30 +69,35 @@ def soft_dice_loss(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
     numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
     denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
 
-    return 1 - torch.mean(
+    return torch.mean(
         numerator / (denominator + epsilon)
     )  # average over classes and batch
 
 
-def dice_metric_binarized(y_pred, y_true, tresh=0.5, epsilon=1e-6, X_Y=(2, 3)):
-    """
-    Dice metric calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
-    Assumes the `channels_first` format by default: X_Y = (2, 3)
+def soft_dice_loss(**kwargs):
 
-    # Arguments
+    return 1 - calculate_DSC(**kwargs)
 
-        y_pred: b x c x (X x Y) Network output, must sum to 1 over
-        y_true: b x c x (X x Y) One hot encoding of ground truth
-        c channel (such as after softmax)
-        epsilon: Used for numerical stability to avoid divide by zero errors
-    """
-    y_pred = torch.where(y_pred > tresh, torch.tensor(1), torch.tensor(1))
-    numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
-    denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
 
-    return 1 - torch.mean(
-        numerator / (denominator + epsilon)
-    )  # average over classes and batch
+# def dice_metric_binarized(y_pred, y_true, tresh=0.5, epsilon=1e-6, X_Y=(2, 3)):
+#     """
+#     Dice metric calculation for arbitrary batch size, number of classes, and number of spatial dimensions.
+#     Assumes the `channels_first` format by default: X_Y = (2, 3)
+
+#     # Arguments
+
+#         y_pred: b x c x (X x Y) Network output, must sum to 1 over
+#         y_true: b x c x (X x Y) One hot encoding of ground truth
+#         c channel (such as after softmax)
+#         epsilon: Used for numerical stability to avoid divide by zero errors
+#     """
+#     y_pred = torch.where(y_pred > tresh, torch.tensor(1), torch.tensor(1))
+#     numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
+#     denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
+
+#     return 1 - torch.mean(
+#         numerator / (denominator + epsilon)
+#     )  # average over classes and batch
 
 
 # current criterion as example
