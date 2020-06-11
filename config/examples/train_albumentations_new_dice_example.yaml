@@ -1,10 +1,10 @@
 ---
-_EXPERIMENT_DIR: "./experiments/albumentations_new_dice_example/"
+_EXPERIMENT_DIR: "./experiments/albumentations_new_dice_example_15/"
 _MODEL_CHECKPOINT: null
 _NEW_CKP_FORMAT: false
 
 _EXPERIMENT_DATA:
-  "num_epochs": 30
+  "num_epochs": 40
   "batch_log_interval": 20
   "best_metric_type": "high"
   "saving_metric": "dice_metric"
@@ -24,7 +24,7 @@ _TRAIN_DATALOADER_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.dataloader"
     _CLASS_NAME: "BaselineDataloaderGetter"
-  "batchsize": 32
+  "batchsize": 64
   "shuffle": True
   "dataset":
     _CLASS_INFO:
@@ -71,7 +71,7 @@ _VAL_DATALOADER_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.dataloader"
     _CLASS_NAME: "BaselineDataloaderGetter"
-  "batchsize": 32
+  "batchsize": 64
   "shuffle": False
   "dataset":
     _CLASS_INFO:
@@ -116,20 +116,26 @@ _VAL_DATALOADER_CONFIG:
 
 _LOSSES_METRICS_CONFIG:
   "criterions_dict":
+    "loss_baseline":
+      "dice_smooth": 1.0E-8
+      "bce_weight": 0.0
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "BaselineLoss"
     "combined_dice_bce":
-      "epsilon": 1.0E-6
+      "epsilon": 1.0E-8
       "bce_weight": 0.5
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
         _CLASS_NAME: "CombinedDiceBCE"
     "loss_dice":
-      "epsilon": 1.0E-6
+      "epsilon": 1.0E-8
       "bce_weight": 0.0
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
         _CLASS_NAME: "CombinedDiceBCE"
     "loss_bce":
-      "epsilon": 1.0E-6
+      "epsilon": 1.0E-8
       "bce_weight": 1.0
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
@@ -138,17 +144,45 @@ _LOSSES_METRICS_CONFIG:
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
         _CLASS_NAME: "DiceMetric"
-      "epsilon": 1.0E-6
+      "epsilon": 1.0E-8
       "binarize_func":
         _CLASS_INFO:
           _MODULE_NAME: "loss_utils.losses"
           _CLASS_NAME: "SigmoidBinarize"
         "thresholds": [0.5]
+    "hard_dice":
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "HardDice"
+      "epsilon": 1.0E-8
+      "binary_forward":
+        _CLASS_INFO:
+          _MODULE_NAME: "loss_utils.losses"
+          _CLASS_NAME: "SigmoidForwardBinarize"
+        "thresholds": [0.5]
+    "weighted_hard_dice_BCE":
+      _CLASS_INFO:
+        _MODULE_NAME: "loss_utils.losses"
+        _CLASS_NAME: "WeightedLosses"
+      "criterions":
+        - _CLASS_INFO:
+            _MODULE_NAME: "loss_utils.losses"
+            _CLASS_NAME: "HardDice"
+          "epsilon": 1.0E-8
+          "binary_forward":
+            _CLASS_INFO:
+              _MODULE_NAME: "loss_utils.losses"
+              _CLASS_NAME: "SigmoidForwardBinarize"
+            "thresholds": [0.5]
+        - _CLASS_INFO:
+            _MODULE_NAME: "torch.nn"
+            _CLASS_NAME: "BCEWithLogitsLoss"
+      "weights": [0.8, 0.2]
   _CLASS_INFO:
     _MODULE_NAME: "loss_utils.criterions"
     _CLASS_NAME: "LossesMetrics"
 
-_OPTIMIZATION_LOSS: "combined_dice_bce"
+_OPTIMIZATION_LOSS: "weighted_hard_dice_BCE"
 
 _LR_SCHEDULER:
   _CLASS_INFO:
@@ -157,7 +191,7 @@ _LR_SCHEDULER:
   "name": "ReduceLROnPlateau"
   "param_dict":
     "factor": 0.9
-    "patience": 1
+    "patience": 2
     "verbose": true
     "threshold": 0.001
     "cooldown": 0

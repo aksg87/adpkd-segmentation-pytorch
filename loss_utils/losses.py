@@ -44,7 +44,7 @@ def binarize_argmax(pred):
     return encoded.float()
 
 
-def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
+def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3), power=2):
     """
     Dice simmilarity coeficient calculation.
 
@@ -62,13 +62,16 @@ def calculate_DSC(y_pred, y_true, epsilon=1e-6, X_Y=(2, 3)):
         y_true: b x c x (X x Y) One hot encoding of ground truth
         epsilon: used for numerical stability to avoid divide by zero errors
         X_Y: tuple, height and width dimensions
+        power: 1 or 2, supporting different Dice loss implementations
     """
 
     numerator = 2.0 * torch.sum(y_pred * y_true, X_Y)
-    denominator = torch.sum(torch.pow(y_pred, 2) + torch.pow(y_true, 2), X_Y)
+    denominator = torch.sum(
+        torch.pow(y_pred, power) + torch.pow(y_true, power), X_Y
+    )
 
     # average over classes and batch
-    return torch.mean(numerator / (denominator + epsilon))
+    return torch.mean((epsilon + numerator) / (denominator + epsilon))
 
 
 class SigmoidBinarize:
@@ -80,40 +83,84 @@ class SigmoidBinarize:
         return binarize_thresholds(torch.sigmoid(pred), self.thresholds)
 
 
+class SigmoidForwardBinarize:
+    def __init__(self, thresholds):
+        self.thresholds = thresholds
+
+    def __call__(self, pred):
+        # Expects (N, C, H, W) format
+        soft = torch.sigmoid(pred)
+        hard = binarize_thresholds(soft, self.thresholds)
+        return hard.detach() + soft - soft.detach()
+
+
 class SoftmaxBinarize:
     def __call__(self, pred):
         # Expects (N, C, H, W) format
         return binarize_argmax(pred)
 
 
+class SoftmaxForwardBinarize:
+    def __call__(self, pred):
+        # Expects (N, C, H, W) format
+        soft = F.softmax(pred, dim=1)
+        hard = binarize_argmax(soft)
+        return hard.detach() + soft - soft.detach()
+
+
 class SoftDice(nn.Module):
     """"New soft dice loss criterion callable"""
 
-    def __init__(self, pred_process, epsilon=1e-6):
+    def __init__(self, pred_process, epsilon=1e-6, power=2):
         super().__init__()
         self.pred_process = pred_process
         self.epsilon = epsilon
+        self.power = power
 
     def __call__(self, pred, target):
 
         pred = self.pred_process(pred)
-        loss = 1 - calculate_DSC(pred, target, epsilon=self.epsilon)
+        loss = 1 - calculate_DSC(
+            pred, target, epsilon=self.epsilon, power=self.power
+        )
 
         return loss
+
+
+class HardDice(nn.Module):
+    """Binarized dice in forward pass, soft in backward"""
+
+    def __init__(self, binary_forward, epsilon=1e-6, power=2):
+        super().__init__()
+        self.binary_forward = binary_forward
+        self.epsilon = epsilon
+        self.power = power
+
+    def __call__(self, pred, target):
+
+        pred = self.binary_forward(pred)
+        dsc = calculate_DSC(
+            pred, target, epsilon=self.epsilon, power=self.power
+        )
+
+        return 1 - dsc
 
 
 class DiceMetric(nn.Module):
     """Dice metric callable"""
 
-    def __init__(self, binarize_func, epsilon=1e-6):
+    def __init__(self, binarize_func, epsilon=1e-6, power=2):
         super().__init__()
         self.binarize_func = binarize_func
         self.epsilon = epsilon
+        self.power = power
 
     def __call__(self, pred, target):
 
         pred = self.binarize_func(pred)
-        dsc = calculate_DSC(pred, target, epsilon=self.epsilon)
+        dsc = calculate_DSC(
+            pred, target, epsilon=self.epsilon, power=self.power
+        )
 
         return dsc
 
@@ -121,17 +168,33 @@ class DiceMetric(nn.Module):
 class CombinedDiceBCE(nn.Module):
     """Combined soft Dice and BCE loss"""
 
-    def __init__(self, epsilon=1e-6, bce_weight=0.5):
+    def __init__(self, epsilon=1e-6, bce_weight=0.5, power=2):
         super().__init__()
         self.epsilon = epsilon
         self.bce_weight = bce_weight
-        self.soft_dice = SoftDice(pred_process=torch.sigmoid, epsilon=epsilon)
+        self.power = power
+        self.soft_dice = SoftDice(
+            pred_process=torch.sigmoid, epsilon=epsilon, power=power
+        )
 
     def __call__(self, pred, target):
         bce = F.binary_cross_entropy_with_logits(pred, target)
         dice = self.soft_dice(pred, target)
         loss = bce * self.bce_weight + dice * (1 - self.bce_weight)
         return loss
+
+
+class WeightedLosses(nn.Module):
+    def __init__(self, criterions, weights):
+        super().__init__()
+        self.criterions = criterions
+        self.weights = weights
+
+    def __call__(self, pred, target):
+        losses = [
+            c(pred, target) * w for c, w in zip(self.criterions, self.weights)
+        ]
+        return torch.sum(torch.stack(losses))
 
 
 # %%
