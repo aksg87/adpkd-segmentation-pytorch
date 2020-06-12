@@ -18,6 +18,7 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
+from matplotlib import pyplot as plt
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -78,6 +79,28 @@ def plot_image_from_batch(
     writer.add_images(
         "prediction_channels", pred_mask, global_step, dataformats="NCHW"
     )
+
+
+def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
+    image = batch[idx][1]  # middle channel
+    pred_mask = prediction[idx][0] + prediction[idx][1]  # combine channels
+    mask = target[idx][0] + target[idx][1]  # combine channels
+
+    # print(f"***shapes {image.shape} {pred_mask.shape} {mask.shape}")
+    # plot each of the image channels as a separate grayscale image
+    # (C, 1, H, W) shape to treat each of the channels as a new image
+    image = image.cpu()
+    mask = mask.cpu()
+    pred_mask = pred_mask.cpu().detach()
+
+    f, axarr = plt.subplots(1, 3)
+    axarr[0].imshow(image, cmap="gray")
+    axarr[1].imshow(image, cmap="gray")  # background for mask
+    axarr[1].imshow(mask, alpha=0.5)
+    axarr[2].imshow(image, cmap="gray")  # background for mask
+    axarr[2].imshow(pred_mask, alpha=0.5)
+
+    writer.add_figure("fig: img_target_pred", f, global_step)
 
 
 # %%
@@ -153,7 +176,7 @@ def train(config):
                 tb_log_metrics(train_writer, losses_and_metrics, global_step)
                 # TODO: add support for softmax processing
                 prediction = torch.sigmoid(y_batch_hat)
-                plot_image_from_batch(
+                plot_fig_from_batch(
                     train_writer, x_batch, prediction, y_batch, global_step
                 )
 
