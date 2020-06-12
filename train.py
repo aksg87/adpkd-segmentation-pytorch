@@ -62,6 +62,7 @@ def tb_log_metrics(writer, metrics, global_step):
         writer.add_scalar(k, v, global_step)
 
 
+# %%
 def plot_image_from_batch(
     writer, batch, prediction, target, global_step, idx=0
 ):
@@ -81,17 +82,22 @@ def plot_image_from_batch(
     )
 
 
+# %%
 def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
     image = batch[idx][1]  # middle channel
-    pred_mask = prediction[idx][0] + prediction[idx][1]  # combine channels
-    mask = target[idx][0] + target[idx][1]  # combine channels
+    # single channel by default
+    mask = target[idx][0]
+    pred_mask = prediction[idx][0]
+    # TODO add standardizaton to convert all setups into single channel format
+    # currently supporting 1 and 2 channels, sigmoid based
+    num_channels = target.shape[1]
+    if num_channels == 2:
+        pred_mask = prediction[idx][0] + prediction[idx][1]  # combine channels
+        mask = target[idx][0] + target[idx][1]  # combine channels
 
-    # print(f"***shapes {image.shape} {pred_mask.shape} {mask.shape}")
-    # plot each of the image channels as a separate grayscale image
-    # (C, 1, H, W) shape to treat each of the channels as a new image
-    image = image.cpu()
-    mask = mask.cpu()
-    pred_mask = pred_mask.cpu().detach()
+    image = image.detach().cpu()
+    mask = mask.detach().cpu()
+    pred_mask = pred_mask.detach().cpu()
 
     f, axarr = plt.subplots(1, 3)
     axarr[0].imshow(image, cmap="gray")
