@@ -24,10 +24,12 @@ from albumentations import (
     GridDistortion,
     OpticalDistortion,
     RandomSizedCrop,
+    RandomResizedCrop,
     OneOf,
     # CLAHE,
     RandomBrightnessContrast,
     RandomGamma,
+    ShiftScaleRotate
 )
 
 # %%
@@ -87,21 +89,6 @@ def show_img(img, figsize=(8, 8)):
     ax.set_xticklabels([])
     ax.imshow(img)
     plt.imshow(img, cmap="gray")
-
-
-# %%
-def show_augmentation(img, augmenation, **params):
-    params_code = ", ".join(f"{key}={value}" for key, value in params.items())
-    if params_code:
-        params_code += ", "
-    text = HTML(
-        "Use this augmentation in your code:"
-        '<pre style="display:block; background-color: #eee; margin: 10px; padding: 10px;">'
-        f"{augmenation.__class__.__name__}({params_code}p=0.5)"
-        "</pre>"
-    )
-    display(text)
-    show_img(img)
 
 
 # %%
@@ -239,10 +226,24 @@ visualize(
 
 # %%
 
-# ElasticTransfor
+# ElasticTransform
 aug = ElasticTransform(
     p=1, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03
 )
+
+augmented = aug(image=image, mask=mask)
+
+image_elastic = augmented["image"]
+mask_elastic = augmented["mask"]
+
+visualize(
+    image_elastic, mask_elastic, original_image=image, original_mask=mask
+)
+
+# %%
+
+# ElasticTransform default
+aug = ElasticTransform()
 
 augmented = aug(image=image, mask=mask)
 
@@ -265,7 +266,6 @@ mask_grid = augmented["mask"]
 
 visualize(image_grid, mask_grid, original_image=image, original_mask=mask)
 
-
 # %%
 # Optical Distortion
 aug = OpticalDistortion(p=1, distort_limit=2, shift_limit=0.5)
@@ -280,11 +280,64 @@ visualize(
 )
 
 # %%
+# Optical Distortion 3
+aug = OpticalDistortion(p=1, distort_limit=1, shift_limit=0.3)
+
+augmented = aug(image=image, mask=mask)
+
+image_optical = augmented["image"]
+mask_optical = augmented["mask"]
+
+visualize(
+    image_optical, mask_optical, original_image=image, original_mask=mask
+)
+
+# %%
+# Optical Distortion default
+aug = OpticalDistortion(p=1)
+
+augmented = aug(image=image, mask=mask)
+
+image_optical = augmented["image"]
+mask_optical = augmented["mask"]
+
+visualize(
+    image_optical, mask_optical, original_image=image, original_mask=mask
+)
+
+# %%
+# Shift scale rotate
+aug = ShiftScaleRotate()
+
+augmented = aug(image=image, mask=mask)
+
+image_optical = augmented["image"]
+mask_optical = augmented["mask"]
+
+visualize(
+    image_optical, mask_optical, original_image=image, original_mask=mask
+)
+
+# %%
 
 # RandomSizedCrop
+
 aug = RandomSizedCrop(
-    p=1, min_max_height=(50, 101), height=original_height, width=original_width
+    p=1, min_max_height=(50, 96), height=72, width=72
 )
+
+augmented = aug(image=image, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image, original_mask=mask)
+
+# %%
+
+# RandomResizedCrop
+
+aug = RandomResizedCrop(p=1, height=72, width=72, scale=(0.25, 1.0))
 
 augmented = aug(image=image, mask=mask)
 
