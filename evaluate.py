@@ -20,9 +20,19 @@ from matplotlib import pyplot as plt
 
 
 # %%
-def validate(dataloader, model, loss_metric, device):
+def validate(
+    dataloader,
+    model,
+    loss_metric,
+    device,
+    saving_metric=None,
+    best_metric_type=None,
+    is_better=None,
+):
     all_losses_and_metrics = defaultdict(list)
     num_examples = 0
+    worst_batch = None
+    worst_metric = None
 
     for x_batch, y_batch in dataloader:
         x_batch = x_batch.to(device)
@@ -36,11 +46,19 @@ def validate(dataloader, model, loss_metric, device):
         for key, value in losses_and_metrics.items():
             all_losses_and_metrics[key].append(value.item() * batch_size)
 
+        if saving_metric is not None:
+            current = losses_and_metrics[saving_metric]
+            if worst_metric is None or not is_better(
+                current, worst_metric, best_metric_type
+            ):
+                worst_metric = current
+                worst_batch = x_batch, y_batch, y_batch_hat
+
     for key, value in all_losses_and_metrics.items():
         all_losses_and_metrics[key] = (
             sum(all_losses_and_metrics[key]) / num_examples
         )
-    return all_losses_and_metrics
+    return all_losses_and_metrics, worst_batch
 
 
 # %%
