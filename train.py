@@ -197,8 +197,24 @@ def train(config):
         # done with one epoch
         # let's validate (use code from the validation script)
         model.eval()
-        all_losses_and_metrics = validate(
-            val_loader, model, loss_metric, device
+        all_losses_and_metrics, worst_batch = validate(
+            val_loader,
+            model,
+            loss_metric,
+            device,
+            saving_metric,
+            best_metric_type,
+            is_better,
+        )
+
+        worst_xbatch, worst_ybatch, worst_predbatch = worst_batch
+        plot_fig_from_batch(
+            train_writer,
+            worst_xbatch,
+            worst_predbatch,
+            worst_ybatch,
+            global_step,
+            title="valid_worst_batch",
         )
         print("Validation results for epoch {}".format(epoch))
         print("VAL:", get_losses_str(all_losses_and_metrics, tensors=False))
