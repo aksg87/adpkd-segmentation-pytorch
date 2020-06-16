@@ -83,7 +83,15 @@ def plot_image_from_batch(
 
 
 # %%
-def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
+def plot_fig_from_batch(
+    writer,
+    batch,
+    prediction,
+    target,
+    global_step,
+    idx=0,
+    title="fig: img_target_pred",
+):
     image = batch[idx][1]  # middle channel
     # single channel by default
     mask = target[idx][0]
@@ -106,7 +114,7 @@ def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
     axarr[2].imshow(image, cmap="gray")  # background for mask
     axarr[2].imshow(pred_mask, alpha=0.5)
 
-    writer.add_figure("fig: img_target_pred", f, global_step)
+    writer.add_figure(title, f, global_step)
 
 
 # %%
@@ -183,7 +191,7 @@ def train(config):
                 # TODO: add support for softmax processing
                 prediction = torch.sigmoid(y_batch_hat)
                 plot_fig_from_batch(
-                    train_writer, x_batch, prediction, y_batch, global_step
+                    train_writer, x_batch, prediction, y_batch, global_step,
                 )
 
         # done with one epoch
