@@ -58,14 +58,13 @@ def validate(
                 **plotting_func_params,
             )
 
+    averaged = {}
     for key, value in all_losses_and_metrics.items():
-        all_losses_and_metrics[key] = (
-            sum(all_losses_and_metrics[key]) / num_examples
-        )
+        averaged[key] = sum(all_losses_and_metrics[key]) / num_examples
 
     if output_losses_list:
-        return all_losses_and_metrics, all_losses_and_metrics
-    return all_losses_and_metrics
+        return averaged, all_losses_and_metrics
+    return averaged
 
 
 # %%
