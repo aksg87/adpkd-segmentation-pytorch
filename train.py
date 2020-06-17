@@ -20,6 +20,8 @@ from evaluate import validate
 from train_utils import load_model_data, save_model_data
 from matplotlib import pyplot as plt
 
+from functools import partial
+
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
 TB_LOGS = "tb_logs"
@@ -196,8 +198,22 @@ def train(config):
 
         # done with one epoch
         # let's validate (use code from the validation script)
+
+        # select batch and img for error analysis
+        val_batch_idx = 3
+        val_img_idx = 0
+
+        # create validation plotting for error analysis
+        plot_validate = partial(
+            plot_fig_from_batch,
+            writer=train_writer,
+            global_step=global_step,
+            idx=0,
+            title="valid batch:{} img:{}".format(val_batch_idx, val_img_idx),
+        )
+
         model.eval()
-        all_losses_and_metrics, worst_batch = validate(
+        all_losses_and_metrics, losses_and_metrics_batched = validate(
             val_loader,
             model,
             loss_metric,
@@ -205,17 +221,11 @@ def train(config):
             saving_metric,
             best_metric_type,
             is_better,
+            plot_validate,
+            val_batch_idx,
+            val_img_idx,
         )
 
-        worst_xbatch, worst_ybatch, worst_predbatch = worst_batch
-        plot_fig_from_batch(
-            train_writer,
-            worst_xbatch,
-            worst_predbatch,
-            worst_ybatch,
-            global_step,
-            title="valid_worst_batch",
-        )
         print("Validation results for epoch {}".format(epoch))
         print("VAL:", get_losses_str(all_losses_and_metrics, tensors=False))
         model.train()
