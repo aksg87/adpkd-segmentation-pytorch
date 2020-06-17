@@ -7,8 +7,11 @@ python -m train --config path_to_config_yaml
 # %%
 import argparse
 import json
+import numpy as np
 import os
 import yaml
+
+from matplotlib import pyplot as plt
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -18,9 +21,6 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
-from matplotlib import pyplot as plt
-
-from functools import partial
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -121,6 +121,14 @@ def plot_fig_from_batch(
 
 # %%
 def train(config):
+    # reproducibility
+    seed = config.get("_SEED",  42)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     model_config = config["_MODEL_CONFIG"]
     train_dataloader_config = config["_TRAIN_DATALOADER_CONFIG"]
     val_dataloader_config = config["_VAL_DATALOADER_CONFIG"]
@@ -138,6 +146,7 @@ def train(config):
     lookahead_config = config["_LOOKAHEAD_OPTIM"]
     lr_scheduler_config = config["_LR_SCHEDULER"]
     experiment_data = config["_EXPERIMENT_DATA"]
+    val_plotting_dict = config.get("_VAL_PLOTTING")
 
     model = get_object_instance(model_config)()
     global_step = 0
@@ -198,32 +207,19 @@ def train(config):
 
         # done with one epoch
         # let's validate (use code from the validation script)
-
-        # select batch and img for error analysis
-        val_batch_idx = 3
-        val_img_idx = 0
-
-        # create validation plotting for error analysis
-        plot_validate = partial(
-            plot_fig_from_batch,
-            writer=train_writer,
-            global_step=global_step,
-            idx=0,
-            title="valid batch:{} img:{}".format(val_batch_idx, val_img_idx),
-        )
-
         model.eval()
-        all_losses_and_metrics, losses_and_metrics_batched = validate(
+        all_losses_and_metrics = validate(
             val_loader,
             model,
             loss_metric,
             device,
-            saving_metric,
-            best_metric_type,
-            is_better,
-            plot_validate,
-            val_batch_idx,
-            val_img_idx,
+            plotting_func=plot_fig_from_batch,
+            plotting_func_params={
+                "writer": val_writer,
+                "global_step": global_step,
+            },
+            plotting_dict=val_plotting_dict,
+            output_losses_list=False
         )
 
         print("Validation results for epoch {}".format(epoch))
