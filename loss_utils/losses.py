@@ -108,6 +108,29 @@ class SoftmaxForwardBinarize:
         return hard.detach() + soft - soft.detach()
 
 
+class StandardizeModels:
+    def __init__(self, ignore_channel=2):
+        # used for backgoround in 3 channel setups
+        self.ignore_channel = 2
+
+    def __call__(self, binary_mask):
+        # N, C, H, W mask
+        num_channels = binary_mask.shape[1]
+        if num_channels == 1:
+            return binary_mask
+        elif num_channels == 2:
+            return torch.sum(binary_mask, dim=1, keepdim=True)
+        elif num_channels == 3:
+            sum_all = torch.sum(binary_mask, dim=1)
+            sum_all = sum_all - binary_mask[:, self.ignore_channel, ...]
+            sum_all = sum_all.unsqueeze(1)
+            return sum_all
+        else:
+            raise ValueError(
+                "Unsupported number of channels: {}".format(num_channels)
+            )
+
+
 class SoftDice(nn.Module):
     """"New soft dice loss criterion callable"""
 
@@ -149,15 +172,21 @@ class HardDice(nn.Module):
 class DiceMetric(nn.Module):
     """Dice metric callable"""
 
-    def __init__(self, binarize_func, epsilon=1e-6, power=2):
+    def __init__(
+        self, binarize_func, epsilon=1e-6, power=2, standardize_func=None
+    ):
         super().__init__()
         self.binarize_func = binarize_func
         self.epsilon = epsilon
         self.power = power
+        self.standardize_func = standardize_func
 
     def __call__(self, pred, target):
 
         pred = self.binarize_func(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
         dsc = calculate_DSC(
             pred, target, epsilon=self.epsilon, power=self.power
         )
