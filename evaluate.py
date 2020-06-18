@@ -10,7 +10,6 @@ import argparse
 import json
 import os
 import yaml
-import copy
 
 import torch
 
@@ -21,22 +20,9 @@ from matplotlib import pyplot as plt
 
 
 # %%
-def validate(
-    dataloader,
-    model,
-    loss_metric,
-    device,
-    saving_metric=None,
-    best_metric_type=None,
-    is_better=None,
-    plot_validate=None,
-    val_batch_idx=None,
-    val_img_idx=None,
-):
+def validate(dataloader, model, loss_metric, device):
     all_losses_and_metrics = defaultdict(list)
     num_examples = 0
-    # worst_batch = None
-    # worst_metric = None
 
     for x_batch, y_batch in dataloader:
         x_batch = x_batch.to(device)
@@ -50,23 +36,11 @@ def validate(
         for key, value in losses_and_metrics.items():
             all_losses_and_metrics[key].append(value.item() * batch_size)
 
-            x_check, y_check = dataloader.dataset[
-                batch_size * val_batch_idx + val_img_idx
-            ]
-        x_check = torch.from_numpy(x_check).unsqueeze(0).to(device)
-        y_check = torch.from_numpy(y_check).unsqueeze(0).to(device)
-        pred_check = model(x_check)
-        plot_validate(batch=x_check, prediction=pred_check, target=y_check)
-
-    losses_and_metrics_batched = copy.deepcopy(
-        all_losses_and_metrics
-    )  # non-reduced
-
     for key, value in all_losses_and_metrics.items():
         all_losses_and_metrics[key] = (
             sum(all_losses_and_metrics[key]) / num_examples
         )
-    return all_losses_and_metrics, losses_and_metrics_batched
+    return all_losses_and_metrics
 
 
 # %%
