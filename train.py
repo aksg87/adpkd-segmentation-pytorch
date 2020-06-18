@@ -7,10 +7,11 @@ python -m train --config path_to_config_yaml
 # %%
 import argparse
 import json
+import numpy as np
 import os
 import yaml
 
-from collections import OrderedDict
+from matplotlib import pyplot as plt
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -20,7 +21,6 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
-from matplotlib import pyplot as plt
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -85,7 +85,15 @@ def plot_image_from_batch(
 
 
 # %%
-def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
+def plot_fig_from_batch(
+    writer,
+    batch,
+    prediction,
+    target,
+    global_step,
+    idx=0,
+    title="fig: img_target_pred",
+):
     image = batch[idx][1]  # middle channel
     # single channel by default
     mask = target[idx][0]
@@ -108,11 +116,19 @@ def plot_fig_from_batch(writer, batch, prediction, target, global_step, idx=0):
     axarr[2].imshow(image, cmap="gray")  # background for mask
     axarr[2].imshow(pred_mask, alpha=0.5)
 
-    writer.add_figure("fig: img_target_pred", f, global_step)
+    writer.add_figure(title, f, global_step)
 
 
 # %%
 def train(config):
+    # reproducibility
+    seed = config.get("_SEED",  42)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     model_config = config["_MODEL_CONFIG"]
     train_dataloader_config = config["_TRAIN_DATALOADER_CONFIG"]
     val_dataloader_config = config["_VAL_DATALOADER_CONFIG"]
@@ -130,6 +146,7 @@ def train(config):
     lookahead_config = config["_LOOKAHEAD_OPTIM"]
     lr_scheduler_config = config["_LR_SCHEDULER"]
     experiment_data = config["_EXPERIMENT_DATA"]
+    val_plotting_dict = config.get("_VAL_PLOTTING")
 
     model = get_object_instance(model_config)()
     global_step = 0
@@ -153,11 +170,7 @@ def train(config):
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
 
-    model_params = model.parameters()
-    if config.get("_MODEL_PARAM_PREP") is not None:
-        model_prep = get_object_instance(config.get("_MODEL_PARAM_PREP"))
-        model_params = model_prep(model)
-
+    model_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optimizer_getter(model_params)
     if lookahead_config["use_lookahead"]:
         optimizer = Lookahead(optimizer, **lookahead_config["params"])
@@ -189,15 +202,25 @@ def train(config):
                 # TODO: add support for softmax processing
                 prediction = torch.sigmoid(y_batch_hat)
                 plot_fig_from_batch(
-                    train_writer, x_batch, prediction, y_batch, global_step
+                    train_writer, x_batch, prediction, y_batch, global_step,
                 )
 
         # done with one epoch
         # let's validate (use code from the validation script)
         model.eval()
         all_losses_and_metrics = validate(
-            val_loader, model, loss_metric, device
+            val_loader,
+            model,
+            loss_metric,
+            device,
+            plotting_func=plot_fig_from_batch,
+            plotting_dict=val_plotting_dict,
+            writer=val_writer,
+            global_step=global_step,
+            val_metric_to_check=saving_metric,
+            output_losses_list=False,
         )
+
         print("Validation results for epoch {}".format(epoch))
         print("VAL:", get_losses_str(all_losses_and_metrics, tensors=False))
         model.train()
@@ -224,17 +247,12 @@ def train(config):
             lr_scheduler.step(epoch)
         else:
             lr_scheduler.step()
-
-        # plot distinct learning rates in order they appear in the optimizer
-        lr_dict = OrderedDict()
-        for param_group in optimizer.param_groups:
-            lr = param_group.get("lr")
-            lr_dict[lr] = None
-        for idx, lr in enumerate(lr_dict):
-            tb_log_metrics(val_writer, {"lr_{}".format(idx): lr}, global_step)
-            tb_log_metrics(
-                train_writer, {"lr_{}".format(idx): lr}, global_step
-            )
+        # plot the learning rate
+        for idx, param_group in enumerate(optimizer.param_groups):
+            key = "lr_param_group_{}".format(idx)
+            value = param_group["lr"]
+            tb_log_metrics(val_writer, {key: value}, global_step)
+            tb_log_metrics(train_writer, {key: value}, global_step)
 
     train_writer.close()
     val_writer.close()
