@@ -26,8 +26,10 @@ def validate(
     loss_metric,
     device,
     plotting_func=None,
-    plotting_func_params=None,
     plotting_dict=None,
+    writer=None,
+    global_step=None,
+    val_metric_to_check=None,
     output_losses_list=False,
 ):
     all_losses_and_metrics = defaultdict(list)
@@ -36,27 +38,40 @@ def validate(
     for batch_idx, (x_batch, y_batch) in enumerate(dataloader):
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
-        with torch.no_grad():
-            y_batch_hat = model(x_batch)
-
         batch_size = y_batch.size(0)
         num_examples += batch_size
-        losses_and_metrics = loss_metric(y_batch_hat, y_batch)
-        for key, value in losses_and_metrics.items():
-            all_losses_and_metrics[key].append(value.item() * batch_size)
+        with torch.no_grad():
+            y_batch_hat = model(x_batch)
+            losses_and_metrics = loss_metric(y_batch_hat, y_batch)
 
-        if plotting_dict is not None and batch_idx in plotting_dict:
-            # TODO: add support for softmax processing
-            prediction = torch.sigmoid(y_batch_hat)
-            image_idx = plotting_func[batch_idx]
-            plotting_func(
-                batch=x_batch,
-                prediction=prediction,
-                target=y_batch,
-                idx=image_idx,
-                title="val_batch_{}image{}".format(batch_idx, image_idx),
-                **plotting_func_params,
-            )
+            for key, value in losses_and_metrics.items():
+                all_losses_and_metrics[key].append(value.item() * batch_size)
+
+            if plotting_dict is not None and batch_idx in plotting_dict:
+                # TODO: add support for softmax processing
+                prediction = torch.sigmoid(y_batch_hat)
+                image_idx = plotting_dict[batch_idx]
+                plotting_func(
+                    writer=writer,
+                    batch=x_batch,
+                    prediction=prediction,
+                    target=y_batch,
+                    global_step=global_step,
+                    idx=image_idx,
+                    title="val_batch_{}_image_{}".format(batch_idx, image_idx),
+                )
+                # check DSC metric for this image
+                # `loss_metric` expects raw model outputs without the sigmoid
+                im_pred = y_batch_hat[image_idx].unsqueeze(0)
+                im_target_mask = y_batch[image_idx].unsqueeze(0)
+                im_losses = loss_metric(im_pred, im_target_mask)
+                writer.add_scalar(
+                    "val_batch_{}_image_{}_{}".format(
+                        batch_idx, image_idx, val_metric_to_check
+                    ),
+                    im_losses[val_metric_to_check],
+                    global_step,
+                )
 
     averaged = {}
     for key, value in all_losses_and_metrics.items():

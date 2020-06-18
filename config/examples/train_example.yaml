@@ -290,4 +290,4 @@ _LOOKAHEAD_OPTIM:
   "params": {k: 5, alpha: 0.5}
 
 # a dict of batch_idx: image_idx_in_batch to plot
-_VAL_PLOTTING: {0: 2, 10: 6, 20: 3}
+_VAL_PLOTTING: {0: 2, 5: 1, 10: 6, 20: 3, 30: 2}

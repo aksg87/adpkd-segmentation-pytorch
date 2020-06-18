@@ -214,12 +214,11 @@ def train(config):
             loss_metric,
             device,
             plotting_func=plot_fig_from_batch,
-            plotting_func_params={
-                "writer": val_writer,
-                "global_step": global_step,
-            },
             plotting_dict=val_plotting_dict,
-            output_losses_list=False
+            writer=val_writer,
+            global_step=global_step,
+            val_metric_to_check=saving_metric,
+            output_losses_list=False,
         )
 
         print("Validation results for epoch {}".format(epoch))
