@@ -11,6 +11,7 @@ import numpy as np
 import os
 import yaml
 
+from collections import OrderedDict
 from matplotlib import pyplot as plt
 
 import torch
@@ -170,7 +171,11 @@ def train(config):
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
 
-    model_params = filter(lambda p: p.requires_grad, model.parameters())
+    model_params = model.parameters()
+    if config.get("_MODEL_PARAM_PREP") is not None:
+        model_prep = get_object_instance(config.get("_MODEL_PARAM_PREP"))
+        model_params = model_prep(model)
+
     optimizer = optimizer_getter(model_params)
     if lookahead_config["use_lookahead"]:
         optimizer = Lookahead(optimizer, **lookahead_config["params"])
@@ -247,12 +252,17 @@ def train(config):
             lr_scheduler.step(epoch)
         else:
             lr_scheduler.step()
-        # plot the learning rate
-        for idx, param_group in enumerate(optimizer.param_groups):
-            key = "lr_param_group_{}".format(idx)
-            value = param_group["lr"]
-            tb_log_metrics(val_writer, {key: value}, global_step)
-            tb_log_metrics(train_writer, {key: value}, global_step)
+
+        # plot distinct learning rates in order they appear in the optimizer
+        lr_dict = OrderedDict()
+        for param_group in optimizer.param_groups:
+            lr = param_group.get("lr")
+            lr_dict[lr] = None
+        for idx, lr in enumerate(lr_dict):
+            tb_log_metrics(val_writer, {"lr_{}".format(idx): lr}, global_step)
+            tb_log_metrics(
+                train_writer, {"lr_{}".format(idx): lr}, global_step
+            )
 
     train_writer.close()
     val_writer.close()
