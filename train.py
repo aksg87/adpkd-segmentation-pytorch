@@ -157,6 +157,11 @@ def train(config):
         )
     train_loader = get_object_instance(train_dataloader_config)()
     val_loader = get_object_instance(val_dataloader_config)()
+
+    print("Train dataset length: {}".format(len(train_loader.dataset)))
+    print("Validation dataset length: {}".format(len(val_loader.dataset)))
+    print("Valiation dataset patients:\n{}".format(val_loader.dataset.patients))
+
     loss_metric = get_object_instance(loss_metric_config)()
     optimizer_getter = get_object_instance(optim_config)
     lr_scheduler_getter = get_object_instance(lr_scheduler_config)

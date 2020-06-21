@@ -32,7 +32,12 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         self.smp_preprocessing = smp_preprocessing
         self.filters = filters
 
-        dcms_paths = get_labeled()
+        dcms_paths = sorted(get_labeled())
+        print(
+            "The number of dcm images before splitting: {}".format(
+                len(dcms_paths)
+            )
+        )
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
 
         if filters is not None:
@@ -50,7 +55,7 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         for p in self.patients:
             patient_dcms.extend(patient2dcm[p])
 
-        self.dcm_paths = sorted(patient_dcms)
+        self.dcm_paths = patient_dcms
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
 
     def __getitem__(self, index):
