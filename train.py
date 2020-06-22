@@ -10,6 +10,7 @@ import json
 import numpy as np
 import os
 import yaml
+import random
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt
@@ -123,7 +124,9 @@ def plot_fig_from_batch(
 # %%
 def train(config):
     # reproducibility
-    seed = config.get("_SEED",  42)
+    seed = config.get("_SEED", 42)
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -160,7 +163,9 @@ def train(config):
 
     print("Train dataset length: {}".format(len(train_loader.dataset)))
     print("Validation dataset length: {}".format(len(val_loader.dataset)))
-    print("Valiation dataset patients:\n{}".format(val_loader.dataset.patients))
+    print(
+        "Valiation dataset patients:\n{}".format(val_loader.dataset.patients)
+    )
 
     loss_metric = get_object_instance(loss_metric_config)()
     optimizer_getter = get_object_instance(optim_config)
@@ -168,10 +173,10 @@ def train(config):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    os.makedirs(checkpoints_dir, exist_ok=True)
-    os.makedirs(results_dir, exist_ok=True)
-    os.makedirs(tb_logs_dir_train, exist_ok=True)
-    os.makedirs(tb_logs_dir_val, exist_ok=True)
+    os.makedirs(checkpoints_dir)
+    os.makedirs(results_dir)
+    os.makedirs(tb_logs_dir_train)
+    os.makedirs(tb_logs_dir_val)
 
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
