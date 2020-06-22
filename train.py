@@ -2,6 +2,11 @@
 Model train script
 
 python -m train --config path_to_config_yaml --makelinks
+
+If using a specific GPU (e.g. device 2):
+CUDA_VISIBLE_DEVICES=2 python -m train --config path_to_config_yaml --makelinks
+
+The makelinks flag is needed only once to create symbolic links to the data.
 """
 
 # %%
