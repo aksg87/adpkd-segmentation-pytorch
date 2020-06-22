@@ -26,6 +26,7 @@ class OptimGetter:
 
 
 def save_model_data(path, model, global_step):
+    print("saving checkpoint to {}".format(path))
     torch.save(
         {"global_step": global_step, "model_state_dict": model.state_dict()},
         path,
@@ -33,6 +34,7 @@ def save_model_data(path, model, global_step):
 
 
 def load_model_data(path, model, new_format=False):
+    print("loading checkpoint {}".format(path))
     checkpoint = torch.load(path)
     global_step = 0
     if not new_format:

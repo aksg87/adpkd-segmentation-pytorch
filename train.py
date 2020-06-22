@@ -1,7 +1,7 @@
 """
 Model train script
 
-python -m train --config path_to_config_yaml
+python -m train --config path_to_config_yaml --makelinks
 """
 
 # %%
@@ -122,11 +122,10 @@ def plot_fig_from_batch(
 
 
 # %%
-def train(config):
+def train(config, config_save_name=None):
     # reproducibility
     seed = config.get("_SEED", 42)
     random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -142,6 +141,7 @@ def train(config):
     results_dir = os.path.join(experiment_dir, RESULTS)
     tb_logs_dir_train = os.path.join(experiment_dir, TB_LOGS, "train")
     tb_logs_dir_val = os.path.join(experiment_dir, TB_LOGS, "val")
+    config_out = os.path.join(experiment_dir, config_save_name)
 
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
@@ -177,6 +177,8 @@ def train(config):
     os.makedirs(results_dir)
     os.makedirs(tb_logs_dir_train)
     os.makedirs(tb_logs_dir_val)
+    with open(config_out, 'w') as f:
+        yaml.dump(config, f, default_flow_style=False)
 
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
@@ -303,4 +305,5 @@ if __name__ == "__main__":
         config = yaml.load(f, Loader=yaml.FullLoader)
     if args.makelinks:
         makelinks()
-    train(config)
+    config_save_name = os.path.basename(args.config)
+    train(config, config_save_name)
