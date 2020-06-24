@@ -7,6 +7,10 @@ If using a specific GPU (e.g. device 2):
 CUDA_VISIBLE_DEVICES=2 python -m train --config path_to_config_yaml --makelinks
 
 The makelinks flag is needed only once to create symbolic links to the data.
+
+To create and activate the conda environment for this repository:
+conda env create --file adpkd-segmentation.yml
+conda activate adpkd-segmentation
 """
 
 # %%
@@ -182,7 +186,7 @@ def train(config, config_save_name=None):
     os.makedirs(results_dir)
     os.makedirs(tb_logs_dir_train)
     os.makedirs(tb_logs_dir_val)
-    with open(config_out, 'w') as f:
+    with open(config_out, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
 
     train_writer = SummaryWriter(tb_logs_dir_train)
