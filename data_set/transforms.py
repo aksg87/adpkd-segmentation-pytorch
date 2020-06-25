@@ -1,22 +1,24 @@
+# This module is deprecated
+
 from torchvision import transforms
 from PIL import Image
 
 import numpy as np
 
 def mask2label(mask, data_set_name="ADPKD", show_vals = False):
-    """converts mask png to one-hot-encoded label"""    
+    """converts mask png to one-hot-encoded label"""
 
     if show_vals:
-        print("unique values ", np.unique(mask)) 
- 
-    #unique_vals corespond to mask class values after transforms        
+        print("unique values ", np.unique(mask))
+
+    #unique_vals corespond to mask class values after transforms
     if(data_set_name == "ADPKD"):
         L_KIDNEY = 0.5019608
         R_KIDNEY = 0.7490196
         unique_vals = [R_KIDNEY, L_KIDNEY]
 
     mask = mask.squeeze()
-    
+
     s = mask.shape
 
     ones, zeros = np.ones(s), np.zeros(s)

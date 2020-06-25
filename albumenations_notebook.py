@@ -1,3 +1,6 @@
+# Notebook to check different augmentations
+# TODO: use the new dataset formulation in `new_datasets.datasets`
+
 # %%
 
 from sklearn.model_selection import train_test_split
@@ -34,7 +37,7 @@ from albumentations import (
 
 # %%
 IMG_IDX = (
-    184
+    200
 )  # SET THIS INDEX for selecting img label in augmentations example
 # %%
 makelinks()
@@ -93,18 +96,15 @@ def show_img(img, figsize=(8, 8)):
 
 # %%
 image, mask = dataset_train[IMG_IDX]
-# %%
 mask = mask[0] + mask[1]  # Combine into channel
 image = image[0]  # Display only one channel
 # %%
 show_img(image)
 # %%
-
 # ORIGINAL
 visualize(image, mask)
 
 # %%
-
 # PADDING
 aug = PadIfNeeded(p=1, min_height=128, min_width=128)
 

@@ -1,3 +1,4 @@
+# This module is deprecated
 
 import torch
 import numpy as np
@@ -26,7 +27,7 @@ def to_tensor(x, **kwargs):
 def get_preprocessing(preprocessing_fn):
     """Preprocessing  functions for segmentation-models-pytorch pretrained models
     https://github.com/qubvel/segmentation_models.pytorch
-    """    
+    """
     _transform = [
         albu.Lambda(image=get_tensor, mask=get_tensor),
         albu.Lambda(image=preprocessing_fn),

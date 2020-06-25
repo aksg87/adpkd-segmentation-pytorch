@@ -1,12 +1,13 @@
-# %%
+# TODO: replace with dataset in `new_datasets`
+# filtering not fixed in SegmentationDataset
 
+# %%
 from sklearn.model_selection import train_test_split
 
 from data_set.datasets import SegmentationDataset
 from data.data_utils import (
     make_dcmdicts,
     get_labeled,
-    display_traindata,
     filter_dcm2attribs,
 )
 from data.link_data import makelinks
@@ -31,7 +32,8 @@ dcm2attribs = filter_dcm2attribs(filters, dcm2attribs)
 
 
 # %%
-# train, val, test split--> 85 / 15 / 15. Note: Applied to patients not dcm images.
+# train, val, test split--> 85 / 15 / 15.
+# Note: Applied to patients not dcm images.
 train_IDS, test_IDS = train_test_split(all_IDS, test_size=0.15, random_state=1)
 train_IDS, val_IDS = train_test_split(
     train_IDS, test_size=0.176, random_state=1

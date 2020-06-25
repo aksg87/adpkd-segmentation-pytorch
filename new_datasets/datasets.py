@@ -9,7 +9,6 @@ from data.data_utils import (
     new_path_2dcm,
     path_2label,
     get_y_Path,
-    filter_dcm2attribs,
 )
 
 
@@ -40,8 +39,7 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         )
         dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
 
-        if filters is not None:
-            dcm2attribs = filter_dcm2attribs(filters, dcm2attribs)
+        # TODO: filtering support
 
         self.dcm2attribs = dcm2attribs
         self.pt2dcm = patient2dcm

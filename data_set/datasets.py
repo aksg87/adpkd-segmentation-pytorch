@@ -1,3 +1,5 @@
+# This module is deprecated
+
 # %%
 import torch
 

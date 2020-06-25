@@ -1,0 +1,4 @@
+---
+# used by multi_train.py to run more experiments in a sequance
+- "first_training_config.yaml"
+- "second_training_config.yaml"
