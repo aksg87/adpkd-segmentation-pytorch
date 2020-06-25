@@ -18,10 +18,11 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         label2mask,
+        dcm2attribs,
+        patient2dcm,
         patient_indices=None,
         augmentation=None,
         smp_preprocessing=None,
-        filters=None,
     ):
 
         super().__init__()
@@ -29,32 +30,18 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         self.patient_indices = patient_indices
         self.augmentation = augmentation
         self.smp_preprocessing = smp_preprocessing
-        self.filters = filters
-
-        dcms_paths = sorted(get_labeled())
-        print(
-            "The number of dcm images before splitting: {}".format(
-                len(dcms_paths)
-            )
-        )
-        dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
-
-        if filters is not None:
-            dcm2attribs, patient2dcm = filters(dcm2attribs, patient2dcm)
 
         self.dcm2attribs = dcm2attribs
         self.pt2dcm = patient2dcm
         self.patients = list(patient2dcm.keys())
 
-        # select subset of data for train, val, test split
+        # select subset of data (train, val, or test)
         if patient_indices is not None:
             self.patients = [self.patients[i] for i in patient_indices]
 
-        patient_dcms = []
+        self.dcm_paths = []
         for p in self.patients:
-            patient_dcms.extend(patient2dcm[p])
-
-        self.dcm_paths = patient_dcms
+            self.dcm_paths.extend(patient2dcm[p])
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
 
     def __getitem__(self, index):
@@ -118,21 +105,36 @@ class NewBaselineDatasetGetter:
         filters=None,
     ):
         super().__init__()
-        self.splitter = splitter()
+        self.splitter = splitter
         self.splitter_key = splitter_key
         self.label2mask = label2mask
         self.augmentation = augmentation
         self.smp_preprocessing = smp_preprocessing
         self.filters = filters
 
+        dcms_paths = sorted(get_labeled())
+        print(
+            "The number of images before splitting and filtering: {}".format(
+                len(dcms_paths)
+            )
+        )
+        self.dcm2attribs, self.patient2dcm = make_dcmdicts(tuple(dcms_paths))
+        if filters is not None:
+            self.dcm2attribs, self.patient2dcm = filters(
+                self.dcm2attribs, self.patient2dcm
+            )
+        self.all_idxs = range(len(self.patient2dcm.keys()))
+        self.patient_indices = self.splitter(self.all_idxs)[self.splitter_key]
+
     def __call__(self):
 
         return NewSegmentationDataset(
             label2mask=self.label2mask,
-            patient_indices=self.splitter[self.splitter_key],
+            dcm2attribs=self.dcm2attribs,
+            patient2dcm=self.patient2dcm,
+            patient_indices=self.patient_indices,
             augmentation=self.augmentation,
             smp_preprocessing=self.smp_preprocessing,
-            filters=self.filters,
         )
 
 
