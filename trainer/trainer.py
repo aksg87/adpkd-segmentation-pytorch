@@ -1,3 +1,5 @@
+# This module is deprecated
+
 import torch
 import torch.nn.functional as F
 

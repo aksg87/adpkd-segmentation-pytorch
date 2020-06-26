@@ -1,77 +1,30 @@
 ---
-_EXPERIMENT_DIR: "./experiments/albumentations_new_dice_example_15/"
-_MODEL_CHECKPOINT: null
-_NEW_CKP_FORMAT: false
+# example config run by evaluate.py
 
-_EXPERIMENT_DATA:
-  "num_epochs": 40
-  "batch_log_interval": 20
-  "best_metric_type": "high"
-  "saving_metric": "dice_metric"
+# path to store evaluation results
+# (pick another location when testing)
+_RESULTS_PATH: "./example_experiment/evaluation_results/test/"
+_MODEL_CHECKPOINT: "./example_experiment/training_run/checkpoints/best_val_checkpoint.pth"
+_NEW_CKP_FORMAT: true
 
 _MODEL_CONFIG:
   "smp_name": "Unet"
   "smp_params":
-    encoder_name: "efficientnet-b0"
+    encoder_name: "efficientnet-b4"
     encoder_weights: "imagenet"
+    decoder_use_batchnorm: False
     activation: null
     classes: 1
   _CLASS_INFO:
     _MODULE_NAME: "new_models.models"
     _CLASS_NAME: "BaselineModelGetter"
 
-_TRAIN_DATALOADER_CONFIG:
+# use splitter key to specify which dataset
+_TEST_DATALOADER_CONFIG:
   _CLASS_INFO:
     _MODULE_NAME: "new_datasets.dataloader"
     _CLASS_NAME: "BaselineDataloaderGetter"
-  "batchsize": 64
-  "shuffle": True
-  "dataset":
-    _CLASS_INFO:
-      _MODULE_NAME: "new_datasets.datasets"
-      _CLASS_NAME: "NewBaselineDatasetGetter"
-    "splitter":
-      _CLASS_INFO:
-        _MODULE_NAME: "new_datasets.splits"
-        _CLASS_NAME: "GenSplit"
-      "train": 0.7
-      "val": 0.15
-      "test": 0.15
-      "seed": 1
-    "label2mask":
-      _CLASS_INFO:
-        _MODULE_NAME: "new_datasets.transforms"
-        _CLASS_NAME: "SingleChannelMaskNumpy"
-    "augmentation":
-      _CLASS_INFO:
-        _MODULE_NAME: "albumentations"
-        _CLASS_NAME: "Compose"
-      transforms:
-        - _CLASS_INFO:
-            _MODULE_NAME: "albumentations"
-            _CLASS_NAME: "Resize"
-          "height": 256
-          "width": 256
-          "interpolation": 2 # cubic
-        - _CLASS_INFO:
-            _MODULE_NAME: "albumentations"
-            _CLASS_NAME: "CenterCrop"
-          "height": 192
-          "width": 192
-    "smp_preprocessing":
-      "encoder_name": "efficientnet-b0"
-      "pretrained": "imagenet"
-      _CLASS_INFO:
-        _MODULE_NAME: "segmentation_models_pytorch.encoders"
-        _CLASS_NAME: "get_preprocessing_fn"
-    "splitter_key": "train"
-    "filters": null
-
-_VAL_DATALOADER_CONFIG:
-  _CLASS_INFO:
-    _MODULE_NAME: "new_datasets.dataloader"
-    _CLASS_NAME: "BaselineDataloaderGetter"
-  "batchsize": 64
+  "batchsize": 8
   "shuffle": False
   "dataset":
     _CLASS_INFO:
@@ -97,21 +50,21 @@ _VAL_DATALOADER_CONFIG:
         - _CLASS_INFO:
             _MODULE_NAME: "albumentations"
             _CLASS_NAME: "Resize"
-          "height": 256
-          "width": 256
+          "height": 512
+          "width": 512
           "interpolation": 2 # cubic
         - _CLASS_INFO:
             _MODULE_NAME: "albumentations"
             _CLASS_NAME: "CenterCrop"
-          "height": 192
-          "width": 192
+          "height": 384
+          "width": 384
     "smp_preprocessing":
-      "encoder_name": "efficientnet-b0"
+      "encoder_name": "efficientnet-b4"
       "pretrained": "imagenet"
       _CLASS_INFO:
         _MODULE_NAME: "segmentation_models_pytorch.encoders"
         _CLASS_NAME: "get_preprocessing_fn"
-    "splitter_key": "val"
+    "splitter_key": "test"
     "filters": null
 
 _LOSSES_METRICS_CONFIG:
@@ -122,24 +75,19 @@ _LOSSES_METRICS_CONFIG:
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
         _CLASS_NAME: "BaselineLoss"
-    "combined_dice_bce":
-      "epsilon": 1.0E-8
-      "bce_weight": 0.5
-      _CLASS_INFO:
-        _MODULE_NAME: "loss_utils.losses"
-        _CLASS_NAME: "CombinedDiceBCE"
     "loss_dice":
-      "epsilon": 1.0E-8
-      "bce_weight": 0.0
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
-        _CLASS_NAME: "CombinedDiceBCE"
+        _CLASS_NAME: "SoftDice"
+      "epsilon": 1.0E-8
+      "pred_process":
+        _CLASS_INFO:
+          _MODULE_NAME: "torch.nn"
+          _CLASS_NAME: "Sigmoid"
     "loss_bce":
-      "epsilon": 1.0E-8
-      "bce_weight": 1.0
       _CLASS_INFO:
-        _MODULE_NAME: "loss_utils.losses"
-        _CLASS_NAME: "CombinedDiceBCE"
+        _MODULE_NAME: "torch.nn"
+        _CLASS_NAME: "BCEWithLogitsLoss"
     "dice_metric":
       _CLASS_INFO:
         _MODULE_NAME: "loss_utils.losses"
@@ -182,29 +130,4 @@ _LOSSES_METRICS_CONFIG:
     _MODULE_NAME: "loss_utils.criterions"
     _CLASS_NAME: "LossesMetrics"
 
-_OPTIMIZATION_LOSS: "weighted_hard_dice_BCE"
-
-_LR_SCHEDULER:
-  _CLASS_INFO:
-    _MODULE_NAME: "train_utils"
-    _CLASS_NAME: "TorchLRScheduler"
-  "name": "ReduceLROnPlateau"
-  "param_dict":
-    "factor": 0.9
-    "patience": 2
-    "verbose": true
-    "threshold": 0.001
-    "cooldown": 0
-  "step_type": "use_val"
-
-_OPTIMIZER:
-  _CLASS_INFO:
-    _MODULE_NAME: "train_utils"
-    _CLASS_NAME: "OptimGetter"
-  "module_name": "catalyst.contrib.nn"
-  "name": "RAdam"
-  "param_dict": {"lr": 0.001}
-
-_LOOKAHEAD_OPTIM:
-  "use_lookahead": false
-  "params": {k: 5, alpha: 0.5}
+_LOADER_TO_EVAL: _TEST_DATALOADER_CONFIG

@@ -1,10 +1,10 @@
-structure_reference.txt
 .vscode
 *.png
 *.dcm
 *.npy
+*.pth
+tb_logs/
 /data/data_config.py
 __pycache__/
-/model_checkpoints/
-/config/examples/results/
 /experiments/
+/notebooks/

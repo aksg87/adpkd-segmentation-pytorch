@@ -1,10 +1,16 @@
 ---
-_EXPERIMENT_DIR: "./experiments/train_example/"
+# example config run by train.py
+
+# output folder
+# (pick another location when checking the script)
+_EXPERIMENT_DIR: "./example_experiment/training_run/"
+# optionally load a previous checkpoint to continue training
 _MODEL_CHECKPOINT: null
-_NEW_CKP_FORMAT: false
+# checkpoint format for loading (false deprecated)
+_NEW_CKP_FORMAT: true
 
 _EXPERIMENT_DATA:
-  "num_epochs": 50
+  "num_epochs": 150
   "batch_log_interval": 100
   "best_metric_type": "high"
   "saving_metric": "dice_metric"
@@ -278,12 +284,7 @@ _OPTIMIZER:
   "name": "RAdam"
   "param_dict": {"lr": 0.001, "weight_decay": 0.001}
 
-_MODEL_PARAM_PREP:
-  _CLASS_INFO:
-    _MODULE_NAME: "new_models.models"
-    _CLASS_NAME: "CatalystModelParamPrep"
-  "layerwise_params":
-    "encoder*": {"lr": 0.0001, "weight_decay": 0.0001}
+_MODEL_PARAM_PREP: null
 
 _LOOKAHEAD_OPTIM:
   "use_lookahead": true

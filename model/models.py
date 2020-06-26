@@ -1,3 +1,4 @@
+# This module is deprecated
 # %%
 import torch
 import torch.nn as nn
@@ -11,4 +12,4 @@ from model.model_utils import params
 
 # %%
 
-model = smp.Unet(**params)     
+model = smp.Unet(**params)

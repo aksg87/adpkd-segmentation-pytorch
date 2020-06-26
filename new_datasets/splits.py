@@ -1,38 +1,46 @@
 from sklearn.model_selection import train_test_split
-from data.data_utils import make_dcmdicts, get_labeled
 
 
 class GenSplit:
     def __init__(self, train=0.7, val=0.15, test=0.15, seed=1):
         super().__init__()
 
-        # size needs to be be calculated for splits
-        self.dcm2attribs, self.patient2dcm = make_dcmdicts(
-            tuple(get_labeled())
-        )
-
         self.train = train
         self.val = val
         self.test = test
-        all_idxs = range(len(self.patient2dcm.keys()))
+        self.seed = seed
+
+    def __call__(self, all_idxs):
 
         # split train from validation-test
         train_idxs, test_val_idxs = train_test_split(
-            all_idxs, test_size=(self.val + self.test), random_state=seed
+            all_idxs, test_size=(self.val + self.test), random_state=self.seed
         )
 
         # split validation from test
         val_idxs, test_idxs = train_test_split(
             test_val_idxs,
             test_size=(self.test / (self.test + self.val)),
-            random_state=seed,
+            random_state=self.seed,
         )
 
         self.train_idxs = train_idxs
         self.val_idxs = val_idxs
         self.test_idxs = test_idxs
 
-    def __call__(self):
+        print(
+            "The number of (filtered) train patients: {}".format(
+                len(self.train_idxs)
+            )
+        )
+        print(
+            "The number of (filtered) validation patients: {}".format(
+                len(self.val_idxs)
+            )
+        )
+        print(
+            "The number of (filtered) test patients: {}".format(len(self.test_idxs))
+        )
 
         return {
             "train": self.train_idxs,

@@ -1,7 +1,12 @@
 """
 Model evaluation script
 
-python -m evaluate --config path_to_config_yaml
+python -m evaluate --config path_to_config_yaml --makelinks
+
+If using a specific GPU (e.g. device 2):
+CUDA_VISIBLE_DEVICES=2 python -m evaluate --config path_to_config_yaml
+
+The makelinks flag is needed only once to create symbolic links to the data.
 """
 
 # %%
@@ -17,6 +22,7 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from data.data_utils import masks_to_colorimg
 from matplotlib import pyplot as plt
+from train_utils import load_model_data
 
 
 # %%
@@ -90,10 +96,11 @@ def evaluate(config):
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     results_path = config["_RESULTS_PATH"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
+    checkpoint_format = config["_NEW_CKP_FORMAT"]
 
-    # TODO: support new checkpoint types
     model = get_object_instance(model_config)()
-    model.load_state_dict(torch.load(saved_checkpoint))
+    if saved_checkpoint is not None:
+        load_model_data(saved_checkpoint, model, new_format=checkpoint_format)
 
     dataloader = get_object_instance(dataloader_config)()
     loss_metric = get_object_instance(loss_metric_config)()
@@ -103,7 +110,7 @@ def evaluate(config):
     model.eval()
     all_losses_and_metrics = validate(dataloader, model, loss_metric, device)
 
-    os.makedirs(results_path, exist_ok=True)
+    os.makedirs(results_path)
     with open("{}/val_results.json".format(results_path), "w") as fp:
         print(all_losses_and_metrics)
         json.dump(all_losses_and_metrics, fp, indent=4)
@@ -118,6 +125,7 @@ def evaluate(config):
     plot_figure_from_batch(inputs, preds)
 
 
+# %%
 def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 
     f, axarr = plt.subplots(1, 2)
@@ -132,7 +140,7 @@ def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 def quick_check(run_makelinks=False):
     if run_makelinks:
         makelinks()
-    path = "./config/examples/eval_example.yaml"
+    path = "./example_experiment/configs/eval_example.yaml"
     with open(path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     evaluate(config)
