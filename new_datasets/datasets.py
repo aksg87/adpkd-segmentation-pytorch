@@ -5,11 +5,14 @@ import data_set.datasets as ds
 
 from data.data_utils import (
     get_labeled,
-    make_dcmdicts,
-    new_path_2dcm,
-    path_2label,
     get_y_Path,
+    int16_to_uint8,
+    make_dcmdicts,
+    path_2dcm_int16,
+    path_2label,
 )
+
+from new_datasets.filters import PatientFiltering
 
 
 class NewSegmentationDataset(torch.utils.data.Dataset):
@@ -20,24 +23,26 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         label2mask,
         dcm2attribs,
         patient2dcm,
-        patient_indices=None,
+        patient_IDS=None,
         augmentation=None,
         smp_preprocessing=None,
+        normalization=None,
     ):
 
         super().__init__()
         self.label2mask = label2mask
-        self.patient_indices = patient_indices
-        self.augmentation = augmentation
-        self.smp_preprocessing = smp_preprocessing
-
         self.dcm2attribs = dcm2attribs
         self.pt2dcm = patient2dcm
-        self.patients = list(patient2dcm.keys())
+        self.patient_IDS = patient_IDS
+        self.augmentation = augmentation
+        self.smp_preprocessing = smp_preprocessing
+        self.normalization = normalization
 
-        # select subset of data (train, val, or test)
-        if patient_indices is not None:
-            self.patients = [self.patients[i] for i in patient_indices]
+        self.patients = list(patient2dcm.keys())
+        # kept for compatibility with previous experiments
+        # following patient order in patient_IDS
+        if patient_IDS is not None:
+            self.patients = patient_IDS
 
         self.dcm_paths = []
         for p in self.patients:
@@ -49,8 +54,15 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         if isinstance(index, slice):
             return [self[ii] for ii in range(*index.indices(len(self)))]
 
-        # numpy uint8, (H, W)
-        image = new_path_2dcm(self.dcm_paths[index])
+        # numpy int16, (H, W)
+        im_path = self.dcm_paths[index]
+        image = path_2dcm_int16(im_path)
+        # image local scaling by default to convert to uint8
+        if self.normalization is None:
+            image = int16_to_uint8(image)
+        else:
+            image = self.normalization(image, self.dcm2attribs[im_path])
+
         label = path_2label(self.label_paths[index])
 
         # numpy uint8, one hot encoded (C, H, W)
@@ -103,6 +115,7 @@ class NewBaselineDatasetGetter:
         augmentation=None,
         smp_preprocessing=None,
         filters=None,
+        normalization=None,
     ):
         super().__init__()
         self.splitter = splitter
@@ -111,6 +124,7 @@ class NewBaselineDatasetGetter:
         self.augmentation = augmentation
         self.smp_preprocessing = smp_preprocessing
         self.filters = filters
+        self.normalization = normalization
 
         dcms_paths = sorted(get_labeled())
         print(
@@ -118,23 +132,33 @@ class NewBaselineDatasetGetter:
                 len(dcms_paths)
             )
         )
-        self.dcm2attribs, self.patient2dcm = make_dcmdicts(tuple(dcms_paths))
+        dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
+
         if filters is not None:
-            self.dcm2attribs, self.patient2dcm = filters(
-                self.dcm2attribs, self.patient2dcm
-            )
-        self.all_idxs = range(len(self.patient2dcm.keys()))
-        self.patient_indices = self.splitter(self.all_idxs)[self.splitter_key]
+            dcm2attribs, patient2dcm = filters(dcm2attribs, patient2dcm)
+
+        self.all_patient_IDS = list(patient2dcm.keys())
+        # train, val, or test
+        self.patient_IDS = self.splitter(self.all_patient_IDS)[
+            self.splitter_key
+        ]
+
+        patient_filter = PatientFiltering(self.patient_IDS)
+        self.dcm2attribs, self.patient2dcm = patient_filter(
+            dcm2attribs, patient2dcm
+        )
+        if self.normalization is not None:
+            self.normalization.update_dcm2attribs(self.dcm2attribs)
 
     def __call__(self):
-
         return NewSegmentationDataset(
             label2mask=self.label2mask,
             dcm2attribs=self.dcm2attribs,
             patient2dcm=self.patient2dcm,
-            patient_indices=self.patient_indices,
+            patient_IDS=self.patient_IDS,
             augmentation=self.augmentation,
             smp_preprocessing=self.smp_preprocessing,
+            normalization=self.normalization,
         )
 
 
