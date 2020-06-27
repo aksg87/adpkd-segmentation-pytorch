@@ -152,10 +152,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config", help="YAML config path", type=str, required=True
     )
+    parser.add_argument(
+        "--makelinks", help="Make data links", action="store_true"
+    )
 
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
-    makelinks()
+    if args.makelinks:
+        makelinks()
+
     evaluate(config)
