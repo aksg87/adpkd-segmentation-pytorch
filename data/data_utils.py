@@ -1,4 +1,5 @@
 #%%
+import cv2
 import glob
 import os
 from pathlib import Path
@@ -10,6 +11,10 @@ import functools
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 #%%
+
+def int16_to_uint8(int16):
+    return cv2.normalize(
+        int16, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
 def get_dcms_paths(dir_list):
 
@@ -57,7 +62,7 @@ def new_path_2dcm(fname):
     if not isinstance(fname, str):
         fname = str(fname)
     dcm = pydicom.dcmread(fname)
-    return dcm.pixel_array.astype(dtype=np.uint8)
+    return int16_to_uint8(dcm.pixel_array)
 
 def path_2label(fname):
 
