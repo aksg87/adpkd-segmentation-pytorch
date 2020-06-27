@@ -2,8 +2,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
-PATIENT_KEY = "patient"
-SEQUENCE_KEY = "seq"
+from data.data_utils import PATIENT, SEQUENCE
 
 
 class Filtering(ABC):
@@ -18,7 +17,7 @@ class Filtering(ABC):
         for dcm, attribs in dcm2attribs.items():
             if self.criterion(attribs):
                 new_dcm2attribs[dcm] = attribs
-                new_patient2dcm.setdefault(attribs[PATIENT_KEY], []).append(
+                new_patient2dcm.setdefault(attribs[PATIENT], []).append(
                     dcm
                 )
 
@@ -30,4 +29,12 @@ class SequenceFiltering(Filtering):
         self.sequence_list = sequence_list
 
     def criterion(self, attribs):
-        return attribs[SEQUENCE_KEY] in self.sequence_list
+        return attribs[SEQUENCE] in self.sequence_list
+
+
+class PatientFiltering(Filtering):
+    def __init__(self, patient_IDS):
+        self.patient_IDS = patient_IDS
+
+    def criterion(self, attribs):
+        return attribs[PATIENT] in self.patient_IDS

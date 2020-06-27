@@ -39,7 +39,9 @@ class GenSplit:
             )
         )
         print(
-            "The number of (filtered) test patients: {}".format(len(self.test_idxs))
+            "The number of (filtered) test patients: {}".format(
+                len(self.test_idxs)
+            )
         )
 
         return {
