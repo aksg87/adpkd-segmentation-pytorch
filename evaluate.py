@@ -115,6 +115,8 @@ def evaluate(config):
         print(all_losses_and_metrics)
         json.dump(all_losses_and_metrics, fp, indent=4)
 
+    # TODO: dcm path/index information needed for TKV calculations
+
     data_iter = iter(dataloader)
     inputs, labels = next(data_iter)
     inputs = inputs.to(device)
