@@ -1,0 +1,127 @@
+_LOADER_TO_EVAL: _TEST_DATALOADER_CONFIG
+_LOSSES_METRICS_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: LossesMetrics
+    _MODULE_NAME: loss_utils.criterions
+  criterions_dict:
+    dice_metric:
+      _CLASS_INFO:
+        _CLASS_NAME: DiceMetric
+        _MODULE_NAME: loss_utils.losses
+      binarize_func:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidBinarize
+          _MODULE_NAME: loss_utils.losses
+        thresholds:
+        - 0.5
+      epsilon: 1.0e-08
+    hard_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: HardDice
+        _MODULE_NAME: loss_utils.losses
+      binary_forward:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidForwardBinarize
+          _MODULE_NAME: loss_utils.losses
+        thresholds:
+        - 0.5
+      epsilon: 1.0e-08
+    loss_baseline:
+      _CLASS_INFO:
+        _CLASS_NAME: BaselineLoss
+        _MODULE_NAME: loss_utils.losses
+      bce_weight: 0.0
+      dice_smooth: 1.0e-08
+    loss_bce:
+      _CLASS_INFO:
+        _CLASS_NAME: BCEWithLogitsLoss
+        _MODULE_NAME: torch.nn
+    loss_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: SoftDice
+        _MODULE_NAME: loss_utils.losses
+      epsilon: 1.0e-08
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    weighted_hard_dice_BCE:
+      _CLASS_INFO:
+        _CLASS_NAME: WeightedLosses
+        _MODULE_NAME: loss_utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: HardDice
+          _MODULE_NAME: loss_utils.losses
+        binary_forward:
+          _CLASS_INFO:
+            _CLASS_NAME: SigmoidForwardBinarize
+            _MODULE_NAME: loss_utils.losses
+          thresholds:
+          - 0.5
+        epsilon: 1.0e-08
+      - _CLASS_INFO:
+          _CLASS_NAME: BCEWithLogitsLoss
+          _MODULE_NAME: torch.nn
+      weights:
+      - 0.8
+      - 0.2
+_MODEL_CHECKPOINT: ./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/checkpoints/best_val_checkpoint.pth
+_MODEL_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: BaselineModelGetter
+    _MODULE_NAME: new_models.models
+  smp_name: Unet
+  smp_params:
+    activation: null
+    classes: 1
+    decoder_use_batchnorm: true
+    encoder_name: efficientnet-b5
+    encoder_weights: imagenet
+_NEW_CKP_FORMAT: true
+_RESULTS_PATH: ./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/evaluation_results/test
+_TEST_DATALOADER_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: BaselineDataloaderGetter
+    _MODULE_NAME: new_datasets.dataloader
+  batchsize: 8
+  dataset:
+    _CLASS_INFO:
+      _CLASS_NAME: NewBaselineDatasetGetter
+      _MODULE_NAME: new_datasets.datasets
+    augmentation:
+      _CLASS_INFO:
+        _CLASS_NAME: Compose
+        _MODULE_NAME: albumentations
+      transforms:
+      - _CLASS_INFO:
+          _CLASS_NAME: Resize
+          _MODULE_NAME: albumentations
+        height: 512
+        interpolation: 2
+        width: 512
+      - _CLASS_INFO:
+          _CLASS_NAME: CenterCrop
+          _MODULE_NAME: albumentations
+        height: 384
+        width: 384
+    filters: null
+    label2mask:
+      _CLASS_INFO:
+        _CLASS_NAME: SingleChannelMaskNumpy
+        _MODULE_NAME: new_datasets.transforms
+    normalization:
+      _CLASS_INFO:
+        _CLASS_NAME: NormalizePatientSeq
+        _MODULE_NAME: data.data_utils
+    smp_preprocessing: null
+    splitter:
+      _CLASS_INFO:
+        _CLASS_NAME: GenSplit
+        _MODULE_NAME: new_datasets.splits
+      seed: 1
+      test: 0.15
+      train: 0.7
+      val: 0.15
+    splitter_key: test
+  shuffle: false
