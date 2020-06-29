@@ -23,6 +23,7 @@ from data.link_data import makelinks
 from data.data_utils import masks_to_colorimg
 from matplotlib import pyplot as plt
 from train_utils import load_model_data
+from new_datasets import dataloader
 
 
 # %%
@@ -37,9 +38,12 @@ def validate(
     global_step=None,
     val_metric_to_check=None,
     output_losses_list=False,
+    binarize_func=None,
 ):
     all_losses_and_metrics = defaultdict(list)
     num_examples = 0
+    dataset = dataloader.dataset
+    updated_dcm2attribs = {}
 
     for batch_idx, (x_batch, y_batch) in enumerate(dataloader):
         x_batch = x_batch.to(device)
@@ -48,7 +52,20 @@ def validate(
         num_examples += batch_size
         with torch.no_grad():
             y_batch_hat = model(x_batch)
+            y_batch_hat_binary = binarize_func(y_batch_hat)
             losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+
+            start_idx = num_examples - batch_size
+            end_idx = num_examples
+
+            for inbatch_idx, dataset_idx in enumerate(
+                range(start_idx, end_idx)
+            ):
+                _, dcm_path, attribs = dataset.get_verbose(dataset_idx)
+                attribs["pred_kidney_pixels"] = torch.sum(
+                    y_batch_hat_binary[inbatch_idx] > 0
+                ).item()
+                updated_dcm2attribs[dcm_path] = attribs
 
             for key, value in losses_and_metrics.items():
                 all_losses_and_metrics[key].append(value.item() * batch_size)
@@ -79,13 +96,7 @@ def validate(
                     global_step,
                 )
 
-    averaged = {}
-    for key, value in all_losses_and_metrics.items():
-        averaged[key] = sum(all_losses_and_metrics[key]) / num_examples
-
-    if output_losses_list:
-        return averaged, all_losses_and_metrics
-    return averaged
+    return updated_dcm2attribs
 
 
 # %%
@@ -105,25 +116,21 @@ def evaluate(config):
     dataloader = get_object_instance(dataloader_config)()
 
     loss_metric = get_object_instance(loss_metric_config)()
+
+    criterions_dict = get_object_instance(loss_metric_config).criterions_dict
+
+    # TODO: Hardcoded to dice_metric, so support other metrics from config.
+    binarize_func = criterions_dict["dice_metric"].binarize_func
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = model.to(device)
     model.eval()
-    all_losses_and_metrics = validate(dataloader, model, loss_metric, device)
+    updated_dcm2attribs = validate(
+        dataloader, model, loss_metric, device, binarize_func=binarize_func
+    )
 
-    os.makedirs(results_path)
-    with open("{}/val_results.json".format(results_path), "w") as fp:
-        print(all_losses_and_metrics)
-        json.dump(all_losses_and_metrics, fp, indent=4)
-
-    data_iter = iter(dataloader)
-    inputs, labels = next(data_iter)
-    inputs = inputs.to(device)
-    preds = model(inputs)
-    inputs = inputs.cpu()
-    preds = preds.cpu()
-
-    plot_figure_from_batch(inputs, preds)
+    return updated_dcm2attribs
 
 
 # %%
@@ -138,14 +145,14 @@ def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 
 
 # %%
-def quick_check(run_makelinks=False):
+def calculate_TKVs(run_makelinks=False):
     if run_makelinks:
         makelinks()
     path = "./experiments/june28/train_example_all_no_noise_patient_seq_norm_b5_BN/test/test.yaml"
 
     with open(path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    evaluate(config)
+    return evaluate(config)
 
 
 # %%
