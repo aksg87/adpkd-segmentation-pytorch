@@ -167,10 +167,10 @@ def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 
 
 # %%
-def calculate_TKVs(run_makelinks=False, output=None):
+def calculate_TKVs(run_makelinks=False, output=None, split="val"):
     if run_makelinks:
         makelinks()
-    path = "./experiments/june28/train_example_all_no_noise_patient_seq_norm_b5_BN/test/test.yaml"
+    path = "./experiments/june28/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"
 
     with open(path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -195,7 +195,7 @@ def calculate_TKVs(run_makelinks=False, output=None):
                 "TKV_Pred": patient_MR_TKV[(patient_MR, "Pred")],
                 "sequence": value["seq"],
                 # TODO: automatically determine val/test
-                "split": "test",
+                "split": split,
             }
 
             TKV_data[patient_MR] = summary
