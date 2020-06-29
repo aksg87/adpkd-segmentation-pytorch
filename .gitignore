@@ -8,4 +8,4 @@ tb_logs/
 __pycache__/
 /experiments/
 /notebooks/
-fig_1_patient_summary.csv
+*.csv
