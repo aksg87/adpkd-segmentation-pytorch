@@ -148,7 +148,6 @@ def calculate_TKVs(run_makelinks=False, output=None, path=None):
                 "TKV_GT": patient_MR_TKV[(patient_MR, "GT")],
                 "TKV_Pred": patient_MR_TKV[(patient_MR, "Pred")],
                 "sequence": value["seq"],
-                # TODO: automatically determine val/test
                 "split": split,
             }
 
