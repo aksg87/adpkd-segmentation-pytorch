@@ -61,10 +61,31 @@ def validate(
             for inbatch_idx, dataset_idx in enumerate(
                 range(start_idx, end_idx)
             ):
+                # calculate TKV and TKV inputs for each dcm
                 _, dcm_path, attribs = dataset.get_verbose(dataset_idx)
                 attribs["pred_kidney_pixels"] = torch.sum(
                     y_batch_hat_binary[inbatch_idx] > 0
                 ).item()
+
+                # TODO: Clean up method of accessing Resize transform
+                attribs["transform_resize_dim"] = (
+                    dataloader.dataset.augmentation[0].height,
+                    dataloader.dataset.augmentation[0].width,
+                )
+
+                # scale factor takes differences in pred^2 / GT^2 based on img dim or pixel area
+                scale_factor = (attribs["dim"][0] ** 2) / (
+                    attribs["transform_resize_dim"][0] ** 2
+                )
+                attribs["Vol_GT"] = (
+                    attribs["vox_vol"] * attribs["kidney_pixels"]
+                )
+                attribs["Vol_Pred"] = (
+                    scale_factor
+                    * attribs["vox_vol"]
+                    * attribs["pred_kidney_pixels"]
+                )
+
                 updated_dcm2attribs[dcm_path] = attribs
 
             for key, value in losses_and_metrics.items():
