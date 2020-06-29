@@ -1,4 +1,8 @@
-"""Sequential training of multiple experiments"""
+"""
+Sequential training of multiple experiments
+
+Input config example: `config/multi_train_example.yaml`
+"""
 
 import argparse
 import yaml
