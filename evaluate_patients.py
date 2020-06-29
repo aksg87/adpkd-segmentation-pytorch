@@ -10,7 +10,7 @@ The makelinks flag is needed only once to create symbolic links to the data.
 """
 
 # %%
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 import argparse
 import json
 import os
@@ -173,8 +173,33 @@ def calculate_TKVs(run_makelinks=False):
 
     with open(path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    return evaluate(config)
 
+    dcm2attrib = evaluate(config)
+
+    patient_MR_TKV = defaultdict(float)
+    TKV_data = OrderedDict()
+
+    for key, value in dcm2attrib.items():
+        patient_MR = value["patient"] + value["MR"]
+        patient_MR_TKV[(patient_MR, "GT")] += value["Vol_GT"]
+        patient_MR_TKV[(patient_MR, "Pred")] += value["Vol_Pred"]
+
+    for key, value in dcm2attrib.items():
+        patient_MR = value["patient"] + value["MR"]
+
+        if patient_MR not in TKV_data:
+
+            summary = {
+                "TKV_GT": patient_MR_TKV[(patient_MR, "GT")],
+                "TKV_Pred": patient_MR_TKV[(patient_MR, "Pred")],
+                "sequence": value["seq"],
+                # TODO: automatically determine val/test
+                "split": "test",
+            }
+
+            TKV_data[patient_MR] = summary
+
+    return TKV_data
 
 # %%
 if __name__ == "__main__":
