@@ -26,6 +26,7 @@ MR = "MR"
 VOXEL_VOLUME = "vox_vol"
 DIMENSION = "dim"
 
+
 # %%
 def int16_to_uint8(int16):
     return cv2.normalize(
@@ -181,15 +182,15 @@ def dcm_attributes(dcm):
     pos_pixels = np.sum(label > 0)
     attribs[KIDNEY_PIXELS] = pos_pixels
 
-    """ 
+    """
     Volume for pixels in mask = VOXEL_VOLUME * pos_pixels
     TKV calculated as summation of dcm volumes in a study
-    Note: Dimension (which determines pixel-count) must be normal to calc. TKV 
+    Note: Dimension (which determines pixel-count) must be normal to calc. TKV
     """
     dX_Y = float(pdcm.PixelSpacing[0])
     dZ = float(pdcm.SpacingBetweenSlices)
     attribs[VOXEL_VOLUME] = dZ * (dX_Y ** 2)
-    attribs[DIMENSION] = arr_int16.shape 
+    attribs[DIMENSION] = arr_int16.shape
 
     return attribs
 
