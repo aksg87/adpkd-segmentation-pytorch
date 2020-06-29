@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import yaml
+import pandas as pd
 
 import torch
 
@@ -166,7 +167,7 @@ def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 
 
 # %%
-def calculate_TKVs(run_makelinks=False):
+def calculate_TKVs(run_makelinks=False, output=None):
     if run_makelinks:
         makelinks()
     path = "./experiments/june28/train_example_all_no_noise_patient_seq_norm_b5_BN/test/test.yaml"
@@ -199,7 +200,13 @@ def calculate_TKVs(run_makelinks=False):
 
             TKV_data[patient_MR] = summary
 
+    df = pd.DataFrame(TKV_data).transpose()
+
+    if not output is None:
+        df.to_csv(output)
+
     return TKV_data
+
 
 # %%
 if __name__ == "__main__":
