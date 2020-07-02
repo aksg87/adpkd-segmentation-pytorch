@@ -28,6 +28,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
 
+from create_eval_configs import create_config
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
@@ -188,6 +189,22 @@ def train(config, config_save_name=None):
     os.makedirs(tb_logs_dir_val)
     with open(config_out, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
+
+    # create configs for val and test
+    val_config, val_out_dir = create_config(config, "val")
+    test_config, test_out_dir = create_config(config, "test")
+    os.makedirs(val_out_dir)
+    os.makedirs(test_out_dir)
+
+    val_path = os.path.join(val_out_dir, "val.yaml")
+    print("Creating evaluation config for val: {}".format(val_path))
+    with open(val_path, "w") as f:
+        yaml.dump(val_config, f, default_flow_style=False)
+
+    test_path = os.path.join(test_out_dir, "test.yaml")
+    print("Creating evaluation config for test: {}".format(test_path))
+    with open(test_path, "w") as f:
+        yaml.dump(test_config, f, default_flow_style=False)
 
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
