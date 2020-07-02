@@ -194,6 +194,77 @@ class DiceMetric(nn.Module):
         return dsc
 
 
+class KidneyPixelMAPE(nn.Module):
+    """
+    Calculates the apsolute percentage error for predicted kidney pixel counts
+
+    Applies binarization and calculates
+
+    (label kidney pixel count - predicted k.p. count) / (label k.p. count)
+
+    The kidney pixel summation is done for each image separately, and
+    averaged over the entire batch.
+    """
+
+    def __init__(self, binarize_func, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.binarize_func = binarize_func
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target):
+
+        pred = self.binarize_func(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        target_count = target.sum(dim=(1, 2, 3))
+        pred_count = pred.sum(dim=(1, 2, 3))
+
+        kp_batch_MAPE = torch.abs(
+            (target_count - pred_count) / (target_count + self.epsilon)
+        ).mean()
+
+        return kp_batch_MAPE
+
+
+class KidneyPixelMSLE(nn.Module):
+    """
+    Mean square error for the log of kidney pixel counts.
+
+    Applies binarization to prediction, and calculates
+
+    MSE of ln(label kidney pixel count) - ln(predicted k.p. count)
+
+    Pixels are counted separetely for each image, with final averaging
+    across all images. Uses prediction values prior to binarization for
+    the backward pass.
+    """
+
+    def __init__(self, binary_forward, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.binary_forward = binary_forward
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target):
+        pred = self.binary_forward(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        target_count = target.sum(dim=(1, 2, 3))
+        pred_count = pred.sum(dim=(1, 2, 3))
+
+        sle = (
+            torch.log(target_count + self.epsilon)
+            - torch.log(pred_count + self.epsilon)
+        ) ** 2
+        msle = torch.mean(sle)
+        return msle
+
+
 class CombinedDiceBCE(nn.Module):
     """Combined soft Dice and BCE loss"""
 
