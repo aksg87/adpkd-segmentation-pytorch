@@ -196,7 +196,7 @@ class DiceMetric(nn.Module):
 
 class KidneyPixelMAPE(nn.Module):
     """
-    Calculates the apsolute percentage error for predicted kidney pixel counts
+    Calculates the absolute percentage error for predicted kidney pixel counts
 
     (label kidney pixel count - predicted k.p. count) / (label k.p. count)
 
