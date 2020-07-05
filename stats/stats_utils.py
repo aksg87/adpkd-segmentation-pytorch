@@ -4,10 +4,15 @@ import numpy as np
 import seaborn as sns
 
 # %%
-def bland_altman_plot(predicted, truth, title="Bland-Altman Plot"):
+def bland_altman_plot(
+    predicted, truth, percent=False, title="Bland-Altman Plot"
+):
     predicted = np.asarray(predicted)
     truth = np.asarray(truth)
     diff = predicted - truth
+
+    if percent:
+        diff = np.divide(diff, truth)
 
     fig, ax = plt.subplots()
     ax = sns.scatterplot(truth, diff)
