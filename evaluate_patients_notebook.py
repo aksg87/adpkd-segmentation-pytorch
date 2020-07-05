@@ -6,7 +6,6 @@ The makelinks flag is needed only once to create symbolic links to the data.
 
 # %%
 from collections import OrderedDict, defaultdict
-import argparse
 
 import yaml
 import pandas as pd
@@ -17,14 +16,22 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from train_utils import load_model_data
 
-
 # %%
 def calculate_dcm_voxel_volumes(
-    dataloader,
-    model,
-    device,
-    binarize_func,
+    dataloader, model, device, binarize_func,
 ):
+    """Calculates dcm voxel volume and per slice volume for each patient and stores value returning an updated dcm2attrib dictionary. Utilized for the calculation of TKV.
+
+    Args:
+        dataloader
+        model
+        device
+        binarize_func
+
+    Returns:
+        dictionary: updated dcm2attrib dictionary
+    """
+
     num_examples = 0
     dataset = dataloader.dataset
     updated_dcm2attribs = {}
@@ -52,7 +59,8 @@ def calculate_dcm_voxel_volumes(
                     y_batch_hat_binary[inbatch_idx] > 0
                 ).item()
                 attribs["ground_kidney_pixels"] = torch.sum(
-                    y_batch[inbatch_idx] > 0).item()
+                    y_batch[inbatch_idx] > 0
+                ).item()
 
                 # TODO: Clean up method of accessing Resize transform
                 attribs["transform_resize_dim"] = (
@@ -62,14 +70,14 @@ def calculate_dcm_voxel_volumes(
 
                 # scale factor takes into account the difference
                 # between the original image/mask size and the size
-                # after mask & prediction resizing
+                # after transform based resizing
                 scale_factor = (attribs["dim"][0] ** 2) / (
                     attribs["transform_resize_dim"][0] ** 2
                 )
                 attribs["Vol_GT"] = (
-                    scale_factor *
-                    attribs["vox_vol"] *
-                    attribs["ground_kidney_pixels"]
+                    scale_factor
+                    * attribs["vox_vol"]
+                    * attribs["ground_kidney_pixels"]
                 )
                 attribs["Vol_Pred"] = (
                     scale_factor
@@ -83,13 +91,26 @@ def calculate_dcm_voxel_volumes(
 
 
 # %%
-def evaluate(config):
+def load_config(run_makelinks=False, path=None):
+    """Reads config file and calculates additional dcm attributes such as slice volume. Reeturns a dictionary used for patient wide calculations such as TKV.
+    """
+    if run_makelinks:
+        makelinks()
+
+    if path is None:
+
+        path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
+
+    with open(path, "r") as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+
     model_config = config["_MODEL_CONFIG"]
     loader_to_eval = config["_LOADER_TO_EVAL"]
     dataloader_config = config[loader_to_eval]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
+    split = config["_LOADER_TO_EVAL"].split("_")[0].lower()
 
     model = get_object_instance(model_config)()
     if saved_checkpoint is not None:
@@ -99,43 +120,28 @@ def evaluate(config):
 
     # TODO: Hardcoded to dice_metric, so support other metrics from config.
     binarize_func = get_object_instance(
-        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"])
+        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"]
+    )
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
 
-    updated_dcm2attribs = calculate_dcm_voxel_volumes(
-        dataloader, model, device, binarize_func
-    )
-
-    return updated_dcm2attribs
+    return dataloader, model, device, binarize_func, split
 
 
 # %%
-def calculate_TKVs(run_makelinks=False, output=None, path=None):
-    if run_makelinks:
-        makelinks()
-    if path is None:
-
-        path = "example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml" # noqa
-    with open(path, "r") as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-
-    # val or test
-    split = config["_LOADER_TO_EVAL"].split("_")[0].lower()
-
-    dcm2attrib = evaluate(config)
+def calculate_TKVs(updated_dcm2attrib, output=None):
 
     patient_MR_TKV = defaultdict(float)
     TKV_data = OrderedDict()
 
-    for key, value in dcm2attrib.items():
+    for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
         patient_MR_TKV[(patient_MR, "GT")] += value["Vol_GT"]
         patient_MR_TKV[(patient_MR, "Pred")] += value["Vol_Pred"]
 
-    for key, value in dcm2attrib.items():
+    for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
 
         if patient_MR not in TKV_data:
@@ -154,8 +160,15 @@ def calculate_TKVs(run_makelinks=False, output=None, path=None):
     if output is not None:
         df.to_csv(output)
 
-    return TKV_data
+    return df
 
 
 # %%
-calculate_TKVs()
+
+dataloader, model, device, binarize_func, split = load_config()
+
+dcm2attrib = calculate_dcm_voxel_volumes(
+    dataloader, model, device, binarize_func
+)
+
+TKV_data = calculate_TKVs(dcm2attrib)
