@@ -194,6 +194,78 @@ class DiceMetric(nn.Module):
         return dsc
 
 
+class KidneyPixelMAPE(nn.Module):
+    """
+    Calculates the absolute percentage error for predicted kidney pixel counts
+
+    (label kidney pixel count - predicted k.p. count) / (label k.p. count)
+
+    The kidney pixel summation is done for each image separately, and
+    averaged over the entire batch.
+
+    Depending on the `pred_process` function,
+    predicted kidney pixel count can be soft or hard.
+    """
+
+    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target):
+
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        target_count = target.sum(dim=(1, 2, 3)).detach()
+        pred_count = pred.sum(dim=(1, 2, 3))
+
+        kp_batch_MAPE = torch.abs(
+            (target_count - pred_count) / (target_count + self.epsilon)
+        ).mean()
+
+        return kp_batch_MAPE
+
+
+class KidneyPixelMSLE(nn.Module):
+    """
+    Mean square error for the log of kidney pixel counts.
+
+    MSE of ln(label kidney pixel count) - ln(predicted k.p. count)
+
+    Pixels are counted separetely for each image, with final averaging
+    across all images
+
+    Depending on the `pred_process` function,
+    predicted kidney pixel count can be soft or hard.
+    """
+
+    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        target_count = target.sum(dim=(1, 2, 3)).detach()
+        pred_count = pred.sum(dim=(1, 2, 3))
+
+        sle = (
+            torch.log(target_count + self.epsilon)
+            - torch.log(pred_count + self.epsilon)
+        ) ** 2
+        msle = torch.mean(sle)
+        return msle
+
+
 class CombinedDiceBCE(nn.Module):
     """Combined soft Dice and BCE loss"""
 
