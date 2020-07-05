@@ -120,15 +120,18 @@ def load_config(run_makelinks=False, path=None):
     dataloader = get_object_instance(dataloader_config)()
 
     # TODO: Hardcoded to dice_metric, so support other metrics from config.
-    binarize_func = get_object_instance(
-        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"]
+
+    dice_metric = get_object_instance(
+        loss_metric_config["criterions_dict"]["dice_metric"]
     )
+
+    binarize_func = dice_metric.binarize_func
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
 
-    return dataloader, model, device, binarize_func, split
+    return dataloader, model, device, dice_metric, binarize_func, split
 
 
 # %%
@@ -168,7 +171,7 @@ def calculate_TKVs(updated_dcm2attrib, output=None):
 
 ## TKV on unfiltered + BA Plot
 
-dataloader, model, device, binarize_func, split = load_config()
+dataloader, model, device, dice_metric, binarize_func, split = load_config()
 
 dcm2attrib = calculate_dcm_voxel_volumes(
     dataloader, model, device, binarize_func
