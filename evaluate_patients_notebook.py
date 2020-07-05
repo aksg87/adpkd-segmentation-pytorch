@@ -186,21 +186,28 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # %%
 
-## TKV on unfiltered + BA Plot
+## TKV on unfiltered + BA Plot ***
 
 dataloader, model, device, dice_metric, binarize_func, split = load_config()
 
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 
-TKV_data = calculate_patient_metrics(dcm2attrib)
+patient_metric_data = calculate_patient_metrics(dcm2attrib)
 
-pred = TKV_data["TKV_Pred"].to_numpy()
-gt = TKV_data["TKV_GT"].to_numpy()
+pred = patient_metric_data["TKV_Pred"].to_numpy()
+gt = patient_metric_data["TKV_GT"].to_numpy()
 bland_altman_plot(pred, gt, percent=True, title="BA Plot: TKV all - % error")
 
 # %%
 
-## TKV on positive slices + BA Plot
+## Patient Dice with TKV-GT on Scatter Plot ***
+
+patient_dice = patient_metric_data["patient_dice"].to_numpy()
+scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
+
+# %%
+
+## TKV on positive slices + BA Plot ***
 
 dcm2attrib_pos = {}
 
@@ -208,17 +215,17 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] > 0:
         dcm2attrib_pos[key] = value
 
-TKV_data_pos = calculate_patient_metrics(dcm2attrib_pos)
+patient_metric_data_pos = calculate_patient_metrics(dcm2attrib_pos)
 
-pred_pos = TKV_data_pos["TKV_Pred"].to_numpy()
-gt_pos = TKV_data_pos["TKV_GT"].to_numpy()
+pred_pos = patient_metric_data_pos["TKV_Pred"].to_numpy()
+gt_pos = patient_metric_data_pos["TKV_GT"].to_numpy()
 bland_altman_plot(
     pred_pos, gt_pos, percent=True, title="BA Plot: TKV positives - % error"
 )
 
 # %%
 
-## TKV on negative slices + BA Plot
+## TKV on negative slices + BA Plot ***
 
 dcm2attrib_neg = {}
 
@@ -226,14 +233,11 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] == 0:
         dcm2attrib_neg[key] = value
 
-TKV_data_neg = calculate_patient_metrics(dcm2attrib_neg)
+patient_metric_data_neg = calculate_patient_metrics(dcm2attrib_neg)
 
-pred_neg = TKV_data_neg["TKV_Pred"].to_numpy()
-gt_neg = TKV_data_neg["TKV_GT"].to_numpy()
+pred_neg = patient_metric_data_neg["TKV_Pred"].to_numpy()
+gt_neg = patient_metric_data_neg["TKV_GT"].to_numpy()
 bland_altman_plot(
     pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
 )  # percent throws division by zero error
-
-
-# %%
 
