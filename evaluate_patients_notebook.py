@@ -15,7 +15,7 @@ import torch
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from train_utils import load_model_data
-from stats.stats_utils import bland_altman_plot
+from stats.stats_utils import bland_altman_plot, scatter_plot
 
 # %%
 def calc_dcm_metrics(

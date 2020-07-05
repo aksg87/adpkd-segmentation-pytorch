@@ -26,6 +26,22 @@ def bland_altman_plot(
     return ax
 
 
+def scatter_plot(predicted, truth, title="Scatter Plot"):
+    predicted = np.asarray(predicted)
+    truth = np.asarray(truth)
+
+    fig, ax = plt.subplots()
+    ax = sns.scatterplot(truth, predicted)
+    ax.set(
+        xlabel="GT", ylabel="Metric", title=title,
+    )
+
+    # Plot a horizontal line at 0
+    ax.axhline(0, ls=":", c=".2")
+
+    return ax
+
+
 def sample_plot():
     sample_x = np.random.rayleigh(scale=10, size=201)
     sample_y = np.random.normal(size=len(sample_x)) + 10 - sample_x / 10.0
