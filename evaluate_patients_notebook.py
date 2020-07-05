@@ -86,7 +86,8 @@ def calc_dcm_metrics(
                     * attribs["pred_kidney_pixels"]
                 )
 
-                # TODO: check dimensions, power, and add 'channels_first' doc
+                # TODO: check dimensions, and add 'channels_first' doc
+                # TODO: check if pow=2 is valid for 3d dice
                 power = 2
                 attribs["intersection"] = torch.sum(pred * gt, (1, 2))
                 attribs["union"] = torch.sum(
@@ -142,7 +143,7 @@ def load_config(run_makelinks=False, path=None):
 
 
 # %%
-def calculate_metrics(updated_dcm2attrib, output=None):
+def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
     patient_MR_Metrics = defaultdict(float)
     Metric_data = OrderedDict()
@@ -151,17 +152,26 @@ def calculate_metrics(updated_dcm2attrib, output=None):
         patient_MR = value["patient"] + value["MR"]
         patient_MR_Metrics[(patient_MR, "Vol_GT")] += value["Vol_GT"]
         patient_MR_Metrics[(patient_MR, "Vol_Pred")] += value["Vol_Pred"]
+        patient_MR_Metrics[(patient_MR, "intersection")] += value[
+            "intersection"
+        ]
+        patient_MR_Metrics[(patient_MR, "union")] += value["union"]
 
     for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
 
         if patient_MR not in Metric_data:
 
+            intersection = patient_MR_Metrics[(patient_MR, "intersection")]
+            union = patient_MR_Metrics[(patient_MR, "union")]
+            patient_dice = ((2.0 * intersection) / union).item()
+
             summary = {
                 "TKV_GT": patient_MR_Metrics[(patient_MR, "Vol_GT")],
                 "TKV_Pred": patient_MR_Metrics[(patient_MR, "Vol_Pred")],
                 "sequence": value["seq"],
                 "split": split,
+                "patient_dice": patient_dice,
             }
 
             Metric_data[patient_MR] = summary
@@ -182,7 +192,7 @@ dataloader, model, device, dice_metric, binarize_func, split = load_config()
 
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 
-TKV_data = calculate_metrics(dcm2attrib)
+TKV_data = calculate_patient_metrics(dcm2attrib)
 
 pred = TKV_data["TKV_Pred"].to_numpy()
 gt = TKV_data["TKV_GT"].to_numpy()
@@ -198,7 +208,7 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] > 0:
         dcm2attrib_pos[key] = value
 
-TKV_data_pos = calculate_metrics(dcm2attrib_pos)
+TKV_data_pos = calculate_patient_metrics(dcm2attrib_pos)
 
 pred_pos = TKV_data_pos["TKV_Pred"].to_numpy()
 gt_pos = TKV_data_pos["TKV_GT"].to_numpy()
@@ -216,7 +226,7 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] == 0:
         dcm2attrib_neg[key] = value
 
-TKV_data_neg = calculate_metrics(dcm2attrib_neg)
+TKV_data_neg = calculate_patient_metrics(dcm2attrib_neg)
 
 pred_neg = TKV_data_neg["TKV_Pred"].to_numpy()
 gt_neg = TKV_data_neg["TKV_GT"].to_numpy()
