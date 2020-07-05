@@ -9,7 +9,6 @@ from collections import OrderedDict, defaultdict
 
 import yaml
 import pandas as pd
-import seaborn as sns
 
 import torch
 
