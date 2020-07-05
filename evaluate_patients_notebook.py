@@ -106,11 +106,11 @@ def load_config(run_makelinks=False, path=None):
 
     model_config = config["_MODEL_CONFIG"]
     loader_to_eval = config["_LOADER_TO_EVAL"]
+    split = config[loader_to_eval]["dataset"]["splitter_key"].lower()
     dataloader_config = config[loader_to_eval]
     loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
-    split = config["_LOADER_TO_EVAL"].split("_")[0].lower()
 
     model = get_object_instance(model_config)()
     if saved_checkpoint is not None:
