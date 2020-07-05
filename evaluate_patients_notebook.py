@@ -142,31 +142,31 @@ def load_config(run_makelinks=False, path=None):
 
 
 # %%
-def calculate_TKVs(updated_dcm2attrib, output=None):
+def calculate_metrics(updated_dcm2attrib, output=None):
 
-    patient_MR_TKV = defaultdict(float)
-    TKV_data = OrderedDict()
-
-    for key, value in updated_dcm2attrib.items():
-        patient_MR = value["patient"] + value["MR"]
-        patient_MR_TKV[(patient_MR, "GT")] += value["Vol_GT"]
-        patient_MR_TKV[(patient_MR, "Pred")] += value["Vol_Pred"]
+    patient_MR_Metrics = defaultdict(float)
+    Metric_data = OrderedDict()
 
     for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
+        patient_MR_Metrics[(patient_MR, "Vol_GT")] += value["Vol_GT"]
+        patient_MR_Metrics[(patient_MR, "Vol_Pred")] += value["Vol_Pred"]
 
-        if patient_MR not in TKV_data:
+    for key, value in updated_dcm2attrib.items():
+        patient_MR = value["patient"] + value["MR"]
+
+        if patient_MR not in Metric_data:
 
             summary = {
-                "TKV_GT": patient_MR_TKV[(patient_MR, "GT")],
-                "TKV_Pred": patient_MR_TKV[(patient_MR, "Pred")],
+                "TKV_GT": patient_MR_Metrics[(patient_MR, "Vol_GT")],
+                "TKV_Pred": patient_MR_Metrics[(patient_MR, "Vol_Pred")],
                 "sequence": value["seq"],
                 "split": split,
             }
 
-            TKV_data[patient_MR] = summary
+            Metric_data[patient_MR] = summary
 
-    df = pd.DataFrame(TKV_data).transpose()
+    df = pd.DataFrame(Metric_data).transpose()
 
     if output is not None:
         df.to_csv(output)
@@ -182,7 +182,7 @@ dataloader, model, device, dice_metric, binarize_func, split = load_config()
 
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 
-TKV_data = calculate_TKVs(dcm2attrib)
+TKV_data = calculate_metrics(dcm2attrib)
 
 pred = TKV_data["TKV_Pred"].to_numpy()
 gt = TKV_data["TKV_GT"].to_numpy()
@@ -198,7 +198,7 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] > 0:
         dcm2attrib_pos[key] = value
 
-TKV_data_pos = calculate_TKVs(dcm2attrib_pos)
+TKV_data_pos = calculate_metrics(dcm2attrib_pos)
 
 pred_pos = TKV_data_pos["TKV_Pred"].to_numpy()
 gt_pos = TKV_data_pos["TKV_GT"].to_numpy()
@@ -216,7 +216,7 @@ for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] == 0:
         dcm2attrib_neg[key] = value
 
-TKV_data_neg = calculate_TKVs(dcm2attrib_neg)
+TKV_data_neg = calculate_metrics(dcm2attrib_neg)
 
 pred_neg = TKV_data_neg["TKV_Pred"].to_numpy()
 gt_neg = TKV_data_neg["TKV_GT"].to_numpy()
