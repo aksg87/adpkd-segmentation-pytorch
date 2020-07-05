@@ -16,6 +16,7 @@ import torch
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from train_utils import load_model_data
+from stats.stats_utils import bland_altman_plot
 
 # %%
 def calculate_dcm_voxel_volumes(
@@ -173,3 +174,7 @@ dcm2attrib = calculate_dcm_voxel_volumes(
 )
 
 TKV_data = calculate_TKVs(dcm2attrib)
+
+pred = TKV_data["TKV_Pred"].to_numpy()
+gt = TKV_data["TKV_GT"].to_numpy()
+bland_altman_plot(pred, gt, percent=True)
