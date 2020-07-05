@@ -18,10 +18,10 @@ from train_utils import load_model_data
 from stats.stats_utils import bland_altman_plot
 
 # %%
-def calculate_dcm_voxel_volumes(
+def calc_dcm_metrics(
     dataloader, model, device, binarize_func,
 ):
-    """Calculates dcm voxel volume and per slice volume for each patient and stores value returning an updated dcm2attrib dictionary. Utilized for the calculation of TKV.
+    """Calculates dcm per slice volume, intersection, and union for each patient and stores value returning an updated dcm2attrib dictionary. Utilized for the calculation of TKV.
 
     Args:
         dataloader
@@ -56,17 +56,17 @@ def calculate_dcm_voxel_volumes(
                 # support 3 channel setups where ones could mean background
                 # needs mask standardization to single channel
                 _, dcm_path, attribs = dataset.get_verbose(dataset_idx)
-                attribs["pred_kidney_pixels"] = torch.sum(
-                    y_batch_hat_binary[inbatch_idx] > 0
-                ).item()
-                attribs["ground_kidney_pixels"] = torch.sum(
-                    y_batch[inbatch_idx] > 0
-                ).item()
+                gt = y_batch[inbatch_idx]
+                pred = y_batch_hat_binary[inbatch_idx]
+
+                attribs["pred_kidney_pixels"] = torch.sum(pred > 0).item()
+                attribs["ground_kidney_pixels"] = torch.sum(gt > 0).item()
 
                 # TODO: Clean up method of accessing Resize transform
+                trans_resize = dataloader.dataset.augmentation[0]
                 attribs["transform_resize_dim"] = (
-                    dataloader.dataset.augmentation[0].height,
-                    dataloader.dataset.augmentation[0].width,
+                    trans_resize.height,
+                    trans_resize.width,
                 )
 
                 # scale factor takes into account the difference
@@ -173,9 +173,7 @@ def calculate_TKVs(updated_dcm2attrib, output=None):
 
 dataloader, model, device, dice_metric, binarize_func, split = load_config()
 
-dcm2attrib = calculate_dcm_voxel_volumes(
-    dataloader, model, device, binarize_func
-)
+dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 
 TKV_data = calculate_TKVs(dcm2attrib)
 
