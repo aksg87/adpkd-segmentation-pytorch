@@ -86,6 +86,13 @@ def calc_dcm_metrics(
                     * attribs["pred_kidney_pixels"]
                 )
 
+                # TODO: check dimensions, power, and add 'channels_first' doc
+                power = 2
+                attribs["intersection"] = torch.sum(pred * gt, (1, 2))
+                attribs["union"] = torch.sum(
+                    torch.pow(pred, power) + torch.pow(gt, power), (1, 2)
+                )
+
                 updated_dcm2attribs[dcm_path] = attribs
 
     return updated_dcm2attribs
