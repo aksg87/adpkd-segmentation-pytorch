@@ -7,5 +7,4 @@ tb_logs/
 /data/data_config.py
 __pycache__/
 /experiments/
-/notebooks/
 *.csv
