@@ -35,7 +35,7 @@ def save_model_data(path, model, global_step):
 
 def load_model_data(path, model, new_format=False):
     print("loading checkpoint {}".format(path))
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(path, map_location=torch.device('cpu'))
     global_step = 0
     if not new_format:
         model.load_state_dict(checkpoint)

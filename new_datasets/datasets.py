@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import torch
 
@@ -143,6 +144,58 @@ class NewBaselineDatasetGetter:
             self.splitter_key
         ]
 
+        patient_filter = PatientFiltering(self.patient_IDS)
+        self.dcm2attribs, self.patient2dcm = patient_filter(
+            dcm2attribs, patient2dcm
+        )
+        if self.normalization is not None:
+            self.normalization.update_dcm2attribs(self.dcm2attribs)
+
+    def __call__(self):
+        return NewSegmentationDataset(
+            label2mask=self.label2mask,
+            dcm2attribs=self.dcm2attribs,
+            patient2dcm=self.patient2dcm,
+            patient_IDS=self.patient_IDS,
+            augmentation=self.augmentation,
+            smp_preprocessing=self.smp_preprocessing,
+            normalization=self.normalization,
+        )
+
+
+class JsonDatasetGetter:
+    """Get the dataset from a prepared patient ID split"""
+
+    def __init__(
+        self,
+        json_path,
+        splitter_key,
+        label2mask,
+        augmentation=None,
+        smp_preprocessing=None,
+        normalization=None,
+    ):
+        super().__init__()
+
+        self.label2mask = label2mask
+        self.augmentation = augmentation
+        self.smp_preprocessing = smp_preprocessing
+        self.normalization = normalization
+
+        dcms_paths = sorted(get_labeled())
+        print(
+            "The number of images before splitting and filtering: {}".format(
+                len(dcms_paths)
+            )
+        )
+        dcm2attribs, patient2dcm = make_dcmdicts(tuple(dcms_paths))
+
+        print("Loading ", json_path)
+        with open(json_path, "r") as f:
+            dataset_split = json.load(f)
+        self.patient_IDS = dataset_split[splitter_key]
+
+        # filter info dicts to correpsond to patient_IDS
         patient_filter = PatientFiltering(self.patient_IDS)
         self.dcm2attribs, self.patient2dcm = patient_filter(
             dcm2attribs, patient2dcm
