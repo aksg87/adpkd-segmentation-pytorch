@@ -169,7 +169,7 @@ class JsonDatasetGetter:
     def __init__(
         self,
         json_path,
-        dataset_key,
+        splitter_key,
         label2mask,
         augmentation=None,
         smp_preprocessing=None,
@@ -193,7 +193,7 @@ class JsonDatasetGetter:
         print("Loading ", json_path)
         with open(json_path, "r") as f:
             dataset_split = json.load(f)
-        self.patient_IDS = dataset_split[dataset_key]
+        self.patient_IDS = dataset_split[splitter_key]
 
         # filter info dicts to correpsond to patient_IDS
         patient_filter = PatientFiltering(self.patient_IDS)
