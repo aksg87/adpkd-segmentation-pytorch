@@ -305,13 +305,17 @@ class DynamicBalanceLosses(nn.Module):
 
     def __call__(self, pred, target):
         # weights should sum to one (after normalization)
-        # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n
+        # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n =
+        # L_1 * L_2 * ... * L_n
+        # e.g. W_2 = L_1 * L_3 * ... * L_n
         partial_losses = torch.stack(
             [c(pred, target) + self.epsilon for c in self.criterions]
         )
         # no backprop through weights
         detached = partial_losses.detach()
         prod = torch.prod(detached)
+        # divide the total product by the vector of loss values
+        # to get weights such as e.g. W_2 = L_1 * L_3 * ... * L_n
         weights = prod / detached
         normalization = torch.sum(weights)
 
