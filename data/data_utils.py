@@ -2,8 +2,9 @@
 
 import functools
 import glob
+import torch
 
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import cv2
@@ -25,6 +26,7 @@ MR = "MR"
 
 VOXEL_VOLUME = "vox_vol"
 DIMENSION = "dim"
+STUDY_TKV = "study_tkv"
 
 
 # %%
@@ -76,6 +78,49 @@ def add_patient_sequence_min_max(dcm2attribs):
         seq = attribs[SEQUENCE]
         attribs[MIN_VALUE] = patient_seq_dict_mins[(patient, seq)]
         attribs[MAX_VALUE] = patient_seq_dict_maximums[(patient, seq)]
+
+
+def TKV_update(dcm2attribs):
+    studies = defaultdict(int)
+    for dcm, attribs in dcm2attribs.items():
+        study_id = (attribs[PATIENT], attribs[MR])
+        studies[study_id] += attribs[KIDNEY_PIXELS] * attribs[VOXEL_VOLUME]
+
+    for dcm, attribs in dcm2attribs.items():
+        tkv = studies[(attribs[PATIENT], attribs[MR])]
+        attribs[STUDY_TKV] = tkv
+
+    return studies, dcm2attribs
+
+
+class SegmentationAttribsToTensors:
+    def __init__(self, attrib_types=None):
+        self.attrib_types = attrib_types
+        if self.attrib_types is None:
+            self.attrib_types = {
+                STUDY_TKV: "float32",
+                KIDNEY_PIXELS: "float32",
+                VOXEL_VOLUME: "float32",
+            }
+
+    def __call__(self, dataset, device):
+        self.tensor_dict = {}
+        for k, v in self.attrib_types.items():
+            self.tensor_dict[k] = torch.zeros(
+                len(dataset), dtype=getattr(torch, v),
+                device=device
+            )
+
+        for idx, _ in enumerate(dataset):
+            dcm_path = dataset.dcm_paths[idx]
+            attribs = dataset.dcm2attribs[dcm_path]
+
+            for k, v in self.tensor_dict.items():
+                v[idx] = attribs[k]
+        return self.tensor_dict
+
+    def get_extra_dict(self, index):
+        return {k: v[index] for k, v in self.tensor_dict}
 
 
 class NormalizePatientSeq:

@@ -11,6 +11,7 @@ from data.data_utils import (
     make_dcmdicts,
     path_2dcm_int16,
     path_2label,
+    TKV_update
 )
 
 from new_datasets.filters import PatientFiltering
@@ -51,6 +52,9 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         for p in self.patients:
             self.dcm_paths.extend(patient2dcm[p])
         self.label_paths = [get_y_Path(dcm) for dcm in self.dcm_paths]
+
+        # study_id to TKV and TKV for each dcm
+        self.studies, self.dcm2attribs = TKV_update(dcm2attribs)
 
     def __getitem__(self, index):
 

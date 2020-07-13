@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from data.data_utils import KIDNEY_PIXELS, STUDY_TKV, VOXEL_VOLUME
+
 
 # %%
 def binarize_thresholds(pred, thresholds):
@@ -334,6 +336,42 @@ class DynamicBalanceLosses(nn.Module):
 
         loss = (partial_losses * weights).sum() / normalization
         return loss
+
+
+class ErrorLogTKVRelative(nn.Module):
+    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target, extra_dict):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=(1, 2, 3))
+        error = (
+            torch.sum(pred ** 2, dim=(1, 2, 3))
+            + torch.sum(target ** 2, dim=(1, 2, 3))
+            - 2 * intersection
+        )
+
+        # augmentation correction for original kidney pixel count
+        # also, convert to VOXEL VOLUME
+        scale = extra_dict[KIDNEY_PIXELS] / (
+            torch.sum(target, dim=(1, 2, 3)) + self.epsilon
+        )
+        scaled_vol_error = scale * error * extra_dict[VOXEL_VOLUME]
+        # error more important if kidneys are smaller
+        # but for the same kidney volume, error on any slice
+        # matters equally
+        # use log due to different orders of magnitudes
+        weight = 1 / torch.log(extra_dict[STUDY_TKV])
+        log_error = (scaled_vol_error * weight).mean()
+
+        return log_error
 
 
 # %%

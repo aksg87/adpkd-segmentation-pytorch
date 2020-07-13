@@ -236,19 +236,19 @@ def train(config, config_save_name=None):
     create_extra_dict = extra_losses_dict_conf is not None
     if create_extra_dict:
         extra_prep = get_object_instance(extra_losses_dict_conf)(
-            train_loader.dataset
+            train_loader.dataset, device
         )
 
     for epoch in range(num_epochs):
         for output in train_loader:
             if output_example_idx:
                 x_batch, y_batch, index = output
+                if create_extra_dict:
+                    extra_dict = extra_prep.get_extra_dict(index)
             else:
                 x_batch, y_batch = output
-            if create_extra_dict:
-                extra_dict = extra_prep.get_extra_dict(index)
-            else:
                 extra_dict = None
+
             optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
