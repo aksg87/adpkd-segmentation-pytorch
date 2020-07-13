@@ -266,6 +266,7 @@ class KidneyPixelMSLE(nn.Module):
         return msle
 
 
+# deprecated
 class CombinedDiceBCE(nn.Module):
     """Combined soft Dice and BCE loss"""
 
@@ -286,31 +287,43 @@ class CombinedDiceBCE(nn.Module):
 
 
 class WeightedLosses(nn.Module):
-    def __init__(self, criterions, weights):
+    def __init__(self, criterions, weights, requires_extra_dict=None):
         super().__init__()
         self.criterions = criterions
         self.weights = weights
+        self.requires_extra_dict = requires_extra_dict
+        if requires_extra_dict is None:
+            self.requires_extra_dict = [False for c in self.criterions]
 
-    def __call__(self, pred, target):
-        losses = [
-            c(pred, target) * w for c, w in zip(self.criterions, self.weights)
-        ]
+    def __call__(self, pred, target, extra_dict=None):
+        losses = []
+        for c, w, e in zip(
+            self.criterions, self.weights, self.requires_extra_dict
+        ):
+            loss = c(pred, target, extra_dict) if e else c(pred, target)
+            losses.append(loss * w)
         return torch.sum(torch.stack(losses))
 
 
 class DynamicBalanceLosses(nn.Module):
-    def __init__(self, criterions, epsilon=1e-6):
+    def __init__(self, criterions, epsilon=1e-6, requires_extra_dict=None):
         self.criterions = criterions
         self.epsilon = epsilon
+        self.requires_extra_dict = requires_extra_dict
+        if requires_extra_dict is None:
+            self.requires_extra_dict = [False for c in self.criterions]
 
-    def __call__(self, pred, target):
+    def __call__(self, pred, target, extra_dict=None):
         # weights should sum to one (after normalization)
         # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n =
         # L_1 * L_2 * ... * L_n
         # e.g. W_2 = L_1 * L_3 * ... * L_n
-        partial_losses = torch.stack(
-            [c(pred, target) + self.epsilon for c in self.criterions]
-        )
+        partial_losses = []
+        for c, e in zip(self.criterions, self.requires_extra_dict):
+            loss = c(pred, target, extra_dict) if e else c(pred, target)
+            partial_losses.append(loss)
+        partial_losses = torch.stack(partial_losses) + self.epsilon
+
         # no backprop through weights
         detached = partial_losses.detach()
         prod = torch.prod(detached)

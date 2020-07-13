@@ -228,13 +228,32 @@ def train(config, config_save_name=None):
     saving_metric = experiment_data["saving_metric"]
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
+    output_example_idx = (
+        hasattr(train_loader.dataset, "output_idx")
+        and train_loader.dataset.output_idx
+    )
+    extra_losses_dict_conf = config.get("_EXTRA_LOSSES_DICT_PREP")
+    create_extra_dict = extra_losses_dict_conf is not None
+    if create_extra_dict:
+        extra_prep = get_object_instance(extra_losses_dict_conf)(
+            train_loader.dataset
+        )
+
     for epoch in range(num_epochs):
-        for idx, (x_batch, y_batch) in enumerate(train_loader):
+        for output in train_loader:
+            if output_example_idx:
+                x_batch, y_batch, index = output
+            else:
+                x_batch, y_batch = output
+            if create_extra_dict:
+                extra_dict = extra_prep.get_extra_dict(index)
+            else:
+                extra_dict = None
             optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
             y_batch_hat = model(x_batch)
-            losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+            losses_and_metrics = loss_metric(y_batch_hat, y_batch, extra_dict)
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()

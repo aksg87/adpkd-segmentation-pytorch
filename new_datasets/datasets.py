@@ -28,6 +28,7 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         augmentation=None,
         smp_preprocessing=None,
         normalization=None,
+        output_idx=False
     ):
 
         super().__init__()
@@ -38,6 +39,7 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         self.augmentation = augmentation
         self.smp_preprocessing = smp_preprocessing
         self.normalization = normalization
+        self.output_idx = output_idx
 
         self.patients = list(patient2dcm.keys())
         # kept for compatibility with previous experiments
@@ -91,6 +93,8 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
             # stack image to (3, H, W)
             image = np.repeat(image[np.newaxis, ...], 3, axis=0)
 
+        if self.output_idx:
+            return image, mask, index
         return image, mask
 
     def __len__(self):
