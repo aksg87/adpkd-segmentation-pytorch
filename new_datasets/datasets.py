@@ -11,8 +11,10 @@ from data.data_utils import (
     make_dcmdicts,
     path_2dcm_int16,
     path_2label,
-    TKV_update
+    TKV_update,
 )
+
+from data.data_utils import KIDNEY_PIXELS, STUDY_TKV, VOXEL_VOLUME
 
 from new_datasets.filters import PatientFiltering
 
@@ -29,7 +31,8 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         augmentation=None,
         smp_preprocessing=None,
         normalization=None,
-        output_idx=False
+        output_idx=False,
+        attrib_types=None,
     ):
 
         super().__init__()
@@ -41,6 +44,15 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         self.smp_preprocessing = smp_preprocessing
         self.normalization = normalization
         self.output_idx = output_idx
+        self.attrib_types = attrib_types
+
+        # store some attributes as PyTorch tensors
+        if self.attrib_types is None:
+            self.attrib_types = {
+                STUDY_TKV: "float32",
+                KIDNEY_PIXELS: "float32",
+                VOXEL_VOLUME: "float32",
+            }
 
         self.patients = list(patient2dcm.keys())
         # kept for compatibility with previous experiments
@@ -55,6 +67,8 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
 
         # study_id to TKV and TKV for each dcm
         self.studies, self.dcm2attribs = TKV_update(dcm2attribs)
+        # storring attrib types as tensors
+        self.tensor_dict = self.prepare_tensor_dict(self.attrib_types)
 
     def __getitem__(self, index):
 
@@ -112,6 +126,23 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
 
         return sample, dcm_path, attribs
 
+    def get_extra_dict(self, batch_of_idx):
+        return {k: v[batch_of_idx] for k, v in self.tensor_dict.items()}
+
+    def prepare_tensor_dict(self, attrib_types):
+        tensor_dict = {}
+        for k, v in attrib_types.items():
+            tensor_dict[k] = torch.zeros(
+                self.__len__(), dtype=getattr(torch, v))
+
+        for idx, _ in enumerate(self):
+            dcm_path = self.dcm_paths[idx]
+            attribs = self.dcm2attribs[dcm_path]
+            for k, v in tensor_dict.items():
+                v[idx] = attribs[k]
+
+        return tensor_dict
+
 
 class NewBaselineDatasetGetter:
     """Create baseline segmentation dataset"""
@@ -125,6 +156,8 @@ class NewBaselineDatasetGetter:
         smp_preprocessing=None,
         filters=None,
         normalization=None,
+        output_idx=False,
+        attrib_types=None,
     ):
         super().__init__()
         self.splitter = splitter
@@ -134,6 +167,8 @@ class NewBaselineDatasetGetter:
         self.smp_preprocessing = smp_preprocessing
         self.filters = filters
         self.normalization = normalization
+        self.output_idx = output_idx
+        self.attrib_types = attrib_types
 
         dcms_paths = sorted(get_labeled())
         print(
@@ -168,6 +203,8 @@ class NewBaselineDatasetGetter:
             augmentation=self.augmentation,
             smp_preprocessing=self.smp_preprocessing,
             normalization=self.normalization,
+            output_idx=self.output_idx,
+            attrib_types=self.attrib_types,
         )
 
 
@@ -182,6 +219,8 @@ class JsonDatasetGetter:
         augmentation=None,
         smp_preprocessing=None,
         normalization=None,
+        output_idx=False,
+        attrib_types=None,
     ):
         super().__init__()
 
@@ -189,6 +228,8 @@ class JsonDatasetGetter:
         self.augmentation = augmentation
         self.smp_preprocessing = smp_preprocessing
         self.normalization = normalization
+        self.output_idx = output_idx
+        self.attrib_types = attrib_types
 
         dcms_paths = sorted(get_labeled())
         print(
@@ -220,9 +261,12 @@ class JsonDatasetGetter:
             augmentation=self.augmentation,
             smp_preprocessing=self.smp_preprocessing,
             normalization=self.normalization,
+            output_idx=self.output_idx,
+            attrib_types=self.attrib_types,
         )
 
 
+# deprecated
 class BaselineDatasetGetter:
     """Create baseline segmentation dataset"""
 

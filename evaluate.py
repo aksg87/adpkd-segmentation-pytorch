@@ -23,6 +23,7 @@ from data.link_data import makelinks
 from data.data_utils import masks_to_colorimg
 from matplotlib import pyplot as plt
 from train_utils import load_model_data
+from data.data_utils import tensor_dict_to_device
 
 
 # %%
@@ -40,15 +41,26 @@ def validate(
 ):
     all_losses_and_metrics = defaultdict(list)
     num_examples = 0
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
 
-    for batch_idx, (x_batch, y_batch) in enumerate(dataloader):
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, index = output
+            extra_dict = dataloader.dataset.get_extra_dict(index)
+            extra_dict = tensor_dict_to_device(extra_dict, device)
+        else:
+            x_batch, y_batch = output
+            extra_dict = None
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
         batch_size = y_batch.size(0)
         num_examples += batch_size
         with torch.no_grad():
             y_batch_hat = model(x_batch)
-            losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+            losses_and_metrics = loss_metric(y_batch_hat, y_batch, extra_dict)
 
             for key, value in losses_and_metrics.items():
                 all_losses_and_metrics[key].append(value.item() * batch_size)
@@ -57,6 +69,11 @@ def validate(
                 # TODO: add support for softmax processing
                 prediction = torch.sigmoid(y_batch_hat)
                 image_idx = plotting_dict[batch_idx]
+                global_im_index = batch_idx * batch_size + image_idx
+                extra_dict = dataloader.dataset.get_extra_dict(
+                    [global_im_index]
+                )
+                extra_dict = tensor_dict_to_device(extra_dict, device)
                 plotting_func(
                     writer=writer,
                     batch=x_batch,
@@ -70,7 +87,7 @@ def validate(
                 # `loss_metric` expects raw model outputs without the sigmoid
                 im_pred = y_batch_hat[image_idx].unsqueeze(0)
                 im_target_mask = y_batch[image_idx].unsqueeze(0)
-                im_losses = loss_metric(im_pred, im_target_mask)
+                im_losses = loss_metric(im_pred, im_target_mask, extra_dict)
                 writer.add_scalar(
                     "val_batch_{}_image_{}_{}".format(
                         batch_idx, image_idx, val_metric_to_check

@@ -360,7 +360,7 @@ class ErrorLogTKVRelative(nn.Module):
 
         # augmentation correction for original kidney pixel count
         # also, convert to VOXEL VOLUME
-        scale = extra_dict[KIDNEY_PIXELS] / (
+        scale = (extra_dict[KIDNEY_PIXELS] + self.epsilon) / (
             torch.sum(target, dim=(1, 2, 3)) + self.epsilon
         )
         scaled_vol_error = scale * error * extra_dict[VOXEL_VOLUME]
@@ -368,7 +368,7 @@ class ErrorLogTKVRelative(nn.Module):
         # but for the same kidney volume, error on any slice
         # matters equally
         # use log due to different orders of magnitudes
-        weight = 1 / torch.log(extra_dict[STUDY_TKV])
+        weight = 1 / (torch.log(extra_dict[STUDY_TKV]) + self.epsilon)
         log_error = (scaled_vol_error * weight).mean()
 
         return log_error

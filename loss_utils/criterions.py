@@ -8,23 +8,21 @@ class LossesMetrics:
         """
         Args:
             criterions_dict {dict} -- key (str) : criterion_losses
-            requires_extra_info {dict}, mapping keys in `criterions_dict`
-                to True or False
-            (tells if extra info will be used for losses)
+            requires_extra_info {list or None}, keys in `criterions_dict`
+                noting losses which require extra information
         """
         self.criterions_dict = criterions_dict
-        self.requires_extra_info = requires_extra_info
         if requires_extra_info is None:
-            self.requires_extra_info = {
-                c_name: False for c_name in criterions_dict
-            }
+            self.requires_extra_info = set()
+        else:
+            self.requires_extra_info = set(requires_extra_info)
 
     def __call__(self):
         def losses_dict(y_hat, y, extra_dict=None):
             res = {}
             for c_name, criterion in self.criterions_dict.items():
                 # optional info for some criterions
-                if self.requires_extra_info[c_name]:
+                if c_name in self.requires_extra_info:
                     res[c_name] = criterion(y_hat, y, extra_dict)
                 else:
                     res[c_name] = criterion(y_hat, y)

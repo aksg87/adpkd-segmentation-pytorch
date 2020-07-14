@@ -33,6 +33,7 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
+from data.data_utils import tensor_dict_to_device
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -232,19 +233,13 @@ def train(config, config_save_name=None):
         hasattr(train_loader.dataset, "output_idx")
         and train_loader.dataset.output_idx
     )
-    extra_losses_dict_conf = config.get("_EXTRA_LOSSES_DICT_PREP")
-    create_extra_dict = extra_losses_dict_conf is not None
-    if create_extra_dict:
-        extra_prep = get_object_instance(extra_losses_dict_conf)(
-            train_loader.dataset, device
-        )
 
     for epoch in range(num_epochs):
         for output in train_loader:
             if output_example_idx:
                 x_batch, y_batch, index = output
-                if create_extra_dict:
-                    extra_dict = extra_prep.get_extra_dict(index)
+                extra_dict = train_loader.dataset.get_extra_dict(index)
+                extra_dict = tensor_dict_to_device(extra_dict, device)
             else:
                 x_batch, y_batch = output
                 extra_dict = None

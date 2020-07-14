@@ -2,7 +2,6 @@
 
 import functools
 import glob
-import torch
 
 from collections import defaultdict, OrderedDict
 from pathlib import Path
@@ -93,34 +92,11 @@ def TKV_update(dcm2attribs):
     return studies, dcm2attribs
 
 
-class SegmentationAttribsToTensors:
-    def __init__(self, attrib_types=None):
-        self.attrib_types = attrib_types
-        if self.attrib_types is None:
-            self.attrib_types = {
-                STUDY_TKV: "float32",
-                KIDNEY_PIXELS: "float32",
-                VOXEL_VOLUME: "float32",
-            }
-
-    def __call__(self, dataset, device):
-        self.tensor_dict = {}
-        for k, v in self.attrib_types.items():
-            self.tensor_dict[k] = torch.zeros(
-                len(dataset), dtype=getattr(torch, v),
-                device=device
-            )
-
-        for idx, _ in enumerate(dataset):
-            dcm_path = dataset.dcm_paths[idx]
-            attribs = dataset.dcm2attribs[dcm_path]
-
-            for k, v in self.tensor_dict.items():
-                v[idx] = attribs[k]
-        return self.tensor_dict
-
-    def get_extra_dict(self, index):
-        return {k: v[index] for k, v in self.tensor_dict}
+def tensor_dict_to_device(tensor_dict, device):
+    out = {}
+    for k, v in tensor_dict.items():
+        out[k] = v.to(device)
+    return out
 
 
 class NormalizePatientSeq:
