@@ -25,16 +25,23 @@ from train_utils import load_model_data
 
 # %%
 def calculate_dcm_voxel_volumes(
-    dataloader,
-    model,
-    device,
-    binarize_func,
+    dataloader, model, device, binarize_func,
 ):
     num_examples = 0
     dataset = dataloader.dataset
     updated_dcm2attribs = {}
 
-    for batch_idx, (x_batch, y_batch) in enumerate(dataloader):
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
+
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, _ = output
+        else:
+            x_batch, y_batch = output
+
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
         batch_size = y_batch.size(0)
@@ -57,7 +64,8 @@ def calculate_dcm_voxel_volumes(
                     y_batch_hat_binary[inbatch_idx] > 0
                 ).item()
                 attribs["ground_kidney_pixels"] = torch.sum(
-                    y_batch[inbatch_idx] > 0).item()
+                    y_batch[inbatch_idx] > 0
+                ).item()
 
                 # TODO: Clean up method of accessing Resize transform
                 attribs["transform_resize_dim"] = (
@@ -72,9 +80,9 @@ def calculate_dcm_voxel_volumes(
                     attribs["transform_resize_dim"][0] ** 2
                 )
                 attribs["Vol_GT"] = (
-                    scale_factor *
-                    attribs["vox_vol"] *
-                    attribs["ground_kidney_pixels"]
+                    scale_factor
+                    * attribs["vox_vol"]
+                    * attribs["ground_kidney_pixels"]
                 )
                 attribs["Vol_Pred"] = (
                     scale_factor
@@ -104,7 +112,8 @@ def evaluate(config):
 
     # TODO: Hardcoded to dice_metric, so support other metrics from config.
     binarize_func = get_object_instance(
-        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"])
+        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"]
+    )
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
@@ -122,12 +131,12 @@ def calculate_TKVs(run_makelinks=False, output=None, path=None):
     if run_makelinks:
         makelinks()
     if path is None:
-        path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml" # noqa
+        path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
     with open(path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     # val or test
-    split = config["_LOADER_TO_EVAL"].split("_")[0].lower()
+    split = config["_LOADER_TO_EVAL"].split("_")[1].lower()
 
     dcm2attrib = evaluate(config)
 
@@ -170,8 +179,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--makelinks", help="Make data links", action="store_true"
     )
-    parser.add_argument(
-        "--out_path", help="Path to output csv", required=True)
+    parser.add_argument("--out_path", help="Path to output csv", required=True)
 
     args = parser.parse_args()
-    calculate_TKVs(args.run_makelinks, args.out_path, args.config)
+    calculate_TKVs(args.makelinks, args.out_path, args.config)
