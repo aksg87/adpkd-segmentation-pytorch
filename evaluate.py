@@ -132,8 +132,17 @@ def evaluate(config):
         print(all_losses_and_metrics)
         json.dump(all_losses_and_metrics, fp, indent=4)
 
+    # plotting check
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
     data_iter = iter(dataloader)
-    inputs, labels = next(data_iter)
+    if output_example_idx:
+        inputs, labels, _ = next(data_iter)
+    else:
+        inputs, labels = next(data_iter)
+
     inputs = inputs.to(device)
     preds = model(inputs)
     inputs = inputs.cpu()
