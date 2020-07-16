@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 
 from data_set.datasets import SegmentationDataset
-from data.data_utils import make_dcmdicts, get_labeled
+from data.data_utils import make_dcmdicts, get_labeled, int16_to_uint8
 from data.link_data import makelinks
 from model.model_utils import get_preprocessing, preprocessing_fn
 
@@ -29,16 +29,22 @@ from albumentations import (
     RandomSizedCrop,
     RandomResizedCrop,
     OneOf,
-    # CLAHE,
+    CLAHE,
     RandomBrightnessContrast,
     RandomGamma,
-    ShiftScaleRotate
+    ShiftScaleRotate,
+    IAASharpen,
+    Blur,
+    MotionBlur,
+    ImageCompression,
+    IAAPerspective,
+    MultiplicativeNoise,
 )
 
 # %%
 IMG_IDX = (
-    200
-)  # SET THIS INDEX for selecting img label in augmentations example
+    200  # SET THIS INDEX for selecting img label in augmentations example
+)
 # %%
 makelinks()
 # %%
@@ -257,7 +263,7 @@ visualize(
 # %%
 
 # GridDistortion
-aug = GridDistortion(p=1)
+aug = GridDistortion(distort_limit=0.3, p=1)
 
 augmented = aug(image=image, mask=mask)
 
@@ -268,7 +274,7 @@ visualize(image_grid, mask_grid, original_image=image, original_mask=mask)
 
 # %%
 # Optical Distortion
-aug = OpticalDistortion(p=1, distort_limit=2, shift_limit=0.5)
+aug = OpticalDistortion(p=1, distort_limit=1, shift_limit=0.3)
 
 augmented = aug(image=image, mask=mask)
 
@@ -307,7 +313,9 @@ visualize(
 
 # %%
 # Shift scale rotate
-aug = ShiftScaleRotate()
+aug = ShiftScaleRotate(
+    border_mode=0, rotate_limit=20, scale_limit=0.3, shift_limit=0.1
+)
 
 augmented = aug(image=image, mask=mask)
 
@@ -322,9 +330,7 @@ visualize(
 
 # RandomSizedCrop
 
-aug = RandomSizedCrop(
-    p=1, min_max_height=(50, 96), height=72, width=72
-)
+aug = RandomSizedCrop(p=1, min_max_height=(50, 96), height=72, width=72)
 
 augmented = aug(image=image, mask=mask)
 
@@ -346,8 +352,123 @@ mask_scaled = augmented["mask"]
 
 visualize(image_scaled, mask_scaled, original_image=image, original_mask=mask)
 
-# %%
 
+# %%
+# CLAHE
+aug = CLAHE()
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask.astype("uint8"))
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# RandomBrightnessContrast
+aug = RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2)
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# RandomGamma
+
+aug = RandomGamma(gamma_limit=(40, 200))
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# IAASharpen
+aug = IAASharpen(alpha=(0.1, 0.2), lightness=(0.5, 0.7))
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# Blur
+aug = Blur(blur_limit=2)
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# Motion Blur
+aug = MotionBlur(blur_limit=5)
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# Image Compression
+aug = ImageCompression(quality_lower=50, quality_upper=50)
+image8 = int16_to_uint8(image.astype("int16"))
+augmented = aug(image=image8, mask=mask)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
+
+
+# %%
+# IAAPerspective
+aug = IAAPerspective()
+image8 = int16_to_uint8(image.astype("int16"))
+mask8 = mask.astype("uint8")
+augmented = aug(image=image8, mask=mask8)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(
+    image_scaled, mask_scaled, original_image=image8, original_mask=mask8
+)
+
+
+# %%
+# MultiplicativeNoise
+aug = MultiplicativeNoise(multiplier=(0.8, 1.2))
+image8 = int16_to_uint8(image.astype("int16"))
+mask8 = mask.astype("uint8")
+augmented = aug(image=image8, mask=mask8)
+
+image_scaled = augmented["image"]
+mask_scaled = augmented["mask"]
+
+visualize(
+    image_scaled, mask_scaled, original_image=image8, original_mask=mask8
+)
+
+
+# %%
 # combine different transformations
 aug = Compose([VerticalFlip(p=0.5), RandomRotate90(p=0.5)])
 
@@ -428,7 +549,7 @@ aug = Compose(
             ],
             p=0.8,
         ),
-        # CLAHE(p=0.8), # ONLY SUPORTS UINT8 # TODO: Convert input to Uint8 and check?
+        # CLAHE(p=0.8), # ONLY SUPORTS UINT8
         RandomBrightnessContrast(p=0.8),
         RandomGamma(p=0.8),
     ]
