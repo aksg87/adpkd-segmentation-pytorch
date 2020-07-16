@@ -28,10 +28,12 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
 
+from create_eval_configs import create_config
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
+from data.data_utils import tensor_dict_to_device
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -189,6 +191,22 @@ def train(config, config_save_name=None):
     with open(config_out, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
 
+    # create configs for val and test
+    val_config, val_out_dir = create_config(config, "val")
+    test_config, test_out_dir = create_config(config, "test")
+    os.makedirs(val_out_dir)
+    os.makedirs(test_out_dir)
+
+    val_path = os.path.join(val_out_dir, "val.yaml")
+    print("Creating evaluation config for val: {}".format(val_path))
+    with open(val_path, "w") as f:
+        yaml.dump(val_config, f, default_flow_style=False)
+
+    test_path = os.path.join(test_out_dir, "test.yaml")
+    print("Creating evaluation config for test: {}".format(test_path))
+    with open(test_path, "w") as f:
+        yaml.dump(test_config, f, default_flow_style=False)
+
     train_writer = SummaryWriter(tb_logs_dir_train)
     val_writer = SummaryWriter(tb_logs_dir_val)
 
@@ -211,13 +229,26 @@ def train(config, config_save_name=None):
     saving_metric = experiment_data["saving_metric"]
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
+    output_example_idx = (
+        hasattr(train_loader.dataset, "output_idx")
+        and train_loader.dataset.output_idx
+    )
+
     for epoch in range(num_epochs):
-        for idx, (x_batch, y_batch) in enumerate(train_loader):
+        for output in train_loader:
+            if output_example_idx:
+                x_batch, y_batch, index = output
+                extra_dict = train_loader.dataset.get_extra_dict(index)
+                extra_dict = tensor_dict_to_device(extra_dict, device)
+            else:
+                x_batch, y_batch = output
+                extra_dict = None
+
             optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
             y_batch_hat = model(x_batch)
-            losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+            losses_and_metrics = loss_metric(y_batch_hat, y_batch, extra_dict)
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()

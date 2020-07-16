@@ -3,7 +3,7 @@
 import functools
 import glob
 
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import cv2
@@ -25,6 +25,7 @@ MR = "MR"
 
 VOXEL_VOLUME = "vox_vol"
 DIMENSION = "dim"
+STUDY_TKV = "study_tkv"
 
 
 # %%
@@ -76,6 +77,26 @@ def add_patient_sequence_min_max(dcm2attribs):
         seq = attribs[SEQUENCE]
         attribs[MIN_VALUE] = patient_seq_dict_mins[(patient, seq)]
         attribs[MAX_VALUE] = patient_seq_dict_maximums[(patient, seq)]
+
+
+def TKV_update(dcm2attribs):
+    studies = defaultdict(int)
+    for dcm, attribs in dcm2attribs.items():
+        study_id = (attribs[PATIENT], attribs[MR])
+        studies[study_id] += attribs[KIDNEY_PIXELS] * attribs[VOXEL_VOLUME]
+
+    for dcm, attribs in dcm2attribs.items():
+        tkv = studies[(attribs[PATIENT], attribs[MR])]
+        attribs[STUDY_TKV] = tkv
+
+    return studies, dcm2attribs
+
+
+def tensor_dict_to_device(tensor_dict, device):
+    out = {}
+    for k, v in tensor_dict.items():
+        out[k] = v.to(device)
+    return out
 
 
 class NormalizePatientSeq:
