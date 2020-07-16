@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from data.data_utils import KIDNEY_PIXELS, STUDY_TKV, VOXEL_VOLUME
+
 
 # %%
 def binarize_thresholds(pred, thresholds):
@@ -266,6 +268,7 @@ class KidneyPixelMSLE(nn.Module):
         return msle
 
 
+# deprecated
 class CombinedDiceBCE(nn.Module):
     """Combined soft Dice and BCE loss"""
 
@@ -286,31 +289,43 @@ class CombinedDiceBCE(nn.Module):
 
 
 class WeightedLosses(nn.Module):
-    def __init__(self, criterions, weights):
+    def __init__(self, criterions, weights, requires_extra_dict=None):
         super().__init__()
         self.criterions = criterions
         self.weights = weights
+        self.requires_extra_dict = requires_extra_dict
+        if requires_extra_dict is None:
+            self.requires_extra_dict = [False for c in self.criterions]
 
-    def __call__(self, pred, target):
-        losses = [
-            c(pred, target) * w for c, w in zip(self.criterions, self.weights)
-        ]
+    def __call__(self, pred, target, extra_dict=None):
+        losses = []
+        for c, w, e in zip(
+            self.criterions, self.weights, self.requires_extra_dict
+        ):
+            loss = c(pred, target, extra_dict) if e else c(pred, target)
+            losses.append(loss * w)
         return torch.sum(torch.stack(losses))
 
 
 class DynamicBalanceLosses(nn.Module):
-    def __init__(self, criterions, epsilon=1e-6):
+    def __init__(self, criterions, epsilon=1e-6, requires_extra_dict=None):
         self.criterions = criterions
         self.epsilon = epsilon
+        self.requires_extra_dict = requires_extra_dict
+        if requires_extra_dict is None:
+            self.requires_extra_dict = [False for c in self.criterions]
 
-    def __call__(self, pred, target):
+    def __call__(self, pred, target, extra_dict=None):
         # weights should sum to one (after normalization)
         # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n =
         # L_1 * L_2 * ... * L_n
         # e.g. W_2 = L_1 * L_3 * ... * L_n
-        partial_losses = torch.stack(
-            [c(pred, target) + self.epsilon for c in self.criterions]
-        )
+        partial_losses = []
+        for c, e in zip(self.criterions, self.requires_extra_dict):
+            loss = c(pred, target, extra_dict) if e else c(pred, target)
+            partial_losses.append(loss)
+        partial_losses = torch.stack(partial_losses) + self.epsilon
+
         # no backprop through weights
         detached = partial_losses.detach()
         prod = torch.prod(detached)
@@ -321,6 +336,42 @@ class DynamicBalanceLosses(nn.Module):
 
         loss = (partial_losses * weights).sum() / normalization
         return loss
+
+
+class ErrorLogTKVRelative(nn.Module):
+    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target, extra_dict):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=(1, 2, 3))
+        error = (
+            torch.sum(pred ** 2, dim=(1, 2, 3))
+            + torch.sum(target ** 2, dim=(1, 2, 3))
+            - 2 * intersection
+        )
+
+        # augmentation correction for original kidney pixel count
+        # also, convert to VOXEL VOLUME
+        scale = (extra_dict[KIDNEY_PIXELS] + self.epsilon) / (
+            torch.sum(target, dim=(1, 2, 3)) + self.epsilon
+        )
+        scaled_vol_error = scale * error * extra_dict[VOXEL_VOLUME]
+        # error more important if kidneys are smaller
+        # but for the same kidney volume, error on any slice
+        # matters equally
+        # use log due to different orders of magnitudes
+        weight = 1 / (torch.log(extra_dict[STUDY_TKV]) + self.epsilon)
+        log_error = (scaled_vol_error * weight).mean()
+
+        return log_error
 
 
 # %%

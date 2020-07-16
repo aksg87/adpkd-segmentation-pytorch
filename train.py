@@ -33,6 +33,7 @@ from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from evaluate import validate
 from train_utils import load_model_data, save_model_data
+from data.data_utils import tensor_dict_to_device
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"
@@ -228,13 +229,26 @@ def train(config, config_save_name=None):
     saving_metric = experiment_data["saving_metric"]
     previous = float("inf") if best_metric_type == "low" else float("-inf")
 
+    output_example_idx = (
+        hasattr(train_loader.dataset, "output_idx")
+        and train_loader.dataset.output_idx
+    )
+
     for epoch in range(num_epochs):
-        for idx, (x_batch, y_batch) in enumerate(train_loader):
+        for output in train_loader:
+            if output_example_idx:
+                x_batch, y_batch, index = output
+                extra_dict = train_loader.dataset.get_extra_dict(index)
+                extra_dict = tensor_dict_to_device(extra_dict, device)
+            else:
+                x_batch, y_batch = output
+                extra_dict = None
+
             optimizer.zero_grad()
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
             y_batch_hat = model(x_batch)
-            losses_and_metrics = loss_metric(y_batch_hat, y_batch)
+            losses_and_metrics = loss_metric(y_batch_hat, y_batch, extra_dict)
             loss = losses_and_metrics[loss_key]
             loss.backward()
             optimizer.step()
