@@ -1,5 +1,5 @@
 """
-Note to explore inference and metrics on patients
+Notebook to explore inference and metrics on patients
 
 The makelinks flag is needed only once to create symbolic links to the data.
 """
@@ -17,11 +17,14 @@ from data.link_data import makelinks
 from train_utils import load_model_data
 from stats.stats_utils import bland_altman_plot, scatter_plot
 
+
 # %%
 def calc_dcm_metrics(
     dataloader, model, device, binarize_func,
 ):
-    """Calculates dcm per slice volume, intersection, and union for each patient and stores value returning an updated dcm2attrib dictionary. Utilized for the calculation of TKV.
+    """Calculates additional information for each of the dcm slices and
+    stores the values in an updated dcm2attrib dictionary.
+    Utilized for TKV and Kidney Dice calculations.
 
     Args:
         dataloader
@@ -36,8 +39,16 @@ def calc_dcm_metrics(
     num_examples = 0
     dataset = dataloader.dataset
     updated_dcm2attribs = {}
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
 
-    for batch_idx, (x_batch, y_batch) in enumerate(dataloader):
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, index = output
+        else:
+            x_batch, y_batch = output
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
         batch_size = y_batch.size(0)
@@ -90,7 +101,7 @@ def calc_dcm_metrics(
                 # TODO: check if pow=2 is valid for 3d dice
                 power = 2
                 attribs["intersection"] = torch.sum(pred * gt, (1, 2))
-                attribs["union"] = torch.sum(
+                attribs["set_addition"] = torch.sum(
                     torch.pow(pred, power) + torch.pow(gt, power), (1, 2)
                 )
 
@@ -101,7 +112,9 @@ def calc_dcm_metrics(
 
 # %%
 def load_config(run_makelinks=False, path=None):
-    """Reads config file and calculates additional dcm attributes such as slice volume. Reeturns a dictionary used for patient wide calculations such as TKV.
+    """Reads config file and calculates additional dcm attributes such as
+    slice volume. Returns a dictionary used for patient wide calculations
+    such as TKV.
     """
     if run_makelinks:
         makelinks()
@@ -155,7 +168,9 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
         patient_MR_Metrics[(patient_MR, "intersection")] += value[
             "intersection"
         ]
-        patient_MR_Metrics[(patient_MR, "union")] += value["union"]
+        patient_MR_Metrics[(patient_MR, "set_addition")] += value[
+            "set_addition"
+        ]
 
     for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
@@ -163,8 +178,8 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
         if patient_MR not in Metric_data:
 
             intersection = patient_MR_Metrics[(patient_MR, "intersection")]
-            union = patient_MR_Metrics[(patient_MR, "union")]
-            patient_dice = ((2.0 * intersection) / union).item()
+            set_addition = patient_MR_Metrics[(patient_MR, "set_addition")]
+            patient_dice = ((2.0 * intersection) / set_addition).item()
 
             summary = {
                 "TKV_GT": patient_MR_Metrics[(patient_MR, "Vol_GT")],
@@ -186,9 +201,12 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # %%
 
-## TKV on unfiltered + BA Plot ***
-
-dataloader, model, device, dice_metric, binarize_func, split = load_config()
+# TKV on unfiltered + BA Plot ***
+# pick another path for different experiments
+path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
+dataloader, model, device, dice_metric, binarize_func, split = load_config(
+    path=path
+)
 
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 
@@ -199,15 +217,13 @@ gt = patient_metric_data["TKV_GT"].to_numpy()
 bland_altman_plot(pred, gt, percent=True, title="BA Plot: TKV all - % error")
 
 # %%
-
-## Patient Dice with TKV-GT on Scatter Plot ***
-
+# Patient Dice with TKV-GT on Scatter Plot ***
 patient_dice = patient_metric_data["patient_dice"].to_numpy()
 scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
 
 # %%
 
-## TKV on positive slices + BA Plot ***
+# TKV on positive slices + BA Plot ***
 
 dcm2attrib_pos = {}
 
@@ -225,7 +241,7 @@ bland_altman_plot(
 
 # %%
 
-## TKV on negative slices + BA Plot ***
+# TKV on negative slices + BA Plot ***
 
 dcm2attrib_neg = {}
 
@@ -241,3 +257,6 @@ bland_altman_plot(
     pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
 )  # percent throws division by zero error
 
+scatter_plot(gt_neg - pred_neg, gt, title="TKV negatives")
+
+# %%

@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+
 # %%
 def bland_altman_plot(
     predicted, truth, percent=False, title="Bland-Altman Plot"
 ):
     predicted = np.asarray(predicted)
     truth = np.asarray(truth)
-    diff = predicted - truth
+    diff = truth - predicted
 
     if percent:
         diff = np.divide(diff, truth)
@@ -26,12 +27,13 @@ def bland_altman_plot(
     return ax
 
 
-def scatter_plot(predicted, truth, title="Scatter Plot"):
-    predicted = np.asarray(predicted)
+# %%
+def scatter_plot(metric, truth, title="Scatter Plot"):
+    metric = np.asarray(metric)
     truth = np.asarray(truth)
 
     fig, ax = plt.subplots()
-    ax = sns.scatterplot(truth, predicted)
+    ax = sns.scatterplot(truth, metric)
     ax.set(
         xlabel="GT", ylabel="Metric", title=title,
     )
@@ -42,6 +44,7 @@ def scatter_plot(predicted, truth, title="Scatter Plot"):
     return ax
 
 
+# %%
 def sample_plot():
     sample_x = np.random.rayleigh(scale=10, size=201)
     sample_y = np.random.normal(size=len(sample_x)) + 10 - sample_x / 10.0
@@ -50,3 +53,5 @@ def sample_plot():
 
     plt.show()
 
+
+# %%
