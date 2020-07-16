@@ -203,13 +203,17 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # TKV on unfiltered + BA Plot ***
 # pick another path for different experiments
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_tkv/val/val.yaml" # noqa
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_only/val/val.yaml"  # noqa
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
+
 path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
 dataloader, model, device, dice_metric, binarize_func, split = load_config(
     path=path
 )
 
+# %%
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
-
 patient_metric_data = calculate_patient_metrics(dcm2attrib)
 
 pred = patient_metric_data["TKV_Pred"].to_numpy()
@@ -222,11 +226,8 @@ patient_dice = patient_metric_data["patient_dice"].to_numpy()
 scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
 
 # %%
-
 # TKV on positive slices + BA Plot ***
-
 dcm2attrib_pos = {}
-
 for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] > 0:
         dcm2attrib_pos[key] = value
@@ -240,11 +241,8 @@ bland_altman_plot(
 )
 
 # %%
-
 # TKV on negative slices + BA Plot ***
-
 dcm2attrib_neg = {}
-
 for key, value in dcm2attrib.items():
     if value["ground_kidney_pixels"] == 0:
         dcm2attrib_neg[key] = value
@@ -257,6 +255,7 @@ bland_altman_plot(
     pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
 )  # percent throws division by zero error
 
+# %%
 scatter_plot(gt_neg - pred_neg, gt, title="TKV negatives")
 
 # %%
