@@ -196,6 +196,46 @@ class DiceMetric(nn.Module):
         return dsc
 
 
+class Dice(nn.Module):
+    """Dice metric/loss.
+
+    Supports different Dice variants.
+    """
+
+    def __init__(
+        self,
+        pred_process,
+        epsilon=1e-8,
+        power=2,
+        dim=(2, 3),
+        standardize_func=None,
+        use_as_loss=True,
+    ):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.power = power
+        self.dim = dim
+        self.standardize_func = standardize_func
+        self.use_as_loss = use_as_loss
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=self.dim)
+        set_add = torch.sum(
+            pred ** self.power + target ** self.power, dim=self.dim
+        )
+        score = (2 * intersection + self.epsilon) / (set_add + self.epsilon)
+        score = score.mean()
+        if self.use_as_loss:
+            return 1 - score
+        return score
+
+
 class KidneyPixelMAPE(nn.Module):
     """
     Calculates the absolute percentage error for predicted kidney pixel counts
@@ -372,6 +412,36 @@ class ErrorLogTKVRelative(nn.Module):
         log_error = (scaled_vol_error * weight).mean()
 
         return log_error
+
+
+class BiasReductionLoss(nn.Module):
+    def __init__(self, pred_process, standardize_func=None, w1=0.5, w2=0.5):
+        super().__init__()
+        self.pred_process = pred_process
+        self.standardize_func = standardize_func
+        self.w1 = w1
+        self.w2 = w2
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=(1, 2, 3))
+        # count what's missing from the target area
+        missing = target.sum(dim=(1, 2, 3)) - intersection
+        # count all extra predictions outside the target area
+        false_pos = torch.sum(pred * (1 - target), dim=(1, 2, 3))
+
+        # both losses should go to zero, but they should also be the same
+        loss = (
+            self.w1 * (missing ** 2 + false_pos ** 2)
+            + self.w2 * (missing - false_pos) ** 2
+        )
+        loss = loss.mean() ** 0.5
+
+        return loss
 
 
 # %%
