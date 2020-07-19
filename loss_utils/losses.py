@@ -415,12 +415,15 @@ class ErrorLogTKVRelative(nn.Module):
 
 
 class BiasReductionLoss(nn.Module):
-    def __init__(self, pred_process, standardize_func=None, w1=0.5, w2=0.5):
+    def __init__(
+        self, pred_process, standardize_func=None, w1=0.5, w2=0.5, epsilon=1e-8
+    ):
         super().__init__()
         self.pred_process = pred_process
         self.standardize_func = standardize_func
         self.w1 = w1
         self.w2 = w2
+        self.epsilon = epsilon
 
     def __call__(self, pred, target):
         pred = self.pred_process(pred)
@@ -439,7 +442,8 @@ class BiasReductionLoss(nn.Module):
             self.w1 * (missing ** 2 + false_pos ** 2)
             + self.w2 * (missing - false_pos) ** 2
         )
-        loss = loss.mean() ** 0.5
+        # sqrt is not differentiable at zero
+        loss = (loss.mean() + self.epsilon) ** 0.5
 
         return loss
 
