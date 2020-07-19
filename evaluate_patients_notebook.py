@@ -17,6 +17,8 @@ from data.link_data import makelinks
 from train_utils import load_model_data
 from stats.stats_utils import bland_altman_plot, scatter_plot
 
+from loss_utils.losses import SigmoidBinarize
+
 
 # %%
 def calc_dcm_metrics(
@@ -130,7 +132,6 @@ def load_config(run_makelinks=False, path=None):
     loader_to_eval = config["_LOADER_TO_EVAL"]
     split = config[loader_to_eval]["dataset"]["splitter_key"].lower()
     dataloader_config = config[loader_to_eval]
-    loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
 
@@ -140,19 +141,14 @@ def load_config(run_makelinks=False, path=None):
 
     dataloader = get_object_instance(dataloader_config)()
 
-    # TODO: Hardcoded to dice_metric, so support other metrics from config.
-
-    dice_metric = get_object_instance(
-        loss_metric_config["criterions_dict"]["dice_metric"]
-    )
-
-    binarize_func = dice_metric.binarize_func
+    # TODO: support other metrics as needed
+    binarize_func = SigmoidBinarize(thresholds=[0.5])
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
 
-    return dataloader, model, device, dice_metric, binarize_func, split
+    return dataloader, model, device, binarize_func, split
 
 
 # %%
@@ -203,12 +199,39 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # TKV on unfiltered + BA Plot ***
 # pick another path for different experiments
-# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_tkv/val/val.yaml" # noqa
-# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_only/val/val.yaml"  # noqa
-# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
 
-path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
-dataloader, model, device, dice_metric, binarize_func, split = load_config(
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_tkv/val/val.yaml" # noqa
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_tkv/test/test.yaml" # noqa
+
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_only/val/val.yaml"  # noqa
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_only/test/test.yaml"  # noqa
+
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
+# path = "experiments/july14/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_sd_tkv/test/test.yaml" # noqa
+
+# path = "experiments/july16/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_sd/val/val.yaml" # noqa
+
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_batch_sd_pow_1/val/val.yaml" # noqa
+
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_batch_sd_pow_2/val/val.yaml" # noqa
+
+path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_batch_sd_pow_1/val/val.yaml" # noqa
+
+# ---------------------
+# path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv_loss/val/val.yaml" # noqa
+# path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv_loss/test/test.yaml" # noqa
+# ---------------------
+# path = "experiments/july16/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv/val/val.yaml" # noqa
+# path = "experiments/july16/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv/test/test.yaml" # noqa
+
+# path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_only/val/val.yaml" # noqa
+
+# path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd/val/val.yaml" # noqa
+
+# path = "experiments/july15/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
+
+# path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
+dataloader, model, device, binarize_func, split = load_config(
     path=path
 )
 
@@ -221,9 +244,19 @@ gt = patient_metric_data["TKV_GT"].to_numpy()
 bland_altman_plot(pred, gt, percent=True, title="BA Plot: TKV all - % error")
 
 # %%
+relative_error = abs((gt - pred) / gt)
+print(relative_error.mean())
+print(relative_error.std(ddof=1))
+
+# %%
 # Patient Dice with TKV-GT on Scatter Plot ***
 patient_dice = patient_metric_data["patient_dice"].to_numpy()
 scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
+
+# %%
+# 3D dice
+print(patient_dice.mean())
+print(patient_dice.std(ddof=1))
 
 # %%
 # TKV on positive slices + BA Plot ***

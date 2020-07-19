@@ -21,6 +21,7 @@ import torch
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
 from train_utils import load_model_data
+from loss_utils.losses import SigmoidBinarize
 
 
 # %%
@@ -100,7 +101,6 @@ def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
     loader_to_eval = config["_LOADER_TO_EVAL"]
     dataloader_config = config[loader_to_eval]
-    loss_metric_config = config["_LOSSES_METRICS_CONFIG"]
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
 
@@ -110,10 +110,8 @@ def evaluate(config):
 
     dataloader = get_object_instance(dataloader_config)()
 
-    # TODO: Hardcoded to dice_metric, so support other metrics from config.
-    binarize_func = get_object_instance(
-        loss_metric_config["criterions_dict"]["dice_metric"]["binarize_func"]
-    )
+    # TODO: support other metrics as needed
+    binarize_func = SigmoidBinarize(thresholds=[0.5])
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
