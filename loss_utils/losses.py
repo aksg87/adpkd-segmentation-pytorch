@@ -348,33 +348,42 @@ class WeightedLosses(nn.Module):
 
 
 class DynamicBalanceLosses(nn.Module):
-    def __init__(self, criterions, epsilon=1e-6, requires_extra_dict=None):
+    def __init__(
+        self, criterions, epsilon=1e-6, weights=None, requires_extra_dict=None
+    ):
         self.criterions = criterions
         self.epsilon = epsilon
         self.requires_extra_dict = requires_extra_dict
+        self.weights = weights
+        if weights is None:
+            self.weights = [1.0] * len(self.criterions)
+        self.weights = torch.tensor(self.weights)
         if requires_extra_dict is None:
             self.requires_extra_dict = [False for c in self.criterions]
 
     def __call__(self, pred, target, extra_dict=None):
-        # weights should sum to one (after normalization)
-        # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n =
+        # first, scale losses such that
+        # L_1 * s_1 = L_2 * s_2 = ... L_n * s_n =
         # L_1 * L_2 * ... * L_n
-        # e.g. W_2 = L_1 * L_3 * ... * L_n
+        # e.g. s_2 = L_1 * L_3 * ... * L_n
+        # calculate scaling factors dynamically
         partial_losses = []
         for c, e in zip(self.criterions, self.requires_extra_dict):
             loss = c(pred, target, extra_dict) if e else c(pred, target)
             partial_losses.append(loss)
         partial_losses = torch.stack(partial_losses) + self.epsilon
-
-        # no backprop through weights
+        # no backprop through dynamic scaling factors
         detached = partial_losses.detach()
         prod = torch.prod(detached)
         # divide the total product by the vector of loss values
-        # to get weights such as e.g. W_2 = L_1 * L_3 * ... * L_n
-        weights = prod / detached
-        normalization = torch.sum(weights)
+        # to get scaling factors such as e.g. s_2 = L_1 * L_3 * ... * L_n
+        scales = prod / detached
+        # final weighting by external weights
+        self.weights = self.weights.to(scales.device)
+        scales = scales * self.weights
+        normalization = torch.sum(scales)
 
-        loss = (partial_losses * weights).sum() / normalization
+        loss = (partial_losses * scales).sum() / normalization
         return loss
 
 
