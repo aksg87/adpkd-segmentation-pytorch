@@ -242,17 +242,20 @@ class KidneyPixelMAPE(nn.Module):
 
     (label kidney pixel count - predicted k.p. count) / (label k.p. count)
 
-    The kidney pixel summation is done for each image separately, and
+    By default, kidney pixel summation is done for each image separately, and
     averaged over the entire batch.
 
     Depending on the `pred_process` function,
     predicted kidney pixel count can be soft or hard.
     """
 
-    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+    def __init__(
+        self, pred_process, epsilon=1.0, dim=(2, 3), standardize_func=None
+    ):
         super().__init__()
         self.pred_process = pred_process
         self.epsilon = epsilon
+        self.dim = dim
         self.standardize_func = standardize_func
 
     def __call__(self, pred, target):
@@ -262,8 +265,8 @@ class KidneyPixelMAPE(nn.Module):
             pred = self.standardize_func(pred)
             target = self.standardize_func(target)
 
-        target_count = target.sum(dim=(1, 2, 3)).detach()
-        pred_count = pred.sum(dim=(1, 2, 3))
+        target_count = target.sum(dim=self.dim).detach()
+        pred_count = pred.sum(dim=self.dim)
 
         kp_batch_MAPE = torch.abs(
             (target_count - pred_count) / (target_count + self.epsilon)
@@ -278,17 +281,20 @@ class KidneyPixelMSLE(nn.Module):
 
     MSE of ln(label kidney pixel count) - ln(predicted k.p. count)
 
-    Pixels are counted separetely for each image, with final averaging
-    across all images
+    By default, pixels are counted separetely for each image, with final
+    averaging across all images
 
     Depending on the `pred_process` function,
     predicted kidney pixel count can be soft or hard.
     """
 
-    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+    def __init__(
+        self, pred_process, epsilon=1.0, dim=(2, 3), standardize_func=None
+    ):
         super().__init__()
         self.pred_process = pred_process
         self.epsilon = epsilon
+        self.dim = dim
         self.standardize_func = standardize_func
 
     def __call__(self, pred, target):
@@ -297,8 +303,8 @@ class KidneyPixelMSLE(nn.Module):
             pred = self.standardize_func(pred)
             target = self.standardize_func(target)
 
-        target_count = target.sum(dim=(1, 2, 3)).detach()
-        pred_count = pred.sum(dim=(1, 2, 3))
+        target_count = target.sum(dim=self.dim).detach()
+        pred_count = pred.sum(dim=self.dim)
 
         sle = (
             torch.log(target_count + self.epsilon)
