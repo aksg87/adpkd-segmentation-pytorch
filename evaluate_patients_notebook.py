@@ -14,6 +14,7 @@ import torch
 
 from config.config_utils import get_object_instance
 from data.link_data import makelinks
+from data.data_utils import display_sample
 from train_utils import load_model_data
 from stats.stats_utils import bland_altman_plot, scatter_plot
 
@@ -215,12 +216,16 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_batch_sd_pow_2/val/val.yaml" # noqa
 
-path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_batch_sd_pow_1/val/val.yaml" # noqa
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_batch_sd_pow_1/val/val.yaml" # noqa
 
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_batch_sd_pow_2/val/val.yaml" # noqa
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_bias_reduce/val/val.yaml" # noqa
+# path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_bce_bias_reduce_weighted/val/val.yaml" # noqa
+# path = "experiments/july22/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_double_batch_sd_pow_1_tkv/val/val.yaml" # noqa
 # ---------------------
 # path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv_loss/val/val.yaml" # noqa
 # path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv_loss/test/test.yaml" # noqa
-# ---------------------
+
 # path = "experiments/july16/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv/val/val.yaml" # noqa
 # path = "experiments/july16/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_tkv/test/test.yaml" # noqa
 
@@ -229,6 +234,8 @@ path = "experiments/july19/strat_seq_norm_b5_BN_bce_dice_simpler_albu_224_unet_d
 # path = "experiments/july17/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd/val/val.yaml" # noqa
 
 # path = "experiments/july15/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
+
+path = "experiments/july22/strat_seq_norm_b5_BN_bce_dice_even_more_albu_224_unet_double_batch_sd_pow_1/val/val.yaml" # noqa
 
 # path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
 dataloader, model, device, binarize_func, split = load_config(
@@ -257,6 +264,33 @@ scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
 # 3D dice
 print(patient_dice.mean())
 print(patient_dice.std(ddof=1))
+
+# %%
+# check some high error studies
+studies = [WC-ADPKD-____-,
+           WC-ADPKD-____-,
+           WC-ADPKD-____-]
+for idx, label in enumerate(patient_metric_data.index):
+    if label in studies:
+        print(relative_error[idx], patient_dice[idx])
+
+# %%
+dataset = dataloader.dataset
+path_to_index = {path: idx for idx, path in enumerate(dataset.dcm_paths)}
+study_to_indices = defaultdict(list)
+for dcm_path, attrib in dcm2attrib.items():
+    study = attrib["patient"] + attrib["MR"]
+    study_to_indices[study].append(path_to_index[dcm_path])
+
+# %%
+study = studies[1]
+print(study)
+for idx in study_to_indices[study]:
+    # assuming that dataset outputs all 3
+    # all 3 image channels equal
+    image, mask, index = dataset[idx]
+    print(idx, index)  # should be the same
+    display_sample((image[0], mask))
 
 # %%
 # TKV on positive slices + BA Plot ***
