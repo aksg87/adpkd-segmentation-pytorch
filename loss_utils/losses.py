@@ -196,23 +196,66 @@ class DiceMetric(nn.Module):
         return dsc
 
 
+class Dice(nn.Module):
+    """Dice metric/loss.
+
+    Supports different Dice variants.
+    """
+
+    def __init__(
+        self,
+        pred_process,
+        epsilon=1e-8,
+        power=2,
+        dim=(2, 3),
+        standardize_func=None,
+        use_as_loss=True,
+    ):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.power = power
+        self.dim = dim
+        self.standardize_func = standardize_func
+        self.use_as_loss = use_as_loss
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=self.dim)
+        set_add = torch.sum(
+            pred ** self.power + target ** self.power, dim=self.dim
+        )
+        score = (2 * intersection + self.epsilon) / (set_add + self.epsilon)
+        score = score.mean()
+        if self.use_as_loss:
+            return 1 - score
+        return score
+
+
 class KidneyPixelMAPE(nn.Module):
     """
     Calculates the absolute percentage error for predicted kidney pixel counts
 
     (label kidney pixel count - predicted k.p. count) / (label k.p. count)
 
-    The kidney pixel summation is done for each image separately, and
+    By default, kidney pixel summation is done for each image separately, and
     averaged over the entire batch.
 
     Depending on the `pred_process` function,
     predicted kidney pixel count can be soft or hard.
     """
 
-    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+    def __init__(
+        self, pred_process, epsilon=1.0, dim=(2, 3), standardize_func=None
+    ):
         super().__init__()
         self.pred_process = pred_process
         self.epsilon = epsilon
+        self.dim = dim
         self.standardize_func = standardize_func
 
     def __call__(self, pred, target):
@@ -222,8 +265,8 @@ class KidneyPixelMAPE(nn.Module):
             pred = self.standardize_func(pred)
             target = self.standardize_func(target)
 
-        target_count = target.sum(dim=(1, 2, 3)).detach()
-        pred_count = pred.sum(dim=(1, 2, 3))
+        target_count = target.sum(dim=self.dim).detach()
+        pred_count = pred.sum(dim=self.dim)
 
         kp_batch_MAPE = torch.abs(
             (target_count - pred_count) / (target_count + self.epsilon)
@@ -238,17 +281,20 @@ class KidneyPixelMSLE(nn.Module):
 
     MSE of ln(label kidney pixel count) - ln(predicted k.p. count)
 
-    Pixels are counted separetely for each image, with final averaging
-    across all images
+    By default, pixels are counted separetely for each image, with final
+    averaging across all images
 
     Depending on the `pred_process` function,
     predicted kidney pixel count can be soft or hard.
     """
 
-    def __init__(self, pred_process, epsilon=1.0, standardize_func=None):
+    def __init__(
+        self, pred_process, epsilon=1.0, dim=(2, 3), standardize_func=None
+    ):
         super().__init__()
         self.pred_process = pred_process
         self.epsilon = epsilon
+        self.dim = dim
         self.standardize_func = standardize_func
 
     def __call__(self, pred, target):
@@ -257,8 +303,8 @@ class KidneyPixelMSLE(nn.Module):
             pred = self.standardize_func(pred)
             target = self.standardize_func(target)
 
-        target_count = target.sum(dim=(1, 2, 3)).detach()
-        pred_count = pred.sum(dim=(1, 2, 3))
+        target_count = target.sum(dim=self.dim).detach()
+        pred_count = pred.sum(dim=self.dim)
 
         sle = (
             torch.log(target_count + self.epsilon)
@@ -308,33 +354,42 @@ class WeightedLosses(nn.Module):
 
 
 class DynamicBalanceLosses(nn.Module):
-    def __init__(self, criterions, epsilon=1e-6, requires_extra_dict=None):
+    def __init__(
+        self, criterions, epsilon=1e-6, weights=None, requires_extra_dict=None
+    ):
         self.criterions = criterions
         self.epsilon = epsilon
         self.requires_extra_dict = requires_extra_dict
+        self.weights = weights
+        if weights is None:
+            self.weights = [1.0] * len(self.criterions)
+        self.weights = torch.tensor(self.weights)
         if requires_extra_dict is None:
             self.requires_extra_dict = [False for c in self.criterions]
 
     def __call__(self, pred, target, extra_dict=None):
-        # weights should sum to one (after normalization)
-        # L_1 * w_1 = L_2 * w_2 = ... L_n * w_n =
+        # first, scale losses such that
+        # L_1 * s_1 = L_2 * s_2 = ... L_n * s_n =
         # L_1 * L_2 * ... * L_n
-        # e.g. W_2 = L_1 * L_3 * ... * L_n
+        # e.g. s_2 = L_1 * L_3 * ... * L_n
+        # calculate scaling factors dynamically
         partial_losses = []
         for c, e in zip(self.criterions, self.requires_extra_dict):
             loss = c(pred, target, extra_dict) if e else c(pred, target)
             partial_losses.append(loss)
         partial_losses = torch.stack(partial_losses) + self.epsilon
-
-        # no backprop through weights
+        # no backprop through dynamic scaling factors
         detached = partial_losses.detach()
         prod = torch.prod(detached)
         # divide the total product by the vector of loss values
-        # to get weights such as e.g. W_2 = L_1 * L_3 * ... * L_n
-        weights = prod / detached
-        normalization = torch.sum(weights)
+        # to get scaling factors such as e.g. s_2 = L_1 * L_3 * ... * L_n
+        scales = prod / detached
+        # final weighting by external weights
+        self.weights = self.weights.to(scales.device)
+        scales = scales * self.weights
+        normalization = torch.sum(scales)
 
-        loss = (partial_losses * weights).sum() / normalization
+        loss = (partial_losses * scales).sum() / normalization
         return loss
 
 
@@ -372,6 +427,40 @@ class ErrorLogTKVRelative(nn.Module):
         log_error = (scaled_vol_error * weight).mean()
 
         return log_error
+
+
+class BiasReductionLoss(nn.Module):
+    def __init__(
+        self, pred_process, standardize_func=None, w1=0.5, w2=0.5, epsilon=1e-8
+    ):
+        super().__init__()
+        self.pred_process = pred_process
+        self.standardize_func = standardize_func
+        self.w1 = w1
+        self.w2 = w2
+        self.epsilon = epsilon
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        intersection = torch.sum(pred * target, dim=(1, 2, 3))
+        # count what's missing from the target area
+        missing = target.sum(dim=(1, 2, 3)) - intersection
+        # count all extra predictions outside the target area
+        false_pos = torch.sum(pred * (1 - target), dim=(1, 2, 3))
+
+        # both losses should go to zero, but they should also be the same
+        loss = (
+            self.w1 * (missing ** 2 + false_pos ** 2)
+            + self.w2 * (missing - false_pos) ** 2
+        )
+        # sqrt is not differentiable at zero
+        loss = (loss.mean() + self.epsilon) ** 0.5
+
+        return loss
 
 
 # %%
