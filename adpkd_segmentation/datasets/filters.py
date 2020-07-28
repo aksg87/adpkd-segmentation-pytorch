@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
-from data.data_utils import PATIENT, SEQUENCE
+from adpkd_segmentation.data.data_utils import PATIENT, SEQUENCE
 
 
 class Filtering(ABC):

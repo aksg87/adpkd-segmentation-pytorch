@@ -18,10 +18,10 @@ import pandas as pd
 
 import torch
 
-from config.config_utils import get_object_instance
-from data.link_data import makelinks
-from train_utils import load_model_data
-from loss_utils.losses import SigmoidBinarize
+from adpkd_segmentation.config.config_utils import get_object_instance
+from adpkd_segmentation.data.link_data import makelinks
+from adpkd_segmentation.utils.train_utils import load_model_data
+from adpkd_segmentation.utils.losses import SigmoidBinarize
 
 
 # %%

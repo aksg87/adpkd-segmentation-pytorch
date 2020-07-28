@@ -5,7 +5,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from data.data_utils import KIDNEY_PIXELS, STUDY_TKV, VOXEL_VOLUME
+from adpkd_segmentation.data.data_utils import (
+    KIDNEY_PIXELS,
+    STUDY_TKV,
+    VOXEL_VOLUME,
+)
 
 
 # %%

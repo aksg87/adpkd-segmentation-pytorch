@@ -28,12 +28,15 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
 
-from create_eval_configs import create_config
-from config.config_utils import get_object_instance
-from data.link_data import makelinks
-from evaluate import validate
-from train_utils import load_model_data, save_model_data
-from data.data_utils import tensor_dict_to_device
+from adpkd_segmentation.create_eval_configs import create_config
+from adpkd_segmentation.config.config_utils import get_object_instance
+from adpkd_segmentation.data.link_data import makelinks
+from adpkd_segmentation.evaluate import validate
+from adpkd_segmentation.utils.train_utils import (
+    load_model_data,
+    save_model_data,
+)
+from adpkd_segmentation.data.data_utils import tensor_dict_to_device
 
 CHECKPOINTS = "checkpoints"
 RESULTS = "results"

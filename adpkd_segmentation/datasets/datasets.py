@@ -2,9 +2,7 @@ import json
 import numpy as np
 import torch
 
-import data_set.datasets as ds
-
-from data.data_utils import (
+from adpkd_segmentation.data.data_utils import (
     get_labeled,
     get_y_Path,
     int16_to_uint8,
@@ -14,9 +12,13 @@ from data.data_utils import (
     TKV_update,
 )
 
-from data.data_utils import KIDNEY_PIXELS, STUDY_TKV, VOXEL_VOLUME
+from adpkd_segmentation.data.data_utils import (
+    KIDNEY_PIXELS,
+    STUDY_TKV,
+    VOXEL_VOLUME,
+)
 
-from new_datasets.filters import PatientFiltering
+from adpkd_segmentation.datasets.filters import PatientFiltering
 
 
 class NewSegmentationDataset(torch.utils.data.Dataset):
@@ -133,7 +135,8 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         tensor_dict = {}
         for k, v in attrib_types.items():
             tensor_dict[k] = torch.zeros(
-                self.__len__(), dtype=getattr(torch, v))
+                self.__len__(), dtype=getattr(torch, v)
+            )
 
         for idx, _ in enumerate(self):
             dcm_path = self.dcm_paths[idx]
@@ -263,36 +266,4 @@ class JsonDatasetGetter:
             normalization=self.normalization,
             output_idx=self.output_idx,
             attrib_types=self.attrib_types,
-        )
-
-
-# deprecated
-class BaselineDatasetGetter:
-    """Create baseline segmentation dataset"""
-
-    def __init__(
-        self,
-        splitter,
-        transform_x,
-        transform_y,
-        preprocess_func,
-        filters,
-        splitter_key,
-    ):
-        super().__init__()
-        self.splitter = splitter()
-        self.transform_x = transform_x()
-        self.transform_y = transform_y()
-        self.preprocess_func = preprocess_func()
-        self.filters = filters
-        self.splitter_key = splitter_key
-
-    def __call__(self):
-
-        return ds.SegmentationDataset(
-            patient_IDS=self.splitter[self.splitter_key],
-            transform_x=self.transform_x,
-            transform_y=self.transform_y,
-            preprocessing=self.preprocess_func,
-            filters=self.filters,
         )

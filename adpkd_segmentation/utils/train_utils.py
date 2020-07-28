@@ -3,7 +3,7 @@
 import torch
 from torch import optim
 
-from config.config_utils import ObjectGetter
+from adpkd_segmentation.config.config_utils import ObjectGetter
 
 
 class TorchLRScheduler:
