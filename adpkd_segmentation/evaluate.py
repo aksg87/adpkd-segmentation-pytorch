@@ -1,7 +1,7 @@
 """
 Model evaluation script
 
-python -m evaluate --config path_to_config_yaml --makelinks
+python -m adpkd_segmentation.evaluate --config path_to_config_yaml --makelinks
 
 If using a specific GPU (e.g. device 2):
 CUDA_VISIBLE_DEVICES=2 python -m evaluate --config path_to_config_yaml
@@ -22,8 +22,8 @@ from matplotlib import pyplot as plt
 from adpkd_segmentation.config.config_utils import get_object_instance
 from adpkd_segmentation.data.link_data import makelinks
 from adpkd_segmentation.data.data_utils import masks_to_colorimg
-from adpkd_segmentation.train_utils import load_model_data
 from adpkd_segmentation.data.data_utils import tensor_dict_to_device
+from adpkd_segmentation.utils.train_utils import load_model_data
 
 
 # %%

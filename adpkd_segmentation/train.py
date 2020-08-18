@@ -1,7 +1,7 @@
 """
 Model train script
 
-python -m train --config path_to_config_yaml --makelinks
+python -m adpkd_segmentation.train --config --config path_to_config_yaml --makelinks # noqa
 
 If using a specific GPU (e.g. device 2):
 CUDA_VISIBLE_DEVICES=2 python -m train --config path_to_config_yaml --makelinks
