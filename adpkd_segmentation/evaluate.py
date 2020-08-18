@@ -10,20 +10,20 @@ The makelinks flag is needed only once to create symbolic links to the data.
 """
 
 # %%
-from collections import defaultdict
 import argparse
 import json
 import os
-import yaml
+from collections import defaultdict
 
 import torch
-
-from config.config_utils import get_object_instance
-from data.link_data import makelinks
-from data.data_utils import masks_to_colorimg
+import yaml
 from matplotlib import pyplot as plt
-from train_utils import load_model_data
-from data.data_utils import tensor_dict_to_device
+
+from adpkd_segmentation.config.config_utils import get_object_instance
+from adpkd_segmentation.data.link_data import makelinks
+from adpkd_segmentation.data.data_utils import masks_to_colorimg
+from adpkd_segmentation.train_utils import load_model_data
+from adpkd_segmentation.data.data_utils import tensor_dict_to_device
 
 
 # %%
@@ -163,11 +163,10 @@ def plot_figure_from_batch(inputs, preds, target=None, idx=0):
 
 
 # %%
-def quick_check(run_makelinks=False):
+def quick_check(config_path, run_makelinks=False):
     if run_makelinks:
         makelinks()
-    path = "./example_experiment/configs/eval_example.yaml"
-    with open(path, "r") as f:
+    with open(config_path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     evaluate(config)
 

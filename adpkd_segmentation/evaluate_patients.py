@@ -125,12 +125,10 @@ def evaluate(config):
 
 
 # %%
-def calculate_TKVs(run_makelinks=False, output=None, path=None):
+def calculate_TKVs(config_path, run_makelinks=False, output=None):
     if run_makelinks:
         makelinks()
-    if path is None:
-        path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
-    with open(path, "r") as f:
+    with open(config_path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     # val or test
@@ -180,4 +178,4 @@ if __name__ == "__main__":
     parser.add_argument("--out_path", help="Path to output csv", required=True)
 
     args = parser.parse_args()
-    calculate_TKVs(args.makelinks, args.out_path, args.config)
+    calculate_TKVs(args.config, args.makelinks, args.out_path)
