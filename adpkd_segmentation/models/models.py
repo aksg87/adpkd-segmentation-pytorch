@@ -6,8 +6,7 @@ from catalyst.dl import utils
 import segmentation_models_pytorch as smp
 
 
-# the same one as in the current version (smp.Unet)
-class BaselineModelGetter(nn.Module):
+class SmpModelGetter(nn.Module):
     def __init__(self, smp_name, smp_params):
         self.smp_name = smp_name
         self.smp_params = smp_params

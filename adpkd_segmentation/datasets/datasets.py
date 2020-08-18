@@ -21,8 +21,8 @@ from adpkd_segmentation.data.data_utils import (
 from adpkd_segmentation.datasets.filters import PatientFiltering
 
 
-class NewSegmentationDataset(torch.utils.data.Dataset):
-    """Some information about NewSegmentationDataset"""
+class SegmentationDataset(torch.utils.data.Dataset):
+    """Some information about SegmentationDataset"""
 
     def __init__(
         self,
@@ -147,8 +147,8 @@ class NewSegmentationDataset(torch.utils.data.Dataset):
         return tensor_dict
 
 
-class NewBaselineDatasetGetter:
-    """Create baseline segmentation dataset"""
+class DatasetGetter:
+    """Create SegmentationDataset"""
 
     def __init__(
         self,
@@ -198,7 +198,7 @@ class NewBaselineDatasetGetter:
             self.normalization.update_dcm2attribs(self.dcm2attribs)
 
     def __call__(self):
-        return NewSegmentationDataset(
+        return SegmentationDataset(
             label2mask=self.label2mask,
             dcm2attribs=self.dcm2attribs,
             patient2dcm=self.patient2dcm,
@@ -256,7 +256,7 @@ class JsonDatasetGetter:
             self.normalization.update_dcm2attribs(self.dcm2attribs)
 
     def __call__(self):
-        return NewSegmentationDataset(
+        return SegmentationDataset(
             label2mask=self.label2mask,
             dcm2attribs=self.dcm2attribs,
             patient2dcm=self.patient2dcm,

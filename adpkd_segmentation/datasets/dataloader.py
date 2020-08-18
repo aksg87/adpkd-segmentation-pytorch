@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader
 
 
-class BaselineDataloaderGetter:
-    """create baseline dataloader"""
+class DataloaderGetter:
+    """create a DataLoader instance"""
 
     def __init__(self, dataset, batchsize, shuffle):
         """
