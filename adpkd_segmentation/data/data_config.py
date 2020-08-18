@@ -18,6 +18,6 @@ UNLABELED = None
 script_location = Path(__file__).resolve()
 
 if LABELED is None:
-    LABELED = script_location.parent().parent() / "labeled"
+    LABELED = script_location.parent.parent / "labeled"
 if UNLABELED is None:
-    UNLABELED = script_location.parent().parent() / "unlabeled"
+    UNLABELED = script_location.parent.parent / "unlabeled"
