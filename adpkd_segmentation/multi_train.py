@@ -7,8 +7,8 @@ Input config example: `config/multi_train_example.yaml`
 import argparse
 import yaml
 
-from train import train
-from data.link_data import makelinks
+from adpkd_segmentation.train import train
+from adpkd_segmentation.data.link_data import makelinks
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
