@@ -13,6 +13,9 @@ import pydicom
 
 from PIL import Image
 
+from adpkd_segmentation.data.data_config import LABELED, UNLABELED
+
+
 MIN_VALUE = "global_min_int16"
 MAX_VALUE = "global_max_int16"
 MIN_IMAGE_VALUE = "min_image_int16"
@@ -129,12 +132,12 @@ def get_dcms_paths(dir_list):
 
 
 def get_labeled():
-    dcms = glob.glob("{}/*.dcm".format("labeled"))
+    dcms = glob.glob("{}/*.dcm".format(LABELED))
     return dcms
 
 
 def get_unlabeled():
-    dcms = glob.glob("{}/*.dcm".format("unlabeled"))
+    dcms = glob.glob("{}/*.dcm".format(UNLABELED))
     return dcms
 
 

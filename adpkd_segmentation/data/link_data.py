@@ -5,7 +5,12 @@ import shutil
 from adpkd_segmentation.data.data_utils import get_dcms_paths, get_y_Path
 
 # define data sources in data_config.py
-from adpkd_segmentation.data.data_config import labeled_dirs, unlabeled_dirs
+from adpkd_segmentation.data.data_config import (
+    labeled_dirs,
+    unlabeled_dirs,
+    LABELED,
+    UNLABELED,
+)
 
 
 # %%
@@ -25,16 +30,16 @@ def mkdir_force(dir):
 # %%
 def makelinks():
 
-    mkdir_force("labeled")
-    mkdir_force("unlabeled")
+    mkdir_force(LABELED)
+    mkdir_force(UNLABELED)
 
     for dcm in get_dcms_paths(labeled_dirs):
         mask = get_y_Path(dcm)
         if not mask.exists():
             raise Exception("Labeled dcm [{}] does not have mask.".format(dcm))
 
-        symlink_force(dcm, "labeled/" + os.path.basename(dcm))
-        symlink_force(mask, "labeled/" + os.path.basename(mask))
+        symlink_force(dcm, os.path.join(LABELED, os.path.basename(dcm)))
+        symlink_force(mask, os.path.join(LABELED, os.path.basename(mask)))
 
     for dcm in get_dcms_paths(unlabeled_dirs):
         mask = get_y_Path(dcm)
@@ -42,4 +47,4 @@ def makelinks():
         if mask.exists():
             raise Exception("Unlabeled dcm [{}] contains a mask.".format(dcm))
 
-        symlink_force(dcm, "unlabeled/" + os.path.basename(dcm))
+        symlink_force(dcm, os.path.join(UNLABELED, os.path.basename(dcm)))
