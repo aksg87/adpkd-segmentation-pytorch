@@ -289,13 +289,13 @@ for dcm_path, attrib in dcm2attrib.items():
 # %%
 study = studies[1]
 print(study)
-for idx in study_to_indices[study]:
+for num, idx in enumerate(study_to_indices[study]):
     # assuming that dataset outputs all 3
     # all 3 image channels equal
     image, mask, index = dataset[idx]
     print(idx, index)  # should be the same
     display_sample((image[0], mask))
-    if idx > 50:
+    if num > 44:
         break
 
 # %%
@@ -328,6 +328,9 @@ bland_altman_plot(
     pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
 )  # percent throws division by zero error
 
+
+# can result in an error for some examples
+# due to different lengths
 # %%
 scatter_plot(gt_neg - pred_neg, gt, title="TKV negatives")
 
