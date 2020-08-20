@@ -1,25 +1,16 @@
 # Notebook to check different augmentations
-# TODO: use the new dataset formulation in `new_datasets.datasets`
 
 # %%
+import matplotlib.pyplot as plt
+import os
+import yaml
 
-from sklearn.model_selection import train_test_split
-from matplotlib import pyplot as plt
-
-from data_set.datasets import SegmentationDataset
-from data.data_utils import make_dcmdicts, get_labeled, int16_to_uint8
-from data.link_data import makelinks
-from model.model_utils import get_preprocessing, preprocessing_fn
-
-from data_set.transforms import T_x, T_y
-
-# https://github.com/albumentations-team/albumentations_examples/blob/master/notebooks/example_kaggle_salt.ipynb
+# https://github.com/albumentations-team/albumentations_examples/blob/master/notebooks/example_kaggle_salt.ipynb # noqa
 from albumentations import (
     PadIfNeeded,
     HorizontalFlip,
     VerticalFlip,
     CenterCrop,
-    Crop,
     Compose,
     Transpose,
     RandomRotate90,
@@ -41,31 +32,53 @@ from albumentations import (
     MultiplicativeNoise,
 )
 
-# %%
-IMG_IDX = (
-    200  # SET THIS INDEX for selecting img label in augmentations example
-)
-# %%
-makelinks()
-# %%
-# find number of patients
-_, patient2dcm = make_dcmdicts(tuple(get_labeled()))
-all_IDS = range(len(patient2dcm))
-# %%
-train_IDS, test_IDS = train_test_split(all_IDS, test_size=0.15, random_state=1)
-train_IDS, val_IDS = train_test_split(
-    train_IDS, test_size=0.176, random_state=1
+# enable lib loading even if not installed as a pip package or in PYTHONPATH
+# also convenient for relative paths in example config files
+from pathlib import Path
+
+os.chdir(Path(__file__).resolve().parent.parent)
+
+from adpkd_segmentation.config.config_utils import get_object_instance  # noqa
+from adpkd_segmentation.data.link_data import makelinks  # noqa
+from adpkd_segmentation.data.data_utils import ( # noqa
+    int16_to_uint8,
+    masks_to_colorimg,
 )
 
 # %%
-dataset_train = SegmentationDataset(
-    patient_IDS=train_IDS,
-    transform_x=T_x,
-    transform_y=T_y,
-    preprocessing=get_preprocessing(preprocessing_fn),
-)
+# needed only once
+# makelinks()
+
+# %%
+path = "./misc/example_experiment/stratified_run_example/val/val.yaml"
+with open(path, "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+dataloader_config = config["_VAL_DATALOADER_CONFIG"]
+dataloader = get_object_instance(dataloader_config)()
+
+# %%
+# SET THIS INDEX for selecting img label in augmentations example
+IMG_IDX = 180
+dataset = dataloader.dataset
+x, y, index = dataset[IMG_IDX]
+
+# %%
+print("Dataset Length: {}".format(len(dataset)))
+print("image -> shape {},  dtype {}".format(x.shape, x.dtype))
+print("mask -> shape {},  dtype {}".format(y.shape, y.dtype))
+
+# %%
+print("Image and Mask: \n")
+image, mask = x[0, ...], y
+
+f, (ax1, ax2) = plt.subplots(1, 2)
+ax1.imshow(image, cmap="gray")
+ax2.imshow(image, cmap="gray")
+ax2.imshow(masks_to_colorimg(mask), alpha=0.5)
 
 
+# %%
+# from albumentation examples
 def visualize(image, mask, original_image=None, original_mask=None):
     fontsize = 18
 
@@ -91,28 +104,13 @@ def visualize(image, mask, original_image=None, original_mask=None):
 
 
 # %%
-def show_img(img, figsize=(8, 8)):
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.grid(False)
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    ax.imshow(img)
-    plt.imshow(img, cmap="gray")
-
-
-# %%
-image, mask = dataset_train[IMG_IDX]
-mask = mask[0] + mask[1]  # Combine into channel
-image = image[0]  # Display only one channel
-# %%
-show_img(image)
-# %%
 # ORIGINAL
+mask = mask[0]
 visualize(image, mask)
 
 # %%
 # PADDING
-aug = PadIfNeeded(p=1, min_height=128, min_width=128)
+aug = PadIfNeeded(p=1, min_height=256, min_width=256)
 
 augmented = aug(image=image, mask=mask)
 
@@ -124,9 +122,8 @@ print(image_padded.shape, mask_padded.shape)
 visualize(image_padded, mask_padded, original_image=image, original_mask=mask)
 
 # %%
-
 # CENTER CROP
-original_height, original_width = 96, 96
+original_height, original_width = 224, 224
 
 aug = CenterCrop(p=1, height=original_height, width=original_width)
 
@@ -141,44 +138,14 @@ assert (image - image_center_cropped).sum() == 0
 assert (mask - mask_center_cropped).sum() == 0
 
 visualize(
-    image_padded,
-    mask_padded,
-    original_image=image_center_cropped,
-    original_mask=mask_center_cropped,
-)
-
-# %%
-
-# CROP
-original_height, original_width = 96, 96
-
-x_min = (128 - original_width) // 2
-y_min = (128 - original_height) // 2
-
-x_max = x_min + original_width
-y_max = y_min + original_height
-
-aug = Crop(p=1, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)
-
-augmented = aug(image=image_padded, mask=mask_padded)
-
-image_cropped = augmented["image"]
-mask_cropped = augmented["mask"]
-
-print(image_cropped.shape, mask_cropped.shape)
-
-assert (image - image_cropped).sum() == 0
-assert (mask - mask_cropped).sum() == 0
-
-visualize(
-    image_cropped,
-    mask_cropped,
+    image_center_cropped,
+    mask_center_cropped,
     original_image=image_padded,
     original_mask=mask_padded,
 )
 
-# %%
 
+# %%
 # Horizontal Flip
 aug = HorizontalFlip(p=1)
 
@@ -330,7 +297,7 @@ visualize(
 
 # RandomSizedCrop
 
-aug = RandomSizedCrop(p=1, min_max_height=(50, 96), height=72, width=72)
+aug = RandomSizedCrop(p=1, min_max_height=(100, 200), height=128, width=128)
 
 augmented = aug(image=image, mask=mask)
 
@@ -356,7 +323,7 @@ visualize(image_scaled, mask_scaled, original_image=image, original_mask=mask)
 # %%
 # CLAHE
 aug = CLAHE()
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask.astype("uint8"))
 
 image_scaled = augmented["image"]
@@ -368,7 +335,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # RandomBrightnessContrast
 aug = RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2)
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -381,7 +348,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # RandomGamma
 
 aug = RandomGamma(gamma_limit=(40, 200))
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -393,7 +360,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # IAASharpen
 aug = IAASharpen(alpha=(0.1, 0.2), lightness=(0.5, 0.7))
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -405,7 +372,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # Blur
 aug = Blur(blur_limit=2)
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -417,7 +384,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # Motion Blur
 aug = MotionBlur(blur_limit=5)
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -429,7 +396,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # Image Compression
 aug = ImageCompression(quality_lower=50, quality_upper=50)
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 augmented = aug(image=image8, mask=mask)
 
 image_scaled = augmented["image"]
@@ -441,7 +408,7 @@ visualize(image_scaled, mask_scaled, original_image=image8, original_mask=mask)
 # %%
 # IAAPerspective
 aug = IAAPerspective()
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 mask8 = mask.astype("uint8")
 augmented = aug(image=image8, mask=mask8)
 
@@ -456,7 +423,7 @@ visualize(
 # %%
 # MultiplicativeNoise
 aug = MultiplicativeNoise(multiplier=(0.8, 1.2))
-image8 = int16_to_uint8(image.astype("int16"))
+image8 = (image * 256).astype("uint8")
 mask8 = mask.astype("uint8")
 augmented = aug(image=image8, mask=mask8)
 
@@ -561,3 +528,5 @@ image_heavy = augmented["image"]
 mask_heavy = augmented["mask"]
 
 visualize(image_heavy, mask_heavy, original_image=image, original_mask=mask)
+
+# %%
