@@ -1,19 +1,24 @@
-"""
-Basic checks for the evaluation script
-
-python -m evaluate --config path_to_config_yaml
-"""
+"""Basic checks for the evaluate.py script"""
 
 # %%
-import yaml
 import matplotlib.pyplot as plt
+import yaml
+import os
 
-from config.config_utils import get_object_instance
-from data.link_data import makelinks
-from data.data_utils import masks_to_colorimg, display_traindata
+# enable lib loading even if not installed as a pip package or in PYTHONPATH
+# also convenient for relative paths in example config files
+from pathlib import Path
+os.chdir(Path(__file__).resolve().parent.parent)
 
-# %%
-makelinks()
+from adpkd_segmentation.config.config_utils import get_object_instance  # noqa
+from adpkd_segmentation.data.link_data import makelinks  # noqa
+from adpkd_segmentation.data.data_utils import ( # noqa
+    masks_to_colorimg,
+    display_traindata,
+)
+
+# %% needed only once
+# makelinks()
 
 
 # %%
@@ -33,7 +38,7 @@ def evaluate(config):
 
 
 # %%
-path = "./example_experiment/configs/eval_example.yaml"
+path = "./misc/example_experiment/stratified_run_example/val/val.yaml"
 with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -46,7 +51,10 @@ print("Model:\n\n{}\n....\n".format(repr(model)[0:500]))
 # %%
 img_idx = 180
 dataset = dataloader.dataset
-x, y = dataset[img_idx]
+x, y, index = dataset[img_idx]
+# some losses depend on specific example data
+extra_dict = dataset.get_extra_dict(index)
+
 print("Dataset Length: {}".format(len(dataset)))
 print("image -> shape {},  dtype {}".format(x.shape, x.dtype))
 print("mask -> shape {},  dtype {}".format(y.shape, y.dtype))
@@ -67,11 +75,15 @@ print("Image Attributes: \n\n{}".format(attribs))
 # %%
 print("Display Dataloader Batch")
 data_iter = iter(dataloader)
-for inputs, labels in data_iter:
+for inputs, labels, index in data_iter:
     display_traindata(inputs[:12], labels[:12])
+    extra_dict = dataset.get_extra_dict(index)
     break
 
 # %%
-loss_metric(model(inputs), labels)
-
+out = model(inputs[:1])
+reduced_extra_dict = {k: v[:1] for k, v in extra_dict.items()}
+# %%
+metric = loss_metric(out, labels[:1], reduced_extra_dict)
+metric
 # %%
