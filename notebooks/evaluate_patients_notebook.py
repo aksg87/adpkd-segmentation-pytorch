@@ -7,18 +7,27 @@ The makelinks flag is needed only once to create symbolic links to the data.
 # %%
 from collections import OrderedDict, defaultdict
 
-import yaml
 import pandas as pd
-
 import torch
+import os
+import yaml
 
-from config.config_utils import get_object_instance
-from data.link_data import makelinks
-from data.data_utils import display_sample
-from train_utils import load_model_data
-from stats.stats_utils import bland_altman_plot, scatter_plot
+# enable lib loading even if not installed as a pip package or in PYTHONPATH
+# also convenient for relative paths in example config files
+from pathlib import Path
 
-from loss_utils.losses import SigmoidBinarize
+os.chdir(Path(__file__).resolve().parent.parent)
+
+from adpkd_segmentation.config.config_utils import get_object_instance  # noqa
+from adpkd_segmentation.data.link_data import makelinks  # noqa
+from adpkd_segmentation.data.data_utils import display_sample  # noqa
+from adpkd_segmentation.utils.train_utils import load_model_data  # noqa
+from adpkd_segmentation.utils.stats_utils import (  # noqa
+    bland_altman_plot,
+    scatter_plot,
+)
+
+from adpkd_segmentation.utils.losses import SigmoidBinarize # noqa
 
 
 # %%
@@ -114,19 +123,14 @@ def calc_dcm_metrics(
 
 
 # %%
-def load_config(run_makelinks=False, path=None):
+def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
     slice volume. Returns a dictionary used for patient wide calculations
     such as TKV.
     """
     if run_makelinks:
         makelinks()
-
-    if path is None:
-
-        path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
-
-    with open(path, "r") as f:
+    with open(config_path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     model_config = config["_MODEL_CONFIG"]
@@ -235,12 +239,10 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # path = "experiments/july15/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
 
-path = "experiments/july22/strat_seq_norm_b5_BN_bce_dice_even_more_albu_224_unet_double_batch_sd_pow_1/val/val.yaml" # noqa
+path = "experiments/august18/stratified_run_example/val/val.yaml"  # noqa
 
 # path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
-dataloader, model, device, binarize_func, split = load_config(
-    path=path
-)
+dataloader, model, device, binarize_func, split = load_config(config_path=path)
 
 # %%
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
@@ -267,9 +269,11 @@ print(patient_dice.std(ddof=1))
 
 # %%
 # check some high error studies
-studies = [WC-ADPKD-____-,
-           WC-ADPKD-____-,
-           WC-ADPKD-____-]
+studies = [
+    WC-ADPKD-____-,
+    WC-ADPKD-____-,
+    WC-ADPKD-____-,
+]
 for idx, label in enumerate(patient_metric_data.index):
     if label in studies:
         print(relative_error[idx], patient_dice[idx])
@@ -291,6 +295,8 @@ for idx in study_to_indices[study]:
     image, mask, index = dataset[idx]
     print(idx, index)  # should be the same
     display_sample((image[0], mask))
+    if idx > 50:
+        break
 
 # %%
 # TKV on positive slices + BA Plot ***

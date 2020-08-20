@@ -20,10 +20,9 @@ import numpy as np
 import os
 import yaml
 import random
-
 from collections import OrderedDict
-from matplotlib import pyplot as plt
 
+from matplotlib import pyplot as plt
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
