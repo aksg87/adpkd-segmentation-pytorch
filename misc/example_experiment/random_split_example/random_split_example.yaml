@@ -1,0 +1,416 @@
+_EXPERIMENT_DATA:
+  batch_log_interval: 100
+  best_metric_type: high
+  num_epochs: 150
+  saving_metric: dice_metric
+_EXPERIMENT_DIR: ./experiments/august18/random_split_example
+_LOOKAHEAD_OPTIM:
+  params:
+    alpha: 0.5
+    k: 5
+  use_lookahead: true
+_LOSSES_METRICS_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: LossesMetrics
+    _MODULE_NAME: adpkd_segmentation.utils.criterions
+  criterions_dict:
+    balanced_bce_batch_sd_1:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 1
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: BCEWithLogitsLoss
+          _MODULE_NAME: torch.nn
+    balanced_bce_batch_sd_2:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 2
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: BCEWithLogitsLoss
+          _MODULE_NAME: torch.nn
+    balanced_tkv_batch_sd_1:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 1
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: ErrorLogTKVRelative
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      requires_extra_dict:
+      - false
+      - true
+    batch_dice_1:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      power: 1
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    batch_dice_2:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      power: 2
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    dice_metric:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      power: 1
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidBinarize
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        thresholds:
+        - 0.5
+      use_as_loss: false
+    hard_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidForwardBinarize
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        thresholds:
+        - 0.5
+    kidney_pixel_bMAPE:
+      _CLASS_INFO:
+        _CLASS_NAME: KidneyPixelMAPE
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    kidney_pixel_bMSLE:
+      _CLASS_INFO:
+        _CLASS_NAME: KidneyPixelMSLE
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    loss_bce:
+      _CLASS_INFO:
+        _CLASS_NAME: BCEWithLogitsLoss
+        _MODULE_NAME: torch.nn
+    loss_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    relative_tkv:
+      _CLASS_INFO:
+        _CLASS_NAME: ErrorLogTKVRelative
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+  requires_extra_info:
+  - relative_tkv
+  - balanced_tkv_batch_sd_1
+_LR_SCHEDULER:
+  _CLASS_INFO:
+    _CLASS_NAME: TorchLRScheduler
+    _MODULE_NAME: adpkd_segmentation.utils.train_utils
+  name: ReduceLROnPlateau
+  param_dict:
+    cooldown: 0
+    factor: 0.9
+    patience: 3
+    threshold: 0.001
+    verbose: true
+  step_type: use_val
+_MODEL_CHECKPOINT: null
+_MODEL_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: SmpModelGetter
+    _MODULE_NAME: adpkd_segmentation.models.models
+  smp_name: Unet
+  smp_params:
+    activation: null
+    classes: 1
+    decoder_channels:
+    - 512
+    - 256
+    - 128
+    - 64
+    - 32
+    decoder_use_batchnorm: true
+    encoder_name: efficientnet-b5
+    encoder_weights: imagenet
+_MODEL_PARAM_PREP: null
+_NEW_CKP_FORMAT: true
+_OPTIMIZATION_LOSS: batch_dice_1
+_OPTIMIZER:
+  _CLASS_INFO:
+    _CLASS_NAME: OptimGetter
+    _MODULE_NAME: adpkd_segmentation.utils.train_utils
+  module_name: catalyst.contrib.nn
+  name: RAdam
+  param_dict:
+    lr: 0.001
+    weight_decay: 0.001
+_TRAIN_DATALOADER_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: DataloaderGetter
+    _MODULE_NAME: adpkd_segmentation.datasets.dataloader
+  batchsize: 8
+  dataset:
+    _CLASS_INFO:
+      _CLASS_NAME: DatasetGetter
+      _MODULE_NAME: adpkd_segmentation.datasets.datasets
+    augmentation:
+      _CLASS_INFO:
+        _CLASS_NAME: Compose
+        _MODULE_NAME: albumentations
+      transforms:
+      - _CLASS_INFO:
+          _CLASS_NAME: Resize
+          _MODULE_NAME: albumentations
+        height: 256
+        interpolation: 2
+        width: 256
+      - _CLASS_INFO:
+          _CLASS_NAME: RandomRotate90
+          _MODULE_NAME: albumentations
+        p: 0.7
+      - _CLASS_INFO:
+          _CLASS_NAME: ShiftScaleRotate
+          _MODULE_NAME: albumentations
+        border_mode: 0
+        p: 1
+        rotate_limit: 30
+        scale_limit: 0.3
+        shift_limit: 0.1
+      - _CLASS_INFO:
+          _CLASS_NAME: RandomCrop
+          _MODULE_NAME: albumentations
+        height: 224
+        p: 1
+        width: 224
+      - _CLASS_INFO:
+          _CLASS_NAME: OneOf
+          _MODULE_NAME: albumentations
+        p: 0.9
+        transforms:
+        - _CLASS_INFO:
+            _CLASS_NAME: ElasticTransform
+            _MODULE_NAME: albumentations
+          alpha: 120
+          alpha_affine: 3.6
+          sigma: 6
+        - _CLASS_INFO:
+            _CLASS_NAME: GridDistortion
+            _MODULE_NAME: albumentations
+          distort_limit: 0.3
+        - _CLASS_INFO:
+            _CLASS_NAME: OpticalDistortion
+            _MODULE_NAME: albumentations
+          distort_limit: 1
+          shift_limit: 0.3
+        - _CLASS_INFO:
+            _CLASS_NAME: IAAPerspective
+            _MODULE_NAME: albumentations
+      - _CLASS_INFO:
+          _CLASS_NAME: OneOf
+          _MODULE_NAME: albumentations
+        p: 0.9
+        transforms:
+        - _CLASS_INFO:
+            _CLASS_NAME: CLAHE
+            _MODULE_NAME: albumentations
+          p: 1
+        - _CLASS_INFO:
+            _CLASS_NAME: RandomBrightnessContrast
+            _MODULE_NAME: albumentations
+          p: 1
+        - _CLASS_INFO:
+            _CLASS_NAME: RandomGamma
+            _MODULE_NAME: albumentations
+          gamma_limit:
+          - 40
+          - 200
+          p: 1
+      - _CLASS_INFO:
+          _CLASS_NAME: OneOf
+          _MODULE_NAME: albumentations
+        p: 0.9
+        transforms:
+        - _CLASS_INFO:
+            _CLASS_NAME: IAASharpen
+            _MODULE_NAME: albumentations
+          alpha:
+          - 0.1
+          - 0.2
+          lightness:
+          - 0.5
+          - 0.7
+          p: 1
+        - _CLASS_INFO:
+            _CLASS_NAME: Blur
+            _MODULE_NAME: albumentations
+          blur_limit: 2
+          p: 1
+        - _CLASS_INFO:
+            _CLASS_NAME: MotionBlur
+            _MODULE_NAME: albumentations
+          blur_limit: 5
+          p: 1
+      - _CLASS_INFO:
+          _CLASS_NAME: ImageCompression
+          _MODULE_NAME: albumentations
+        p: 0.8
+        quality_lower: 50
+        quality_upper: 100
+      - _CLASS_INFO:
+          _CLASS_NAME: MultiplicativeNoise
+          _MODULE_NAME: albumentations
+        multiplier:
+        - 0.8
+        - 1.2
+    label2mask:
+      _CLASS_INFO:
+        _CLASS_NAME: SingleChannelMaskNumpy
+        _MODULE_NAME: adpkd_segmentation.datasets.masks
+    normalization:
+      _CLASS_INFO:
+        _CLASS_NAME: NormalizePatientSeq
+        _MODULE_NAME: adpkd_segmentation.data.data_utils
+    output_idx: true
+    smp_preprocessing: null
+    splitter:
+      _CLASS_INFO:
+        _CLASS_NAME: GenSplit
+        _MODULE_NAME: adpkd_segmentation.datasets.splits
+      seed: 1
+      test: 0.15
+      train: 0.7
+      val: 0.15
+    splitter_key: train
+  shuffle: true
+_VAL_DATALOADER_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: DataloaderGetter
+    _MODULE_NAME: adpkd_segmentation.datasets.dataloader
+  batchsize: 8
+  dataset:
+    _CLASS_INFO:
+      _CLASS_NAME: DatasetGetter
+      _MODULE_NAME: adpkd_segmentation.datasets.datasets
+    augmentation:
+      _CLASS_INFO:
+        _CLASS_NAME: Compose
+        _MODULE_NAME: albumentations
+      transforms:
+      - _CLASS_INFO:
+          _CLASS_NAME: Resize
+          _MODULE_NAME: albumentations
+        height: 256
+        interpolation: 2
+        width: 256
+      - _CLASS_INFO:
+          _CLASS_NAME: CenterCrop
+          _MODULE_NAME: albumentations
+        height: 224
+        width: 224
+    label2mask:
+      _CLASS_INFO:
+        _CLASS_NAME: SingleChannelMaskNumpy
+        _MODULE_NAME: adpkd_segmentation.datasets.masks
+    normalization:
+      _CLASS_INFO:
+        _CLASS_NAME: NormalizePatientSeq
+        _MODULE_NAME: adpkd_segmentation.data.data_utils
+    output_idx: true
+    smp_preprocessing: null
+    splitter:
+      _CLASS_INFO:
+        _CLASS_NAME: GenSplit
+        _MODULE_NAME: adpkd_segmentation.datasets.splits
+      seed: 1
+      test: 0.15
+      train: 0.7
+      val: 0.15
+    splitter_key: train
+  shuffle: false
+_VAL_PLOTTING:
+  0: 2
+  5: 1
+  10: 6
+  20: 3
+  30: 2

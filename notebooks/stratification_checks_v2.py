@@ -9,14 +9,13 @@ import pandas as pd
 from matplotlib.pyplot import hist
 from skmultilearn.model_selection import iterative_train_test_split
 
-# `get_labeled` needs a different working dir
-# imports not working without PYTHONPATH or package setup
-# TODO: refactor later
-# %%
-os.chdir("..")
+# enable lib loading even if not installed as a pip package or in PYTHONPATH
+# also convenient for relative paths in example config files
+from pathlib import Path
+os.chdir(Path(__file__).resolve().parent.parent)
 
 # %%
-from data.data_utils import (
+from adpkd_segmentation.data.data_utils import (  # noqa
     display_sample,
     get_labeled,
     get_y_Path,
@@ -24,7 +23,13 @@ from data.data_utils import (
     path_2dcm_int16,
     path_2label,
 )
-from data.data_utils import PATIENT, SEQUENCE, KIDNEY_PIXELS, MR, VOXEL_VOLUME
+from adpkd_segmentation.data.data_utils import (  # noqa
+    PATIENT,
+    SEQUENCE,
+    KIDNEY_PIXELS,
+    MR,
+    VOXEL_VOLUME,
+)
 
 STUDY_TKV = "study_tkv"
 
@@ -101,9 +106,10 @@ print(patient_info)
 
 # %%
 df = pd.DataFrame.from_records(
-        list(patient_info),
-        columns=[PATIENT, SEQUENCE, MR, STUDY_TKV],
-        index=PATIENT).sort_index()
+    list(patient_info),
+    columns=[PATIENT, SEQUENCE, MR, STUDY_TKV],
+    index=PATIENT,
+).sort_index()
 
 # %%
 df.to_csv("./notebooks/patients.csv")
@@ -181,10 +187,12 @@ TEST = 0.15
 np.random.seed = 42
 
 X_train_val, y_train_val, X_test, y_test = iterative_train_test_split(
-    X, y, test_size=TEST)
+    X, y, test_size=TEST
+)
 
 X_train, y_train, X_val, y_val = iterative_train_test_split(
-    X_train_val, y_train_val, test_size=VAL/(TRAIN + VAL))
+    X_train_val, y_train_val, test_size=VAL / (TRAIN + VAL)
+)
 
 # %%
 print("Sizes: ", len(X_train), len(X_val), len(X_test))
@@ -199,12 +207,14 @@ print(df[df.index.isin(X_test.squeeze())])
 print(df[df.index.isin(X_val.squeeze())])
 
 # %%
-split_dict = {"train": list(X_train.squeeze()),
-              "val": list(X_val.squeeze()),
-              "test": list(X_test.squeeze())}
+split_dict = {
+    "train": list(X_train.squeeze()),
+    "val": list(X_val.squeeze()),
+    "test": list(X_test.squeeze()),
+}
 
 # %%
-with open("./data/stratification/strat_split_2.json", "w") as f:
+with open("./stratification/strat_split_2.json", "w") as f:
     json.dump(split_dict, f, indent=4)
 
 # %%

@@ -1,12 +1,12 @@
 # %%
 import os
 
-# `get_labeled` needs a different working dir
-# imports not working without PYTHONPATH or package setup
-# TODO: refactor later
-os.chdir("..")
-from data.data_utils import get_labeled, make_dcmdicts
-from new_datasets.splits import GenSplit
+# enable lib loading even if not installed as a pip package or in PYTHONPATH
+from pathlib import Path
+os.chdir(Path(__file__).resolve().parent.parent)
+
+from adpkd_segmentation.data.data_utils import get_labeled, make_dcmdicts  # noqa
+from adpkd_segmentation.datasets.splits import GenSplit  # noqa
 
 # %%
 dcm_paths = sorted(get_labeled())
