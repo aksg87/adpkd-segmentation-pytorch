@@ -3,24 +3,26 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
 
 ## Steps to run:
 
-#### 1. Create and activate the conda environment in `adpkd-segmentation.yml`.
+#### 1. Install pip packages from `requirements.txt`.
+(inside some virtual env): `pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html`
+
 #### 2. Modify `config/data_config_example.py` with your data path and place it to `data.data_config.py`.
 #### 3. Run training:
 
-`python -m train --config path_to_config_yaml --makelinks`
+`python -m adpkd_segmentation.train --config --config path_to_config_yaml --makelinks`
 
- Check the config example in `example_experiment`. If using a specific GPU (e.g. device 2):
+ Check the config example in `misc/example_experiment`. If using a specific GPU (e.g. device 2):
 
-`CUDA_VISIBLE_DEVICES=2 python -m train --config path_to_config_yaml --makelinks`
+`CUDA_VISIBLE_DEVICES=2 python -m adpkd_segmentation.train --config --config path_to_config_yaml --makelinks`
 
  The `makelinks` flag is needed only once to create symbolic links to the data.
 
 #### 4. Evaluate:
-`python -m evaluate --config path_to_config_yaml`
+`python -m adpkd_segmentation.evaluate --config path_to_config_yaml --makelinks`
 
  If using a specific GPU (e.g. device 2):
 
- `CUDA_VISIBLE_DEVICES=2 python -m evaluate --config path_to_config_yaml`
+ `CUDA_VISIBLE_DEVICES=2 python -m adpkd_segmentation.evaluate --config path_to_config_yaml --makelinks`
 
 ## Misc:
 - `example_experiment` contains one training example, along with all the configs.
@@ -28,3 +30,4 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
     on those configs to save the outputs to a different location.
 - `multi_train.py` can be used to run multiple training runs in a sequence.
 - `create_eval_configs.py` is a utility script to create evaluation configs from the starting training config.
+Also done automatically inside `train.py`.
