@@ -135,7 +135,7 @@ def plot_fig_from_batch(
 
 
 # %%
-def train(config, config_save_name=None):
+def train(config, config_save_name):
     # reproducibility
     seed = config.get("_SEED", 42)
     random.seed(seed)

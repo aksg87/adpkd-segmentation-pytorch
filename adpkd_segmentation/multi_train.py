@@ -32,4 +32,5 @@ if __name__ == "__main__":
         print("Experiment {}".format(path))
         with open(path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
-        train(config)
+        config_save_name = os.path.basename(path)
+        train(config, config_save_name)
