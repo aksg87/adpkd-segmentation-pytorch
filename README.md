@@ -15,7 +15,7 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
 
 `CUDA_VISIBLE_DEVICES=2 python -m adpkd_segmentation.train --config --config path_to_config_yaml --makelinks`
 
- The `makelinks` flag is needed only once to create symbolic links to the data.
+ The `makelinks` flag is optional and needed only once to create symbolic links to the data.
 
 #### 4. Evaluate:
 `python -m adpkd_segmentation.evaluate --config path_to_config_yaml --makelinks`
@@ -23,6 +23,10 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
  If using a specific GPU (e.g. device 2):
 
  `CUDA_VISIBLE_DEVICES=2 python -m adpkd_segmentation.evaluate --config path_to_config_yaml --makelinks`
+
+For TKV calculations:
+
+`python -m adpkd_segmentation.evaluate_patients --config path_to_config_yaml --makelinks --out_path output_csv_path`
 
 ## Misc:
 - `example_experiment` contains one training example, along with all the configs.

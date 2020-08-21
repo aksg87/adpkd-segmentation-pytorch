@@ -1,10 +1,10 @@
 """
 Model evaluation script for TKV
 
-python -m evaluate_patients --config path_to_config_yaml --makelinks
+python -m adpkd_segmentation.evaluate_patients
+--config path_to_config_yaml --makelinks --out_path output_csv_path
 
-If using a specific GPU (e.g. device 2):
-CUDA_VISIBLE_DEVICES=2 python -m evaluate_patients --config path_to_config_yaml
+If using a specific GPU, e.g. device 2, prepend the command with CUDA_VISIBLE_DEVICES=2 # noqa
 
 The makelinks flag is needed only once to create symbolic links to the data.
 """
