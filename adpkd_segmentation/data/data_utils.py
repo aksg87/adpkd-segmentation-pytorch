@@ -120,10 +120,10 @@ def get_dcms_paths(dir_list):
 
     all_files = []
 
-    for dir in dir_list:
-        print("processing {} ".format(dir))
+    for study_dir in dir_list:
+        print("processing {} ".format(study_dir))
 
-        files = glob.glob("{}/**/*.dcm".format(dir), recursive=True)
+        files = glob.glob("{}/**/*.dcm".format(study_dir), recursive=True)
         all_files.extend(files)
 
         print("total files... --> {} \n".format(len(all_files)))
@@ -152,24 +152,6 @@ def get_y_Path(x):
     y = Path(y)
 
     return y
-
-
-# deprecated
-def path_2dcm(fname):
-
-    if not isinstance(fname, str):
-        fname = str(fname)
-    dcm = pydicom.dcmread(fname)
-    return dcm.pixel_array.astype(dtype=np.float32)
-
-
-# deprecated
-def new_path_2dcm(fname):
-
-    if not isinstance(fname, str):
-        fname = str(fname)
-    dcm = pydicom.dcmread(fname)
-    return int16_to_uint8(dcm.pixel_array)
 
 
 def path_2dcm_int16(fname):
