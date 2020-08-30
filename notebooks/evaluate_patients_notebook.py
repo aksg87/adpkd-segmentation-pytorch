@@ -239,7 +239,9 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 
 # path = "experiments/july15/strat_seq_norm_b5_BN_even_more_albu_224_unet_double_bce_sd_tkv/val/val.yaml" # noqa
 
-path = "experiments/august18/stratified_run_example/val/val.yaml"  # noqa
+# path = "experiments/august18/stratified_run_example/val/val.yaml"  # noqa
+# path = "experiments/august30/random_split_new_data_check/val/val.yaml"  # noqa
+path = "experiments/august30/random_split_new_data_check/test/test.yaml" # noqa
 
 # path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
 dataloader, model, device, binarize_func, split = load_config(config_path=path)
