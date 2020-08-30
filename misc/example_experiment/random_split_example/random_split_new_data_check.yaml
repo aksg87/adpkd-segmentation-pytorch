@@ -3,7 +3,7 @@ _EXPERIMENT_DATA:
   best_metric_type: high
   num_epochs: 150
   saving_metric: dice_metric
-_EXPERIMENT_DIR: ./experiments/august18/random_split_example
+_EXPERIMENT_DIR: ./experiments/august30/random_split_new_data_check
 _LOOKAHEAD_OPTIM:
   params:
     alpha: 0.5
@@ -406,7 +406,7 @@ _VAL_DATALOADER_CONFIG:
       test: 0.15
       train: 0.7
       val: 0.15
-    splitter_key: train
+    splitter_key: val
   shuffle: false
 _VAL_PLOTTING:
   0: 2

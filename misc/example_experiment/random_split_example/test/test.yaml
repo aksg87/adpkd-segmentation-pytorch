@@ -173,7 +173,7 @@ _LOSSES_METRICS_CONFIG:
   requires_extra_info:
   - relative_tkv
   - balanced_tkv_batch_sd_1
-_MODEL_CHECKPOINT: ./experiments/august18/random_split_example/checkpoints/best_val_checkpoint.pth
+_MODEL_CHECKPOINT: ./experiments/august30/random_split_new_data_check/checkpoints/best_val_checkpoint.pth
 _MODEL_CONFIG:
   _CLASS_INFO:
     _CLASS_NAME: SmpModelGetter
@@ -192,7 +192,7 @@ _MODEL_CONFIG:
     encoder_name: efficientnet-b5
     encoder_weights: imagenet
 _NEW_CKP_FORMAT: true
-_RESULTS_PATH: ./experiments/august18/random_split_example/evaluation_results/test
+_RESULTS_PATH: ./experiments/august30/random_split_new_data_check/evaluation_results/test
 _TEST_DATALOADER_CONFIG:
   _CLASS_INFO:
     _CLASS_NAME: DataloaderGetter

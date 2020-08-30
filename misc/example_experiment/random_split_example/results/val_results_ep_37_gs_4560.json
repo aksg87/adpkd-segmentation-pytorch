@@ -1,0 +1,14 @@
+{
+    "dice_metric": 0.9071312403377099,
+    "hard_dice": 0.09286875966229016,
+    "loss_dice": 0.36290899862216996,
+    "batch_dice_1": 0.2826985626281062,
+    "batch_dice_2": 0.28010813646678684,
+    "loss_bce": 0.20622572623959726,
+    "relative_tkv": 732.6595846888537,
+    "balanced_bce_batch_sd_1": 0.09865756095558349,
+    "balanced_bce_batch_sd_2": 0.09664620391542278,
+    "balanced_tkv_batch_sd_1": 0.16030705312806287,
+    "kidney_pixel_bMAPE": 0.6071734396339972,
+    "kidney_pixel_bMSLE": 0.33693756785573836
+}
