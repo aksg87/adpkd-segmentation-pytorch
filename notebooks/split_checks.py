@@ -32,6 +32,33 @@ for patient in split["val"]:
 
 
 # %%
+print(split["test"])
+
+# %%
+for patient in split["test"]:
+    sequences = set()
+    mrs = set()
+    for dcm in patient2dcm[patient]:
+        sequences.add(dcm2attribs[dcm]["seq"])
+        mrs.add(dcm2attribs[dcm]["MR"])
+    print(sequences)
+    print(mrs)
+
+
+# %%
+print(split["train"])
+
+# %%
+for patient in split["train"]:
+    sequences = set()
+    mrs = set()
+    for dcm in patient2dcm[patient]:
+        sequences.add(dcm2attribs[dcm]["seq"])
+        mrs.add(dcm2attribs[dcm]["MR"])
+    print(sequences)
+    print(mrs)
+
+# %%
 for patient in all_patient_IDS:
     sequences = set()
     mrs = set()
