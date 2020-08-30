@@ -1,7 +1,10 @@
-structure_reference.txt
 .vscode
 *.png
 *.dcm
 *.npy
-data/data_config.py
+*.pth
+tb_logs/
+/data/data_config.py
 __pycache__/
+/experiments/
+*.csv

@@ -1,0 +1,240 @@
+_LOADER_TO_EVAL: _VAL_DATALOADER_CONFIG
+_LOSSES_METRICS_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: LossesMetrics
+    _MODULE_NAME: adpkd_segmentation.utils.criterions
+  criterions_dict:
+    balanced_bce_batch_sd_1:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 1
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: BCEWithLogitsLoss
+          _MODULE_NAME: torch.nn
+    balanced_bce_batch_sd_2:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 2
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: BCEWithLogitsLoss
+          _MODULE_NAME: torch.nn
+    balanced_tkv_batch_sd_1:
+      _CLASS_INFO:
+        _CLASS_NAME: DynamicBalanceLosses
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      criterions:
+      - _CLASS_INFO:
+          _CLASS_NAME: Dice
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        dim:
+        - 0
+        - 1
+        - 2
+        - 3
+        power: 1
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      - _CLASS_INFO:
+          _CLASS_NAME: ErrorLogTKVRelative
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        pred_process:
+          _CLASS_INFO:
+            _CLASS_NAME: Sigmoid
+            _MODULE_NAME: torch.nn
+      requires_extra_dict:
+      - false
+      - true
+    batch_dice_1:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      power: 1
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    batch_dice_2:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      power: 2
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    dice_metric:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      power: 1
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidBinarize
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        thresholds:
+        - 0.5
+      use_as_loss: false
+    hard_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: SigmoidForwardBinarize
+          _MODULE_NAME: adpkd_segmentation.utils.losses
+        thresholds:
+        - 0.5
+    kidney_pixel_bMAPE:
+      _CLASS_INFO:
+        _CLASS_NAME: KidneyPixelMAPE
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    kidney_pixel_bMSLE:
+      _CLASS_INFO:
+        _CLASS_NAME: KidneyPixelMSLE
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      dim:
+      - 0
+      - 1
+      - 2
+      - 3
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    loss_bce:
+      _CLASS_INFO:
+        _CLASS_NAME: BCEWithLogitsLoss
+        _MODULE_NAME: torch.nn
+    loss_dice:
+      _CLASS_INFO:
+        _CLASS_NAME: Dice
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+    relative_tkv:
+      _CLASS_INFO:
+        _CLASS_NAME: ErrorLogTKVRelative
+        _MODULE_NAME: adpkd_segmentation.utils.losses
+      pred_process:
+        _CLASS_INFO:
+          _CLASS_NAME: Sigmoid
+          _MODULE_NAME: torch.nn
+  requires_extra_info:
+  - relative_tkv
+  - balanced_tkv_batch_sd_1
+_MODEL_CHECKPOINT: ./experiments/august30/random_split_new_data_check/checkpoints/best_val_checkpoint.pth
+_MODEL_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: SmpModelGetter
+    _MODULE_NAME: adpkd_segmentation.models.models
+  smp_name: Unet
+  smp_params:
+    activation: null
+    classes: 1
+    decoder_channels:
+    - 512
+    - 256
+    - 128
+    - 64
+    - 32
+    decoder_use_batchnorm: true
+    encoder_name: efficientnet-b5
+    encoder_weights: imagenet
+_NEW_CKP_FORMAT: true
+_RESULTS_PATH: ./experiments/august30/random_split_new_data_check/evaluation_results/val
+_VAL_DATALOADER_CONFIG:
+  _CLASS_INFO:
+    _CLASS_NAME: DataloaderGetter
+    _MODULE_NAME: adpkd_segmentation.datasets.dataloader
+  batchsize: 8
+  dataset:
+    _CLASS_INFO:
+      _CLASS_NAME: DatasetGetter
+      _MODULE_NAME: adpkd_segmentation.datasets.datasets
+    augmentation:
+      _CLASS_INFO:
+        _CLASS_NAME: Compose
+        _MODULE_NAME: albumentations
+      transforms:
+      - _CLASS_INFO:
+          _CLASS_NAME: Resize
+          _MODULE_NAME: albumentations
+        height: 256
+        interpolation: 2
+        width: 256
+      - _CLASS_INFO:
+          _CLASS_NAME: CenterCrop
+          _MODULE_NAME: albumentations
+        height: 224
+        width: 224
+    label2mask:
+      _CLASS_INFO:
+        _CLASS_NAME: SingleChannelMaskNumpy
+        _MODULE_NAME: adpkd_segmentation.datasets.masks
+    normalization:
+      _CLASS_INFO:
+        _CLASS_NAME: NormalizePatientSeq
+        _MODULE_NAME: adpkd_segmentation.data.data_utils
+    output_idx: true
+    smp_preprocessing: null
+    splitter:
+      _CLASS_INFO:
+        _CLASS_NAME: GenSplit
+        _MODULE_NAME: adpkd_segmentation.datasets.splits
+      seed: 1
+      test: 0.15
+      train: 0.7
+      val: 0.15
+    splitter_key: val
+  shuffle: false
