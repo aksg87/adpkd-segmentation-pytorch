@@ -107,13 +107,14 @@ def process_dcm_folder(dcm_folder, target_dir):
                 if correct is None:
                     correct = idx
                 else:
-                    raise Exception(
-                        f"Can't tell which study annotated in {dcm_folder}"
-                    )
+                    shutil.rmtree(target_study)
+                    print(f"Can't tell which study annotated in {dcm_folder}")
+                    raise Exception
+
         if correct is None:
-            raise Exception(
-                f"Dicoms and nifti annotations not a match in {dcm_folder}"
-            )
+            shutil.rmtree(target_study)
+            print(f"Dicoms and nifti annotations not a match in {dcm_folder}")
+            raise Exception
     else:
         correct = 0
 
@@ -138,4 +139,8 @@ def process_nifti_dirs(source_dir, target_dir):
     for folder in subfolders:
         if folder.name == DICOM_FOLDER:
             print(f"Processing study {folder.parent.name}")
-            process_dcm_folder(folder, target_dir)
+            try:
+                process_dcm_folder(folder, target_dir)
+            except Exception:
+                print(f"Couldn't process {folder.parent}")
+                continue
