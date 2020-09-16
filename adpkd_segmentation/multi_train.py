@@ -25,8 +25,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.multi_config, "r") as f:
         multi_config = yaml.load(f, Loader=yaml.FullLoader)
-    if args.makelinks:
-        makelinks()
 
     # run experiments
     for path in multi_config:
@@ -34,4 +32,6 @@ if __name__ == "__main__":
         with open(path, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
         config_save_name = os.path.basename(path)
+        if args.makelinks:
+            makelinks()
         train(config, config_save_name)
