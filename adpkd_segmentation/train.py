@@ -263,6 +263,9 @@ def train(config, config_save_name):
                 plot_fig_from_batch(
                     train_writer, x_batch, prediction, y_batch, global_step,
                 )
+            # lr change after each batch
+            if lr_scheduler_getter.step_type == "after_batch":
+                lr_scheduler.step()
 
         # done with one epoch
         # let's validate (use code from the validation script)
@@ -300,12 +303,13 @@ def train(config, config_save_name):
         tb_log_metrics(val_writer, all_losses_and_metrics, global_step)
 
         # learning rate schedule step at the end of epoch
-        if lr_scheduler_getter.step_type == "use_val":
-            lr_scheduler.step(all_losses_and_metrics[loss_key])
-        elif lr_scheduler_getter.step_type == "use_epoch":
-            lr_scheduler.step(epoch)
-        else:
-            lr_scheduler.step()
+        if lr_scheduler_getter.step_type != "after_batch":
+            if lr_scheduler_getter.step_type == "use_val":
+                lr_scheduler.step(all_losses_and_metrics[loss_key])
+            elif lr_scheduler_getter.step_type == "use_epoch":
+                lr_scheduler.step(epoch)
+            else:
+                lr_scheduler.step()
 
         # plot distinct learning rates in order they appear in the optimizer
         lr_dict = OrderedDict()

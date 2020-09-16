@@ -147,6 +147,29 @@ class Dice(nn.Module):
         return score
 
 
+class PredictionEntropy(nn.Module):
+    """
+    Calculates average entropy of the predicted soft mask.
+
+    Doesn't depend on ground truth mask.
+    """
+
+    def __init__(self, pred_process, epsilon=1e-8, standardize_func=None):
+        super().__init__()
+        self.pred_process = pred_process
+        self.epsilon = epsilon
+        self.standardize_func = standardize_func
+
+    def __call__(self, pred, target):
+        pred = self.pred_process(pred)
+        if self.standardize_func is not None:
+            pred = self.standardize_func(pred)
+            target = self.standardize_func(target)
+
+        entropy = -pred * torch.log(pred + self.epsilon)
+        return entropy.mean()
+
+
 class KidneyPixelMAPE(nn.Module):
     """
     Calculates the absolute percentage error for predicted kidney pixel counts

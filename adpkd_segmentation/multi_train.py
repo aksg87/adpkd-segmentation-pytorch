@@ -5,6 +5,7 @@ Input config example: `config/multi_train_example.yaml`
 """
 
 import argparse
+import os
 import yaml
 
 from adpkd_segmentation.train import train
