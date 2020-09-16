@@ -112,7 +112,7 @@ df = pd.DataFrame.from_records(
 ).sort_index()
 
 # %%
-df.to_csv("./notebooks/patients.csv")
+df.to_csv("./notebooks/patients_2020_09_06.csv")
 
 # %%
 print(df.index.value_counts())
@@ -136,9 +136,10 @@ all_ids = [id_ for id_ in all_patient_IDS if id_ not in outlier_ids]
 def create_label_arrays(patient_info, all_ids):
     patient_to_label = {}
     for id_ in all_ids:
+        # previously 7
         # SSFSE, FIESTA, OTHER, LOG_TKV_1, LOG_TKV_2,
         # LOG_TKV_3, LOG_TKV_4
-        patient_to_label[id_] = np.zeros(7, dtype=np.uint8)
+        patient_to_label[id_] = np.zeros(6, dtype=np.uint8)
     for patient, seq, mr, tkv in patient_info:
         # outlier
         if patient not in patient_to_label:
@@ -150,19 +151,21 @@ def create_label_arrays(patient_info, all_ids):
         elif "FIESTA" in seq:
             patient_to_label[patient][1] = 1
         else:
-            patient_to_label[patient][2] = 1
+            # previously a separate label
+            patient_to_label[patient][1] = 1
         # LOG TKV category
+        # old values:
         # 13.6 to 15.1 interquartile range
         # 14.2 median
         log_tkv = np.log(tkv)
-        if log_tkv < 13.6:
+        if log_tkv < 13.7:
+            patient_to_label[patient][2] = 1
+        elif 13.7 <= log_tkv < 14.2:
             patient_to_label[patient][3] = 1
-        elif 13.6 <= log_tkv < 14.2:
+        elif 14.2 <= log_tkv < 14.8:
             patient_to_label[patient][4] = 1
-        elif 14.2 <= log_tkv < 15.1:
+        elif 14.8 <= log_tkv:
             patient_to_label[patient][5] = 1
-        elif 15.1 <= log_tkv:
-            patient_to_label[patient][6] = 1
 
     return patient_to_label
 
@@ -214,7 +217,7 @@ split_dict = {
 }
 
 # %%
-with open("./stratification/strat_split_2.json", "w") as f:
+with open("./stratification/strat_split_2020_09_06.json", "w") as f:
     json.dump(split_dict, f, indent=4)
 
 # %%
