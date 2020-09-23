@@ -5,6 +5,7 @@ import os
 import yaml
 
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import seaborn as sns
 
 import torch
@@ -104,6 +105,47 @@ for dice, idx in very_low_dice:
     axarr[2].imshow(pred_sigm, alpha=0.5)
 
 # %%
+# display in animation format
+plt.rcParams["animation.html"] = "jshtml"
+
+fig, axarr = plt.subplots(1, 3, figsize=(15, 5))
+
+
+def animate(idx, dataset, model):
+
+    """error analysis animation function called for list of idx in dataset
+
+    TODO: runs slow since each inference is on individual image. 
+    TODO: add color bars to indicate dice error and TKV gap for each image
+
+    reference implementation: https://stackoverflow.com/questions/61163447/python-in-vscode-data-in-plot-are-not-updating
+    Args:
+        idx (int): index of sample in dataset
+        dataset (PyTorch dataset): dataset
+        model (PyTorch model): model
+
+        example: ani = FuncAnimation(fig, animate, frames=idxs, fargs=(dataloader.dataset, model), interval=300)
+    """
+    device = torch.device("cpu:0")
+    model = model.to(device)
+    model.eval()
+
+    image, mask, _idx = dataset[idx]
+    im_tensor = torch.from_numpy(image).unsqueeze(0)
+    pred = model(im_tensor)
+    im = image[0]  # (3, 224, 224) original
+    msk = mask[0]  # (1, 224, 224) original
+    pred_sigm = torch.sigmoid(pred)[0][0].detach().numpy()
+
+    attribs = dataset.get_verbose(idx)[2]
+    fig.suptitle(f'index:{idx} \n patient:{attribs["patient"]}  MR:{attribs["MR"]} \n seq {attribs["seq"]} \ntkv {attribs["study_tkv"]}')
+    axarr[0].imshow(im, cmap="gray")
+    axarr[1].imshow(im, cmap="gray")  # background for mask
+    axarr[1].imshow(msk, cmap="jet", alpha=0.4)
+    axarr[2].imshow(im, cmap="gray", )  # background for pred mask
+    axarr[2].imshow(pred_sigm, cmap="jet", alpha=0.4)
+
+# %%
 middle_dice = [
     (dice, idx)
     for idx, dice in enumerate(dice_scores)
@@ -111,6 +153,9 @@ middle_dice = [
 ]
 
 
+idxs = [idx for _, idx in middle_dice[:80]]
+ani = FuncAnimation(fig, animate, frames=idxs, fargs=(dataloader.dataset, model), interval=300, cache_frame_data=False)
+ani
 # %%
 def check_prediction(idx):
     image, mask, _ = dataloader.dataset[idx]
@@ -127,7 +172,6 @@ def check_prediction(idx):
     axarr[1].imshow(msk, alpha=0.5)
     axarr[2].imshow(im, cmap="gray")  # background for mask
     axarr[2].imshow(pred_sigm, alpha=0.5)
-
 
 # %%
 for dice, idx in middle_dice:
