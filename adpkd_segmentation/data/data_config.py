@@ -9,7 +9,7 @@ labeled_dirs_old = [
     dataroot_old / "training_data-61-110MR_AX_SSFSE_ABD_PEL_50",
 ]
 
-labeled_dirs = [dataroot / "new_processed_studies"]
+labeled_dirs = [dataroot / "processed_studies_sep_26"]
 unlabeled_dirs = [dataroot / "unlabelled_data"]
 
 # modify for custom symbolic link locations

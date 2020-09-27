@@ -24,7 +24,7 @@ all_patient_IDS = list(patient2dcm.keys())
 
 
 # %%
-with open("./stratification/strat_split_2020_09_06.json", "r") as f:
+with open("./stratification/strat_split_2020_09_24.json", "r") as f:
     full_split = json.load(f)
 
 # %%
@@ -45,7 +45,7 @@ new["val"] = full_split["val"]
 new["test"] = full_split["test"]
 new["train"] = new_train
 # %%
-with open("./stratification/strat_split_2020_09_06_extended.json", "w") as f:
+with open("./stratification/strat_split_2020_09_24_extended.json", "w") as f:
     json.dump(new, f, indent=4)
 
 # %%
