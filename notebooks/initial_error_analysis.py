@@ -22,14 +22,15 @@ from adpkd_segmentation.utils.train_utils import load_model_data  # noqa
 sns.set()
 
 # %%
-CONFIG = "experiments/september/11_stratified_albu_v2_b4_simple_norm/val/val.yaml"  # noqa
+# CONFIG = "experiments/september/11_stratified_albu_v2_b4_simple_norm/val/val.yaml"  # noqa
+CONFIG = "experiments/september/25_new_stratified_run_2/test/test.yaml"
 
 with open(CONFIG, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 # %%
 model_config = config["_MODEL_CONFIG"]
-dataloader_config = config["_VAL_DATALOADER_CONFIG"]
+dataloader_config = config["_TEST_DATALOADER_CONFIG"]
 losses_config = config["_LOSSES_METRICS_CONFIG"]
 saved_checkpoint = config["_MODEL_CHECKPOINT"]
 # override
@@ -132,5 +133,14 @@ def check_prediction(idx):
 # %%
 for dice, idx in middle_dice:
     check_prediction(idx)
+
+
+# %%
+def get_patients(dice_scores, dataset):
+    patients = []
+    for score, idx in dice_scores:
+        _, _, attribs = dataset.get_verbose(idx)
+        patients.append(attribs["patient"])
+    return patients
 
 # %%
