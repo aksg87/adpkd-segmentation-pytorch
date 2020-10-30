@@ -50,7 +50,8 @@ from adpkd_segmentation.data.data_utils import ( # noqa
 # makelinks()
 
 # %%
-path = "./misc/example_experiment/stratified_run_example/val/val.yaml"
+path = "./experiments/september06/random_split_new_data_less_albu/val/val.yaml"
+
 with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 dataloader_config = config["_VAL_DATALOADER_CONFIG"]
