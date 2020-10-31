@@ -38,7 +38,8 @@ def evaluate(config):
 
 
 # %%
-path = "./experiments/september06/random_split_new_data_less_albu/val/val.yaml"
+path = "./experiments/september03/random_split_new_data_less_albu/val/val.yaml"
+
 with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 

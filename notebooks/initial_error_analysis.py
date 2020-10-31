@@ -23,8 +23,8 @@ sns.set()
 
 # %%
 # CONFIG = "experiments/september/11_stratified_albu_v2_b4_simple_norm/val/val.yaml"  # noqa
-CONFIG = "experiments/september/25_new_stratified_run_2/test/test.yaml"
-
+# CONFIG = "./experiments/september06/random_split_new_data_less_albu/test/test.yaml"
+CONFIG = "./experiments/september03/random_split_new_data_less_albu/test/test.yaml"
 with open(CONFIG, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -58,7 +58,7 @@ dice_scores = all_losses_and_metrics["dice_metric"]
 # %%
 plt.xlabel("Example index")
 plt.ylabel("Dice score")
-sns.scatterplot(x=range(len(dice_scores)), y=dice_scores)
+sns.scatterplot(x=range(len(dice_scores)), y=dice_scores, alpha=0.4)
 
 # %%
 very_low_dice = [
