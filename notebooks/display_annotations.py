@@ -27,7 +27,7 @@ def nii2dcm(nii_file):
 # %%
 
 
-def plot_image_bar(image, label=None, title=None):
+def plot_image_bar(image, label=None, title=None, standardize=True):
 
     ax = plt.subplot(111)
     im = ax.imshow(
@@ -35,6 +35,8 @@ def plot_image_bar(image, label=None, title=None):
     )
 
     if label is not None:
+        if standardize is True:
+            label[label > 0] = 1
         im = ax.imshow(
             label, cmap="viridis", origin='lower', alpha=0.5
         )
@@ -69,8 +71,9 @@ plot_nii_dcm(niis[0], axis=1)
 
 # %%
 # displays 3d sum of masks over dcms for error analysis
-start = 160
+start = 200
 for i in range(start, start+20):
+    print(f"{i}  {niis[i]}")
     plot_nii_dcm(niis[i])
     plot_nii_dcm(niis[i], axis=1)
 
