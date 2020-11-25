@@ -1,6 +1,6 @@
 # %%
 from pathlib import Path
-import PIL
+import PIL  
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,7 +96,7 @@ plt.imshow(dcm_array)
 # %%
 # REAL RUN
 real_source = Path("data/annotation_completed")
-real_target = Path("data/new_processed_studies")
+real_target = Path("data/processed_studies_nov_2")
 process_nifti_dirs(real_source, real_target)
 
 # %%
