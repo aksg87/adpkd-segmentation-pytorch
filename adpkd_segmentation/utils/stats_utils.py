@@ -6,25 +6,18 @@ from sklearn.metrics import r2_score
 
 # %%
 def bland_altman_plot(
-    predicted, truth, percent=False, title="Bland-Altman Plot"
+    predicted, truth, percent=True, title="Bland-Altman Plot"
 ):
     predicted = np.asarray(predicted)
     truth = np.asarray(truth)
-    diff = truth - predicted
-
-    if percent:
-        print('dividing by ground truth')
-        diff = np.divide(diff, truth)
+    diff = (truth - predicted)
+    diff = np.divide(diff, truth)
 
     fig, ax = plt.subplots()
     ax = sns.scatterplot(truth, 100*diff)
     ax.set(
         xlabel="ground truth (mL)", ylabel="%Difference from truth", title=title
     )
-
-    # Plot a horizontal line at 0
-    # ax.axhline(0, ls=":", c=".2")
-    # ax.set_ylim(-20, 20)
 
     avg = 100*np.mean(diff)
     sd_1_96 = 100*(diff.std(ddof=1) * 1.96)

@@ -25,6 +25,7 @@ from adpkd_segmentation.utils.train_utils import load_model_data  # noqa
 from adpkd_segmentation.utils.stats_utils import (  # noqa
     bland_altman_plot,
     scatter_plot,
+    linreg_plot
 )
 
 from adpkd_segmentation.utils.losses import SigmoidBinarize # noqa
@@ -244,18 +245,23 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
 # path = "experiments/august30/random_split_new_data_check/test/test.yaml" # noqa
 # path = "experiments/september03/random_split_new_data_less_albu_10_more_step_lr/val/val.yaml"
 # path = "experiments/september03/random_split_new_data_less_albu/val/val.yaml"
-path = "experiments/september03/random_split_new_data_less_albu/test/test.yaml"
+# path = "experiments/september03/random_split_new_data_less_albu/test/test.yaml"
 
 # path = "./example_experiment/train_example_all_no_noise_patient_seq_norm_b5_BN/val/val.yaml"  # noqa
+
+path = "./experiments/november/26_new_stratified_run_2_long/test/test.yaml"
+
+# path = "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml"
+
 dataloader, model, device, binarize_func, split = load_config(config_path=path)
 
 # %%
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
-patient_metric_data = calculate_patient_metrics(dcm2attrib)
+patient_metric_data = calculate_patient_metrics(dcm2attrib, "test-data.csv")
 
 pred = patient_metric_data["TKV_Pred"].to_numpy()
 gt = patient_metric_data["TKV_GT"].to_numpy()
-bland_altman_plot(pred, gt, percent=True, title="BA Plot: TKV all - % error")
+bland_altman_plot(pred, gt, percent=True, title="Bland-Altman Plot: TKV % error")
 
 # %%
 relative_error = abs((gt - pred) / gt)
@@ -265,7 +271,8 @@ print(relative_error.std(ddof=1))
 # %%
 # Patient Dice with TKV-GT on Scatter Plot ***
 patient_dice = patient_metric_data["patient_dice"].to_numpy()
-scatter_plot(patient_dice, gt, title="plot: Patient Dice by TKV")
+scatter_plot(patient_dice, gt, title="Patient Dice by TKV")
+linreg_plot(pred, gt)
 
 # %%
 # 3D dice
@@ -274,14 +281,14 @@ print(patient_dice.std(ddof=1))
 
 # %%
 # check some high error studies
-studies = [
-    WC-ADPKD-____-,
-    WC-ADPKD-____-,
-    WC-ADPKD-____-,
-]
-for idx, label in enumerate(patient_metric_data.index):
-    if label in studies:
-        print(relative_error[idx], patient_dice[idx])
+# studies = [
+#     WC-ADPKD-____-,
+#     WC-ADPKD-____-,
+#     WC-ADPKD-____-,
+# ]
+# for idx, label in enumerate(patient_metric_data.index):
+#     if label in studies:
+#         print(relative_error[idx], patient_dice[idx])
 
 # %%
 dataset = dataloader.dataset
@@ -292,8 +299,8 @@ for dcm_path, attrib in dcm2attrib.items():
     study_to_indices[study].append(path_to_index[dcm_path])
 
 # %%
-study = studies[1]
-print(study)
+# study = studies[1]
+# print(study)
 for num, idx in enumerate(study_to_indices[study]):
     # assuming that dataset outputs all 3
     # all 3 image channels equal
@@ -315,7 +322,7 @@ patient_metric_data_pos = calculate_patient_metrics(dcm2attrib_pos)
 pred_pos = patient_metric_data_pos["TKV_Pred"].to_numpy()
 gt_pos = patient_metric_data_pos["TKV_GT"].to_numpy()
 bland_altman_plot(
-    pred_pos, gt_pos, percent=True, title="BA Plot: TKV positives - % error"
+    pred_pos, gt_pos, percent=True, title="Test set: BA Plot: TKV positives - % error"
 )
 
 # %%
@@ -337,6 +344,6 @@ bland_altman_plot(
 # can result in an error for some examples
 # due to different lengths
 # %%
-scatter_plot(gt_neg - pred_neg, gt, title="TKV negatives")
+scatter_plot(gt_neg, pred_neg, title="TKV negatives")
 
 # %%
