@@ -12,6 +12,8 @@ import torch
 import os
 import yaml
 
+import matplotlib.pyplot as plt
+
 # enable lib loading even if not installed as a pip package or in PYTHONPATH
 # also convenient for relative paths in example config files
 from pathlib import Path
@@ -122,7 +124,42 @@ def calc_dcm_metrics(
 
     return updated_dcm2attribs
 
+# %%
+def visualize_inference(
+    dataloader, model, device, binarize_func,
+):
+    dataset = dataloader.dataset
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
 
+    img = []
+    pred = []
+    ground = []
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, _ = output
+        else:
+            x_batch, y_batch = output
+
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+        batch_size = y_batch.size(0)
+
+        with torch.no_grad():
+            _, dcm_path, attribs = dataset.get_verbose(batch_size * batch_idx)
+            pt = attribs['patient']
+            mr = attribs['MR']
+
+            if pt == 'WC-ADPKD_WH9-002279':
+                y_batch_hat = model(x_batch)
+                y_batch_hat_binary = binarize_func(y_batch_hat)
+                img += [x_batch]
+                pred += [y_batch_hat_binary]
+                ground += [y_batch]
+        
+    return torch.cat(img, dim=0), torch.cat(pred, dim=0), torch.cat(ground, dim=0)
 # %%
 def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
@@ -256,6 +293,29 @@ path = "./experiments/november/26_new_stratified_run_2_long/test/test.yaml"
 dataloader, model, device, binarize_func, split = load_config(config_path=path)
 
 # %%
+
+img, pred, ground = visualize_inference(
+    dataloader, model, device, binarize_func)
+
+# %%
+print(img.shape)
+idx = 40
+# %%
+arr = img.cpu().numpy()[idx, 0,...]
+arr.shape
+plt.imshow(arr)
+
+# %%
+arr = pred.cpu().numpy()[idx, 0,...]
+arr.shape
+plt.imshow(arr)
+
+# %%
+arr = ground.cpu().numpy()[idx, 0,...]
+arr.shape
+plt.imshow(arr)
+# %%
+calc_dcm_metrics(dataloader, model, device, binarize_func)
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 patient_metric_data = calculate_patient_metrics(dcm2attrib, "test-data.csv")
 
