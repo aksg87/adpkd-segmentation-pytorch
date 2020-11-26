@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 import os
 import yaml
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -139,7 +140,7 @@ def visualize_inference(
     ground = []
     for batch_idx, output in enumerate(dataloader):
         if output_example_idx:
-            x_batch, y_batch, _ = output
+            x_batch, y_batch, idxs_batch = output
         else:
             x_batch, y_batch = output
 
@@ -160,6 +161,55 @@ def visualize_inference(
                 ground += [y_batch]
         
     return torch.cat(img, dim=0), torch.cat(pred, dim=0), torch.cat(ground, dim=0)
+
+# %%
+
+
+def inference_to_disk(
+    dataloader, model, device, binarize_func,
+    save_dir="./saved_inference", model_name="model"
+):
+    dataset = dataloader.dataset
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
+
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, idxs_batch = output
+        else:
+            x_batch, y_batch = output
+
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+
+        with torch.no_grad():
+
+            file_names = [
+                Path(dataset.get_verbose(idx)[1]).stem for idx in idxs_batch
+            ]
+
+            file_attribs = [
+                dataset.get_verbose(idx)[2] for idx in idxs_batch
+            ]
+
+            y_batch_hat = model(x_batch)
+            y_batch_hat_binary = binarize_func(y_batch_hat)
+
+            for file_name, file_attrib, img, pred, ground in zip(
+                file_names, file_attribs, x_batch, y_batch_hat_binary, y_batch
+            ):
+                out_dir = Path.cwd() / Path(save_dir) / model_name / file_attrib['patient'] / file_attrib['MR'] / file_name
+
+                out_dir.parent.mkdir(parents=True, exist_ok=True)
+                print(out_dir)
+
+                np.save(str(out_dir) + "_img", img.cpu().numpy())
+                np.save(str(out_dir) + "_pred", pred.cpu().numpy())
+                np.save(str(out_dir) + "_ground", ground.cpu().numpy())
+
+
 # %%
 def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
@@ -296,6 +346,13 @@ dataloader, model, device, binarize_func, split = load_config(config_path=path)
 
 img, pred, ground = visualize_inference(
     dataloader, model, device, binarize_func)
+
+# %%
+
+inference_to_disk(
+    dataloader, model, device, binarize_func
+)
+
 
 # %%
 print(img.shape)
