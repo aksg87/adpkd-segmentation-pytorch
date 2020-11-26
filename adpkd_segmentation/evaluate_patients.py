@@ -97,6 +97,43 @@ def calculate_dcm_voxel_volumes(
 
 
 # %%
+
+def visualize_performance(
+    dataloader, model, device, binarize_func,
+):
+    dataset = dataloader.dataset
+    output_example_idx = (
+        hasattr(dataloader.dataset, "output_idx")
+        and dataloader.dataset.output_idx
+    )
+
+    for batch_idx, output in enumerate(dataloader):
+        if output_example_idx:
+            x_batch, y_batch, _ = output
+        else:
+            x_batch, y_batch = output
+
+        x_batch = x_batch.to(device)
+        y_batch = y_batch.to(device)
+        batch_size = y_batch.size(0)
+        num_examples += batch_size
+        with torch.no_grad():
+            _, dcm_path, attribs = dataset.get_verbose(batch_size * batch_idx)
+            
+            y_batch_hat = model(x_batch)
+            y_batch_hat_binary = binarize_func(y_batch_hat)
+            start_idx = batch_size * batch_idx
+            end_idx = batch_size * (1 + batch_idx)
+
+            # for inbatch_idx, dataset_idx in enumerate(
+            #     range(start_idx, end_idx)
+            # ):
+            #     _, dcm_path, attribs = dataset.get_verbose(dataset_idx)
+
+            #     updated_dcm2attribs[dcm_path] = attribs
+
+
+# %%
 def evaluate(config):
     model_config = config["_MODEL_CONFIG"]
     loader_to_eval = config["_LOADER_TO_EVAL"]
