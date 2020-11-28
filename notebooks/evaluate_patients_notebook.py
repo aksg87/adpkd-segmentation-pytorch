@@ -242,12 +242,24 @@ def compute_inference_stats(save_dir="./saved_inference"):
             pred_process = Sigmoid()
             dice = Dice(pred_process=pred_process, use_as_loss=False, power=1, dim=(0,1,2,3))
 
-            mid = pred_vol.shape[0]//2
+            slice1 = 1 * (pred_vol.shape[0]//6)
+            slice2 = 2 * (pred_vol.shape[0]//6)
+            slice3 = 3 * (pred_vol.shape[0]//6)
+            slice4 = 4 * (pred_vol.shape[0]//6)
+            slice5 = 5 * (pred_vol.shape[0]//6)
 
-            f, (ax1, ax2) = plt.subplots(1, 2)
-            ax1.imshow(pred_vol[mid, 0])
-            ax2.imshow(ground_vol[mid, 0])
-
+            f, ax = plt.subplots(5, 2)
+            ax[0,0].imshow(pred_vol[slice1, 0])
+            ax[0,1].imshow(ground_vol[slice1, 0])
+            ax[1,0].imshow(pred_vol[slice2, 0])
+            ax[1,1].imshow(ground_vol[slice2, 0])
+            ax[2,0].imshow(pred_vol[slice3, 0])
+            ax[2,1].imshow(ground_vol[slice3, 0])            
+            ax[3,0].imshow(pred_vol[slice4, 0])
+            ax[3,1].imshow(ground_vol[slice4, 0])
+            ax[4,0].imshow(pred_vol[slice5, 0])
+            ax[4,1].imshow(ground_vol[slice5, 0])
+            
             print(dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item())
 
 # %%
@@ -399,23 +411,6 @@ inference_to_disk(
 compute_inference_stats()
 
 # %%
-print(img.shape)
-idx = 40
-# %%
-arr = img.cpu().numpy()[idx, 0,...]
-arr.shape
-plt.imshow(arr)
-
-# %%
-arr = pred.cpu().numpy()[idx, 0,...]
-arr.shape
-plt.imshow(arr)
-
-# %%
-arr = ground.cpu().numpy()[idx, 0,...]
-arr.shape
-plt.imshow(arr)
-# %%
 calc_dcm_metrics(dataloader, model, device, binarize_func)
 dcm2attrib = calc_dcm_metrics(dataloader, model, device, binarize_func)
 patient_metric_data = calculate_patient_metrics(dcm2attrib, "test-data.csv")
@@ -434,11 +429,6 @@ print(relative_error.std(ddof=1))
 patient_dice = patient_metric_data["patient_dice"].to_numpy()
 scatter_plot(patient_dice, gt, title="Patient Dice by TKV")
 linreg_plot(pred, gt)
-
-# %%
-# 3D dice
-print(patient_dice.mean())
-print(patient_dice.std(ddof=1))
 
 # %%
 # check some high error studies
@@ -460,16 +450,6 @@ for dcm_path, attrib in dcm2attrib.items():
     study_to_indices[study].append(path_to_index[dcm_path])
 
 # %%
-# study = studies[1]
-# print(study)
-for num, idx in enumerate(study_to_indices[study]):
-    # assuming that dataset outputs all 3
-    # all 3 image channels equal
-    image, mask, index = dataset[idx]
-    print(idx, index)  # should be the same
-    display_sample((image[0], mask))
-    if num > 44:
-        break
 
 # %%
 # TKV on positive slices + BA Plot ***
@@ -497,14 +477,14 @@ patient_metric_data_neg = calculate_patient_metrics(dcm2attrib_neg)
 
 pred_neg = patient_metric_data_neg["TKV_Pred"].to_numpy()
 gt_neg = patient_metric_data_neg["TKV_GT"].to_numpy()
-bland_altman_plot(
-    pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
-)  # percent throws division by zero error
+# bland_altman_plot(
+#     pred_neg, gt_neg, percent=False, title="BA Plot: TKV negatives"
+# )  # percent throws division by zero error
 
 
 # can result in an error for some examples
 # due to different lengths
 # %%
-scatter_plot(gt_neg, pred_neg, title="TKV negatives")
+# scatter_plot(gt_neg, pred_neg, title="TKV negatives")
 
 # %%
