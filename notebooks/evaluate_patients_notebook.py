@@ -248,17 +248,31 @@ def compute_inference_stats(save_dir="./saved_inference"):
             slice4 = 4 * (pred_vol.shape[0]//6)
             slice5 = 5 * (pred_vol.shape[0]//6)
 
-            f, ax = plt.subplots(5, 2)
-            ax[0,0].imshow(pred_vol[slice1, 0])
-            ax[0,1].imshow(ground_vol[slice1, 0])
-            ax[1,0].imshow(pred_vol[slice2, 0])
-            ax[1,1].imshow(ground_vol[slice2, 0])
-            ax[2,0].imshow(pred_vol[slice3, 0])
-            ax[2,1].imshow(ground_vol[slice3, 0])            
-            ax[3,0].imshow(pred_vol[slice4, 0])
-            ax[3,1].imshow(ground_vol[slice4, 0])
-            ax[4,0].imshow(pred_vol[slice5, 0])
-            ax[4,1].imshow(ground_vol[slice5, 0])
+            f, ax = plt.subplots(5, 2, figsize=(15,15))
+
+            ax[0,0].imshow(img_vol[slice1, 0], cmap="gray")
+            ax[0,1].imshow(img_vol[slice1, 0], cmap="gray")
+            ax[1,0].imshow(img_vol[slice2, 0], cmap="gray")
+            ax[1,1].imshow(img_vol[slice2, 0], cmap="gray")
+            ax[2,0].imshow(img_vol[slice3, 0], cmap="gray")
+            ax[2,1].imshow(img_vol[slice3, 0], cmap="gray")            
+            ax[3,0].imshow(img_vol[slice4, 0], cmap="gray")
+            ax[3,1].imshow(img_vol[slice4, 0], cmap="gray")
+            ax[4,0].imshow(img_vol[slice5, 0], cmap="gray")
+            ax[4,1].imshow(img_vol[slice5, 0], cmap="gray")
+
+            ax[0,0].imshow(pred_vol[slice1, 0], cmap="viridis",alpha=0.3)
+            ax[0,1].imshow(ground_vol[slice1, 0], cmap="viridis",alpha=0.3)
+            ax[1,0].imshow(pred_vol[slice2, 0], cmap="viridis",alpha=0.3)
+            ax[1,1].imshow(ground_vol[slice2, 0], cmap="viridis",alpha=0.3)
+            ax[2,0].imshow(pred_vol[slice3, 0], cmap="viridis",alpha=0.3)
+            ax[2,1].imshow(ground_vol[slice3, 0], cmap="viridis",alpha=0.3)            
+            ax[3,0].imshow(pred_vol[slice4, 0], cmap="viridis",alpha=0.3)
+            ax[3,1].imshow(ground_vol[slice4, 0], cmap="viridis",alpha=0.3)
+            ax[4,0].imshow(pred_vol[slice5, 0], cmap="viridis",alpha=0.3)
+            ax[4,1].imshow(ground_vol[slice5, 0], cmap="viridis",alpha=0.3)
+            
+            f.tight_layout()
             
             print(dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item())
 
@@ -409,6 +423,7 @@ inference_to_disk(
 # %%
 
 compute_inference_stats()
+
 
 # %%
 calc_dcm_metrics(dataloader, model, device, binarize_func)
