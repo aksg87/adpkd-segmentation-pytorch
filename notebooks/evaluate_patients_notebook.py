@@ -31,8 +31,9 @@ from adpkd_segmentation.utils.stats_utils import (  # noqa
     linreg_plot
 )
 
-from adpkd_segmentation.utils.losses import SigmoidBinarize # noqa
+from adpkd_segmentation.utils.losses import SigmoidBinarize, Dice # noqa
 
+from torch.nn import Sigmoid
 
 # %%
 def calc_dcm_metrics(
@@ -211,6 +212,46 @@ def inference_to_disk(
 
 
 # %%
+
+def compute_inference_stats(save_dir="./saved_inference"):
+    root = Path.cwd() / Path(save_dir)
+
+    models = root.glob('*')
+    
+    for model_dir in models:
+        patient_ID, MR_num = "*", "*"
+        studies = model_dir.glob(f"{patient_ID}/{MR_num}")
+        
+        for study_dir in studies:
+            imgs = sorted(study_dir.glob('*_img.npy'))
+            imgs = [np.load(i) for i in imgs]
+
+            preds = sorted(study_dir.glob('*_pred.npy'))
+            preds = [np.load(p) for p in preds]
+
+            grounds = sorted(study_dir.glob('*_ground.npy'))
+            grounds = [np.load(g) for g in grounds]
+
+            img_vol = np.stack(imgs)
+            pred_vol = np.stack(preds)
+            ground_vol = np.stack(grounds)
+
+            print(img_vol.shape, pred_vol.shape, ground_vol.shape)
+
+            # Compute Stats Next 
+            pred_process = Sigmoid()
+            dice = Dice(pred_process=pred_process, use_as_loss=False, power=1, dim=(0,1,2,3))
+
+            mid = pred_vol.shape[0]//2
+
+            f, (ax1, ax2) = plt.subplots(1, 2)
+            ax1.imshow(pred_vol[mid, 0])
+            ax2.imshow(ground_vol[mid, 0])
+
+            print(dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item())
+
+# %%
+
 def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
     slice volume. Returns a dictionary used for patient wide calculations
@@ -353,6 +394,9 @@ inference_to_disk(
     dataloader, model, device, binarize_func
 )
 
+# %%
+
+compute_inference_stats()
 
 # %%
 print(img.shape)
