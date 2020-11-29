@@ -12,6 +12,7 @@ import torch
 import os
 import yaml
 import numpy as np
+import json
 
 import matplotlib.pyplot as plt
 
@@ -209,7 +210,28 @@ def inference_to_disk(
                 np.save(str(out_dir) + "_img", img.cpu().numpy())
                 np.save(str(out_dir) + "_pred", pred.cpu().numpy())
                 np.save(str(out_dir) + "_ground", ground.cpu().numpy())
+            
+                class NpEncoder(json.JSONEncoder):
+                    def default(self, obj):
+                        if isinstance(obj, np.integer):
+                            return int(obj)
+                        elif isinstance(obj, np.floating):
+                            return float(obj)
+                        elif isinstance(obj, np.ndarray):
+                            return obj.tolist()
+                        else:
+                            return super(NpEncoder, self).default(obj)
 
+                trans_resize = dataloader.dataset.augmentation[0]
+                file_attrib["transform_resize_dim"] = (
+                    trans_resize.height,
+                    trans_resize.width,
+                )
+
+                attrib_json = json.dumps(file_attrib, cls=NpEncoder)
+                f = open(str(out_dir) + "_attrib.json", "w")
+                f.write(attrib_json)
+                f.close()
 
 # %%
 
@@ -224,17 +246,19 @@ def compute_inference_stats(save_dir="./saved_inference"):
         
         for study_dir in studies:
             imgs = sorted(study_dir.glob('*_img.npy'))
-            imgs = [np.load(i) for i in imgs]
+            imgs_np = [np.load(i) for i in imgs]
 
             preds = sorted(study_dir.glob('*_pred.npy'))
-            preds = [np.load(p) for p in preds]
+            preds_np = [np.load(p) for p in preds]
 
             grounds = sorted(study_dir.glob('*_ground.npy'))
-            grounds = [np.load(g) for g in grounds]
+            grounds_np = [np.load(g) for g in grounds]
 
-            img_vol = np.stack(imgs)
-            pred_vol = np.stack(preds)
-            ground_vol = np.stack(grounds)
+            attribs = sorted(study_dir.glob('*_attrib.json'))
+
+            img_vol = np.stack(imgs_np)
+            pred_vol = np.stack(preds_np)
+            ground_vol = np.stack(grounds_np)
 
             print(img_vol.shape, pred_vol.shape, ground_vol.shape)
 
@@ -271,10 +295,39 @@ def compute_inference_stats(save_dir="./saved_inference"):
             ax[3,1].imshow(ground_vol[slice4, 0], cmap="viridis",alpha=0.3)
             ax[4,0].imshow(pred_vol[slice5, 0], cmap="viridis",alpha=0.3)
             ax[4,1].imshow(ground_vol[slice5, 0], cmap="viridis",alpha=0.3)
-            
+
             f.tight_layout()
-            
+
             print(dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item())
+
+            volume_ground = None
+            volume_pred = None
+            with open(attribs[0]) as json_file:
+                attrib = json.load(json_file)
+
+                scale_factor = (attrib["dim"][0] ** 2) / (
+                    attrib["transform_resize_dim"][0] ** 2
+                )
+
+                pred_pixel_count = torch.sum(pred_process(torch.from_numpy(pred_vol)))
+                volume_pred = scale_factor * attrib["vox_vol"] * pred_pixel_count
+
+                ground_pixel_count = torch.sum(pred_process(torch.from_numpy(ground_vol)))
+                volume_ground = scale_factor * attrib["vox_vol"] * ground_pixel_count
+
+                print(f"volume_pred:{volume_pred}  volume_ground:{volume_ground}")
+
+            # ground_vol = 
+
+            # scale_factor = (attribs["dim"][0] ** 2) / (
+            #     attribs["transform_resize_dim"][0] ** 2
+            # )
+            # attribs["Vol_GT"] = (
+            #     scale_factor
+            #     * attribs["vox_vol"]
+            #     * attribs["ground_kidney_pixels"]
+            # )
+
 
 # %%
 
