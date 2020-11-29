@@ -29,16 +29,19 @@ from adpkd_segmentation.utils.train_utils import load_model_data  # noqa
 from adpkd_segmentation.utils.stats_utils import (  # noqa
     bland_altman_plot,
     scatter_plot,
-    linreg_plot
+    linreg_plot,
 )
 
-from adpkd_segmentation.utils.losses import SigmoidBinarize, Dice # noqa
+from adpkd_segmentation.utils.losses import SigmoidBinarize, Dice  # noqa
 
 from torch.nn import Sigmoid
 
 # %%
 def calc_dcm_metrics(
-    dataloader, model, device, binarize_func,
+    dataloader,
+    model,
+    device,
+    binarize_func,
 ):
     """Calculates additional information for each of the dcm slices and
     stores the values in an updated dcm2attrib dictionary.
@@ -58,8 +61,7 @@ def calc_dcm_metrics(
     dataset = dataloader.dataset
     updated_dcm2attribs = {}
     output_example_idx = (
-        hasattr(dataloader.dataset, "output_idx")
-        and dataloader.dataset.output_idx
+        hasattr(dataloader.dataset, "output_idx") and dataloader.dataset.output_idx
     )
 
     for batch_idx, output in enumerate(dataloader):
@@ -77,9 +79,7 @@ def calc_dcm_metrics(
             start_idx = num_examples - batch_size
             end_idx = num_examples
 
-            for inbatch_idx, dataset_idx in enumerate(
-                range(start_idx, end_idx)
-            ):
+            for inbatch_idx, dataset_idx in enumerate(range(start_idx, end_idx)):
                 # calculate TKV and TKV inputs for each dcm
                 # TODO:
                 # support 3 channel setups where ones could mean background
@@ -105,14 +105,10 @@ def calc_dcm_metrics(
                     attribs["transform_resize_dim"][0] ** 2
                 )
                 attribs["Vol_GT"] = (
-                    scale_factor
-                    * attribs["vox_vol"]
-                    * attribs["ground_kidney_pixels"]
+                    scale_factor * attribs["vox_vol"] * attribs["ground_kidney_pixels"]
                 )
                 attribs["Vol_Pred"] = (
-                    scale_factor
-                    * attribs["vox_vol"]
-                    * attribs["pred_kidney_pixels"]
+                    scale_factor * attribs["vox_vol"] * attribs["pred_kidney_pixels"]
                 )
 
                 # TODO: check dimensions, and add 'channels_first' doc
@@ -127,14 +123,17 @@ def calc_dcm_metrics(
 
     return updated_dcm2attribs
 
+
 # %%
 def visualize_inference(
-    dataloader, model, device, binarize_func,
+    dataloader,
+    model,
+    device,
+    binarize_func,
 ):
     dataset = dataloader.dataset
     output_example_idx = (
-        hasattr(dataloader.dataset, "output_idx")
-        and dataloader.dataset.output_idx
+        hasattr(dataloader.dataset, "output_idx") and dataloader.dataset.output_idx
     )
 
     img = []
@@ -152,29 +151,33 @@ def visualize_inference(
 
         with torch.no_grad():
             _, dcm_path, attribs = dataset.get_verbose(batch_size * batch_idx)
-            pt = attribs['patient']
-            mr = attribs['MR']
+            pt = attribs["patient"]
+            mr = attribs["MR"]
 
-            if pt == 'WC-ADPKD_WH9-002279':
+            if pt == WC-ADPKD-____-:
                 y_batch_hat = model(x_batch)
                 y_batch_hat_binary = binarize_func(y_batch_hat)
                 img += [x_batch]
                 pred += [y_batch_hat_binary]
                 ground += [y_batch]
-        
+
     return torch.cat(img, dim=0), torch.cat(pred, dim=0), torch.cat(ground, dim=0)
+
 
 # %%
 
 
 def inference_to_disk(
-    dataloader, model, device, binarize_func,
-    save_dir="./saved_inference", model_name="model"
+    dataloader,
+    model,
+    device,
+    binarize_func,
+    save_dir="./saved_inference",
+    model_name="model",
 ):
     dataset = dataloader.dataset
     output_example_idx = (
-        hasattr(dataloader.dataset, "output_idx")
-        and dataloader.dataset.output_idx
+        hasattr(dataloader.dataset, "output_idx") and dataloader.dataset.output_idx
     )
 
     for batch_idx, output in enumerate(dataloader):
@@ -188,13 +191,9 @@ def inference_to_disk(
 
         with torch.no_grad():
 
-            file_names = [
-                Path(dataset.get_verbose(idx)[1]).stem for idx in idxs_batch
-            ]
+            file_names = [Path(dataset.get_verbose(idx)[1]).stem for idx in idxs_batch]
 
-            file_attribs = [
-                dataset.get_verbose(idx)[2] for idx in idxs_batch
-            ]
+            file_attribs = [dataset.get_verbose(idx)[2] for idx in idxs_batch]
 
             y_batch_hat = model(x_batch)
             y_batch_hat_binary = binarize_func(y_batch_hat)
@@ -202,7 +201,14 @@ def inference_to_disk(
             for file_name, file_attrib, img, pred, ground in zip(
                 file_names, file_attribs, x_batch, y_batch_hat_binary, y_batch
             ):
-                out_dir = Path.cwd() / Path(save_dir) / model_name / file_attrib['patient'] / file_attrib['MR'] / file_name
+                out_dir = (
+                    Path.cwd()
+                    / Path(save_dir)
+                    / model_name
+                    / file_attrib["patient"]
+                    / file_attrib["MR"]
+                    / file_name
+                )
 
                 out_dir.parent.mkdir(parents=True, exist_ok=True)
                 print(out_dir)
@@ -210,7 +216,7 @@ def inference_to_disk(
                 np.save(str(out_dir) + "_img", img.cpu().numpy())
                 np.save(str(out_dir) + "_pred", pred.cpu().numpy())
                 np.save(str(out_dir) + "_ground", ground.cpu().numpy())
-            
+
                 class NpEncoder(json.JSONEncoder):
                     def default(self, obj):
                         if isinstance(obj, np.integer):
@@ -233,28 +239,30 @@ def inference_to_disk(
                 f.write(attrib_json)
                 f.close()
 
+
 # %%
+
 
 def compute_inference_stats(save_dir="./saved_inference"):
     root = Path.cwd() / Path(save_dir)
 
-    models = root.glob('*')
-    
+    models = root.glob("*")
+
     for model_dir in models:
         patient_ID, MR_num = "*", "*"
         studies = model_dir.glob(f"{patient_ID}/{MR_num}")
-        
+
         for study_dir in studies:
-            imgs = sorted(study_dir.glob('*_img.npy'))
+            imgs = sorted(study_dir.glob("*_img.npy"))
             imgs_np = [np.load(i) for i in imgs]
 
-            preds = sorted(study_dir.glob('*_pred.npy'))
+            preds = sorted(study_dir.glob("*_pred.npy"))
             preds_np = [np.load(p) for p in preds]
 
-            grounds = sorted(study_dir.glob('*_ground.npy'))
+            grounds = sorted(study_dir.glob("*_ground.npy"))
             grounds_np = [np.load(g) for g in grounds]
 
-            attribs = sorted(study_dir.glob('*_attrib.json'))
+            attribs = sorted(study_dir.glob("*_attrib.json"))
 
             img_vol = np.stack(imgs_np)
             pred_vol = np.stack(preds_np)
@@ -262,39 +270,41 @@ def compute_inference_stats(save_dir="./saved_inference"):
 
             print(img_vol.shape, pred_vol.shape, ground_vol.shape)
 
-            # Compute Stats Next 
+            # Compute Stats Next
             pred_process = SigmoidBinarize(thresholds=[0.5])
-            dice = Dice(pred_process=pred_process, use_as_loss=False, power=1, dim=(0, 1, 2, 3))
+            dice = Dice(
+                pred_process=pred_process, use_as_loss=False, power=1, dim=(0, 1, 2, 3)
+            )
 
-            slice1 = 1 * (pred_vol.shape[0]//6)
-            slice2 = 2 * (pred_vol.shape[0]//6)
-            slice3 = 3 * (pred_vol.shape[0]//6)
-            slice4 = 4 * (pred_vol.shape[0]//6)
-            slice5 = 5 * (pred_vol.shape[0]//6)
+            slice1 = 1 * (pred_vol.shape[0] // 6)
+            slice2 = 2 * (pred_vol.shape[0] // 6)
+            slice3 = 3 * (pred_vol.shape[0] // 6)
+            slice4 = 4 * (pred_vol.shape[0] // 6)
+            slice5 = 5 * (pred_vol.shape[0] // 6)
 
             f, ax = plt.subplots(5, 2)
 
-            ax[0,0].imshow(img_vol[slice1, 0], cmap="gray")
-            ax[0,1].imshow(img_vol[slice1, 0], cmap="gray")
-            ax[1,0].imshow(img_vol[slice2, 0], cmap="gray")
-            ax[1,1].imshow(img_vol[slice2, 0], cmap="gray")
-            ax[2,0].imshow(img_vol[slice3, 0], cmap="gray")
-            ax[2,1].imshow(img_vol[slice3, 0], cmap="gray")            
-            ax[3,0].imshow(img_vol[slice4, 0], cmap="gray")
-            ax[3,1].imshow(img_vol[slice4, 0], cmap="gray")
-            ax[4,0].imshow(img_vol[slice5, 0], cmap="gray")
-            ax[4,1].imshow(img_vol[slice5, 0], cmap="gray")
+            ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
+            ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
+            ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
+            ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
+            ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
+            ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
+            ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
+            ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
+            ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
+            ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
 
-            ax[0,0].imshow(pred_vol[slice1, 0], cmap="viridis",alpha=0.3)
-            ax[0,1].imshow(ground_vol[slice1, 0], cmap="viridis",alpha=0.3)
-            ax[1,0].imshow(pred_vol[slice2, 0], cmap="viridis",alpha=0.3)
-            ax[1,1].imshow(ground_vol[slice2, 0], cmap="viridis",alpha=0.3)
-            ax[2,0].imshow(pred_vol[slice3, 0], cmap="viridis",alpha=0.3)
-            ax[2,1].imshow(ground_vol[slice3, 0], cmap="viridis",alpha=0.3)            
-            ax[3,0].imshow(pred_vol[slice4, 0], cmap="viridis",alpha=0.3)
-            ax[3,1].imshow(ground_vol[slice4, 0], cmap="viridis",alpha=0.3)
-            ax[4,0].imshow(pred_vol[slice5, 0], cmap="viridis",alpha=0.3)
-            ax[4,1].imshow(ground_vol[slice5, 0], cmap="viridis",alpha=0.3)
+            ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
+            ax[0, 1].imshow(ground_vol[slice1, 0], cmap="viridis", alpha=0.3)
+            ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
+            ax[1, 1].imshow(ground_vol[slice2, 0], cmap="viridis", alpha=0.3)
+            ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
+            ax[2, 1].imshow(ground_vol[slice3, 0], cmap="viridis", alpha=0.3)
+            ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
+            ax[3, 1].imshow(ground_vol[slice4, 0], cmap="viridis", alpha=0.3)
+            ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
+            ax[4, 1].imshow(ground_vol[slice5, 0], cmap="viridis", alpha=0.3)
 
             f.tight_layout()
 
@@ -312,12 +322,14 @@ def compute_inference_stats(save_dir="./saved_inference"):
                 pred_pixel_count = torch.sum(pred_process(torch.from_numpy(pred_vol)))
                 volume_pred = scale_factor * attrib["vox_vol"] * pred_pixel_count
 
-                ground_pixel_count = torch.sum(pred_process(torch.from_numpy(ground_vol)))
+                ground_pixel_count = torch.sum(
+                    pred_process(torch.from_numpy(ground_vol))
+                )
                 volume_ground = scale_factor * attrib["vox_vol"] * ground_pixel_count
 
                 print(f"volume_pred:{volume_pred}  volume_ground:{volume_ground}")
 
-            # ground_vol = 
+            # ground_vol =
 
             # scale_factor = (attribs["dim"][0] ** 2) / (
             #     attribs["transform_resize_dim"][0] ** 2
@@ -330,6 +342,7 @@ def compute_inference_stats(save_dir="./saved_inference"):
 
 
 # %%
+
 
 def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
@@ -374,12 +387,8 @@ def calculate_patient_metrics(updated_dcm2attrib, output=None):
         patient_MR = value["patient"] + value["MR"]
         patient_MR_Metrics[(patient_MR, "Vol_GT")] += value["Vol_GT"]
         patient_MR_Metrics[(patient_MR, "Vol_Pred")] += value["Vol_Pred"]
-        patient_MR_Metrics[(patient_MR, "intersection")] += value[
-            "intersection"
-        ]
-        patient_MR_Metrics[(patient_MR, "set_addition")] += value[
-            "set_addition"
-        ]
+        patient_MR_Metrics[(patient_MR, "intersection")] += value["intersection"]
+        patient_MR_Metrics[(patient_MR, "set_addition")] += value["set_addition"]
 
     for key, value in updated_dcm2attrib.items():
         patient_MR = value["patient"] + value["MR"]
@@ -464,14 +473,11 @@ dataloader, model, device, binarize_func, split = load_config(config_path=path)
 
 # %%
 
-img, pred, ground = visualize_inference(
-    dataloader, model, device, binarize_func)
+img, pred, ground = visualize_inference(dataloader, model, device, binarize_func)
 
 # %%
 
-inference_to_disk(
-    dataloader, model, device, binarize_func
-)
+inference_to_disk(dataloader, model, device, binarize_func)
 
 # %%
 
