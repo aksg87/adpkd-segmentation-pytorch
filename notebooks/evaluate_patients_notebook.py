@@ -243,7 +243,8 @@ def inference_to_disk(
 # %%
 
 
-def compute_inference_stats(save_dir="./saved_inference"):
+def compute_inference_stats(save_dir="./saved_inference", output=None):
+    Metric_data = OrderedDict()
     root = Path.cwd() / Path(save_dir)
 
     models = root.glob("*")
@@ -308,7 +309,7 @@ def compute_inference_stats(save_dir="./saved_inference"):
 
             f.tight_layout()
 
-            print(dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item())
+            dice_val = dice(torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)).item()
 
             volume_ground = None
             volume_pred = None
@@ -319,15 +320,31 @@ def compute_inference_stats(save_dir="./saved_inference"):
                     attrib["transform_resize_dim"][0] ** 2
                 )
 
-                pred_pixel_count = torch.sum(pred_process(torch.from_numpy(pred_vol)))
+                pred_pixel_count = torch.sum(pred_process(torch.from_numpy(pred_vol))).item()
                 volume_pred = scale_factor * attrib["vox_vol"] * pred_pixel_count
 
                 ground_pixel_count = torch.sum(
                     pred_process(torch.from_numpy(ground_vol))
-                )
+                ).item()
                 volume_ground = scale_factor * attrib["vox_vol"] * ground_pixel_count
 
                 print(f"volume_pred:{volume_pred}  volume_ground:{volume_ground}")
+
+                summary = {
+                    "TKV_GT": volume_ground,
+                    "TKV_Pred": volume_pred,
+                    "sequence": attrib["seq"],
+                    "split": split,
+                    "patient_dice": dice_val,
+                }
+
+                study = attrib["patient"] + attrib["MR"]
+                Metric_data[study] = summary
+        
+        df = pd.DataFrame(Metric_data).transpose()
+
+        if output is not None:
+            df.to_csv(output)
 
             # ground_vol =
 
@@ -481,7 +498,7 @@ inference_to_disk(dataloader, model, device, binarize_func)
 
 # %%
 
-compute_inference_stats()
+compute_inference_stats(output="test-data_second.csv")
 
 
 # %%
