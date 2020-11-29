@@ -239,8 +239,8 @@ def compute_inference_stats(save_dir="./saved_inference"):
             print(img_vol.shape, pred_vol.shape, ground_vol.shape)
 
             # Compute Stats Next 
-            pred_process = Sigmoid()
-            dice = Dice(pred_process=pred_process, use_as_loss=False, power=1, dim=(0,1,2,3))
+            pred_process = SigmoidBinarize(thresholds=[0.5])
+            dice = Dice(pred_process=pred_process, use_as_loss=False, power=1, dim=(0, 1, 2, 3))
 
             slice1 = 1 * (pred_vol.shape[0]//6)
             slice2 = 2 * (pred_vol.shape[0]//6)
@@ -248,7 +248,7 @@ def compute_inference_stats(save_dir="./saved_inference"):
             slice4 = 4 * (pred_vol.shape[0]//6)
             slice5 = 5 * (pred_vol.shape[0]//6)
 
-            f, ax = plt.subplots(5, 2, figsize=(15,15))
+            f, ax = plt.subplots(5, 2)
 
             ax[0,0].imshow(img_vol[slice1, 0], cmap="gray")
             ax[0,1].imshow(img_vol[slice1, 0], cmap="gray")
