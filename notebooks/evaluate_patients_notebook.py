@@ -402,29 +402,32 @@ def compute_inference_stats(
 
 
 # %%
-path = "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml"
+# Single Experiment
+# path = "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml"
 
+# Ensemble Experiment
 paths = [
-    "./experiments/november/25_new_stratified_run_1/test/test.yaml",
-    "./experiments/november/25_new_stratified_run_2/test/test.yaml",
-    "./experiments/november/25_new_stratified_run_2_long/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long_512_b6/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long_batchdice1/test/test.yaml",
-    "./experiments/november/26_new_stratified_run_2_long_noisy-student/test/test.yaml",
+    # "./experiments/november/25_new_stratified_run_1/test/test.yaml", # 29% 1.96 STD 
+    # "./experiments/november/25_new_stratified_run_2/test/test.yaml", # 39% 1.96 STD 
+    # "./experiments/november/25_new_stratified_run_2_long/test/test.yaml", # 32% 1.96 STD 
+    # "./experiments/november/26_new_stratified_run_2/test/test.yaml", # 22% 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long/test/test.yaml", # 41% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml", # 13% 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long_512_b6/test/test.yaml", # 30% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml", # 11% 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long_batchdice1/test/test.yaml", # 30% 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long_noisy-student/test/test.yaml", # 42 % 1.96 STD
 ]
 
 # %%
 # single inference
-*model_args, split = load_config(config_path=path)
-all_loaded_configs = [load_config(config_path=p) for p in paths]
+# *model_args, split = load_config(config_path=path)
+
 
 
 # %%
 # multi-model inference
+all_loaded_configs = [load_config(config_path=p) for p in paths]
 for loaded_configs in tqdm(all_loaded_configs):
     *model_args, split = loaded_configs
     inference_to_disk(*model_args)
@@ -435,7 +438,7 @@ compute_inference_stats(output=True)
 
 # %%
 # make plot for all saved stats
-stats_csvs = list(Path.cwd().glob("stats-*"))
+stats_csvs = sorted(list(Path.cwd().glob("stats-*")))
 
 for csv_f in stats_csvs:
     plot_model_results(csv_f, csv_f.name)
