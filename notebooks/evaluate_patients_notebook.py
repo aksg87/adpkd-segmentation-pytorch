@@ -17,6 +17,7 @@ import json
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
+import albumentations
 
 # from mpl_toolkits.mplot3d import Axes3D
 
@@ -173,10 +174,20 @@ def inference_to_disk(
                         else:
                             return super(NpEncoder, self).default(obj)
 
-                trans_resize = dataloader.dataset.augmentation[0]
+                # get resize transform within compose object
+                Resize = albumentations.augmentations.transforms.Resize
+                transform_resize = next(
+                    v
+                    for v in dataloader.dataset.augmentation.transforms
+                    if isinstance(v, Resize)
+                )
+                assert (
+                    transform_resize is not None
+                ), "transform_resize must be defined"
+
                 file_attrib["transform_resize_dim"] = (
-                    trans_resize.height,
-                    trans_resize.width,
+                    transform_resize.height,
+                    transform_resize.width,
                 )
 
                 attrib_json = json.dumps(file_attrib, cls=NpEncoder)
