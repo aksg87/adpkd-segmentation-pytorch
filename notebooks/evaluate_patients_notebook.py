@@ -18,6 +18,8 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
+# from mpl_toolkits.mplot3d import Axes3D
+
 # enable lib loading even if not installed as a pip package or in PYTHONPATH
 # also convenient for relative paths in example config files
 from pathlib import Path
@@ -213,8 +215,51 @@ def resized_stack(numpy_list, dsize=None):
     return np.stack(resized)
 
 
+def display_volumes(img_vol, pred_vol, ground_vol):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    print(ground_vol.shape)
+    ax.voxels(np.squeeze(ground_vol))
+
+    plt.show()
+
+    # slice1 = 1 * (pred_vol.shape[0] // 6)
+    # slice2 = 2 * (pred_vol.shape[0] // 6)
+    # slice3 = 3 * (pred_vol.shape[0] // 6)
+    # slice4 = 4 * (pred_vol.shape[0] // 6)
+    # slice5 = 5 * (pred_vol.shape[0] // 6)
+
+    # f, ax = plt.subplots(5, 2)
+
+    # ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
+    # ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
+    # ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
+    # ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
+    # ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
+    # ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
+    # ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
+    # ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
+    # ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
+    # ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
+
+    # ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
+    # ax[0, 1].imshow(ground_vol[slice1, 0], cmap="viridis", alpha=0.3)
+    # ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
+    # ax[1, 1].imshow(ground_vol[slice2, 0], cmap="viridis", alpha=0.3)
+    # ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
+    # ax[2, 1].imshow(ground_vol[slice3, 0], cmap="viridis", alpha=0.3)
+    # ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
+    # ax[3, 1].imshow(ground_vol[slice4, 0], cmap="viridis", alpha=0.3)
+    # ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
+    # ax[4, 1].imshow(ground_vol[slice5, 0], cmap="viridis", alpha=0.3)
+
+    # f.tight_layout()
+
+
 def compute_inference_stats(
-    save_dir="./saved_inference", output=False, display=False
+    save_dir, output=False, display=False, patient_ID=None
 ):
 
     Metric_data = OrderedDict()
@@ -237,7 +282,10 @@ def compute_inference_stats(
     )
 
     for model_dir in tqdm(model_inferences):
-        patient_ID, MR_num = "*", "*"
+        if patient_ID is not None:
+            MR_num = "*"
+        else:
+            patient_ID, MR_num = "*", "*"
         studies = model_dir.glob(f"{patient_ID}/{MR_num}")
 
         for study_dir in studies:
@@ -263,47 +311,7 @@ def compute_inference_stats(
             all_ground_vol[rel_path].append(ground_vol)
 
             if display is True:
-                slice1 = 1 * (pred_vol.shape[0] // 6)
-                slice2 = 2 * (pred_vol.shape[0] // 6)
-                slice3 = 3 * (pred_vol.shape[0] // 6)
-                slice4 = 4 * (pred_vol.shape[0] // 6)
-                slice5 = 5 * (pred_vol.shape[0] // 6)
-
-                f, ax = plt.subplots(5, 2)
-
-                ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
-                ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
-                ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
-                ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
-                ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
-                ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
-                ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
-                ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
-                ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
-                ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
-
-                ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
-                ax[0, 1].imshow(
-                    ground_vol[slice1, 0], cmap="viridis", alpha=0.3
-                )
-                ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
-                ax[1, 1].imshow(
-                    ground_vol[slice2, 0], cmap="viridis", alpha=0.3
-                )
-                ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
-                ax[2, 1].imshow(
-                    ground_vol[slice3, 0], cmap="viridis", alpha=0.3
-                )
-                ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
-                ax[3, 1].imshow(
-                    ground_vol[slice4, 0], cmap="viridis", alpha=0.3
-                )
-                ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
-                ax[4, 1].imshow(
-                    ground_vol[slice5, 0], cmap="viridis", alpha=0.3
-                )
-
-                f.tight_layout()
+                display_volumes(img_vol, pred_vol, ground_vol)
 
             dice_val = dice(
                 torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)
@@ -398,7 +406,10 @@ def compute_inference_stats(
     df = pd.DataFrame(Combined_metric_data).transpose()
 
     if output is True:
-        df.to_csv(f"stats-combined_models.csv")
+        df.to_csv("stats-combined_models.csv")
+
+
+# %%
 
 
 # %%
@@ -407,14 +418,14 @@ def compute_inference_stats(
 
 # Ensemble Experiment
 paths = [
-    # "./experiments/november/25_new_stratified_run_1/test/test.yaml", # 29% 1.96 STD 
-    # "./experiments/november/25_new_stratified_run_2/test/test.yaml", # 39% 1.96 STD 
-    # "./experiments/november/25_new_stratified_run_2_long/test/test.yaml", # 32% 1.96 STD 
+    # "./experiments/november/25_new_stratified_run_1/test/test.yaml", # 29% 1.96 STD
+    # "./experiments/november/25_new_stratified_run_2/test/test.yaml", # 39% 1.96 STD
+    # "./experiments/november/25_new_stratified_run_2_long/test/test.yaml", # 32% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2/test/test.yaml", # 22% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long/test/test.yaml", # 41% 1.96 STD
-    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml", # 13% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",  # 13% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_512_b6/test/test.yaml", # 30% 1.96 STD
-    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml", # 11% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",  # 11% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_batchdice1/test/test.yaml", # 30% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_noisy-student/test/test.yaml", # 42 % 1.96 STD
 ]
@@ -422,7 +433,6 @@ paths = [
 # %%
 # single inference
 # *model_args, split = load_config(config_path=path)
-
 
 
 # %%
@@ -434,7 +444,7 @@ for loaded_configs in tqdm(all_loaded_configs):
 
 # %%
 # run calculations on all saved inferences
-compute_inference_stats(output=True)
+compute_inference_stats(save_dir="./saved_inference", output=True)
 
 # %%
 # make plot for all saved stats
