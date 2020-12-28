@@ -117,17 +117,18 @@ def inference_to_disk(
     model_name="model",
 ):
     dataset = dataloader.dataset
-    output_example_idx = (
+    output_idx_check = (
         hasattr(dataloader.dataset, "output_idx")
         and dataloader.dataset.output_idx
     )
 
-    for batch_idx, output in enumerate(dataloader):
-        if output_example_idx:
-            x_batch, y_batch, idxs_batch = output
-        else:
-            x_batch, y_batch = output
+    assert (
+        output_idx_check is True
+    ), "output indexes are required for the dataset"
 
+    for batch_idx, output in enumerate(dataloader):
+
+        x_batch, y_batch, idxs_batch = output
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
 
