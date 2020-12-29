@@ -275,6 +275,57 @@ def display_volumes(img_vol, pred_vol, ground_vol):
     # f.tight_layout()
 
 
+def exam_preds_to_stat(
+    pred_vol, ground_vol, pred_process, attrib_dict, pred_std=None
+):
+    """computes stats for a single exam prediction
+
+    Args:
+        pred_vol (numpy): prediction volume
+        ground_vol (numpy): ground truth volume
+        pred_process (function): converts prediction to binary
+        attrib (dict): dictionary of attributes (usually from index 0)
+
+    Returns:
+        tuple: study key, dictionary of attributes
+    """
+    volume_ground = None
+    volume_pred = None
+    dice = Dice(
+        pred_process=pred_process, use_as_loss=False, power=1, dim=(0, 1, 2, 3)
+    )
+    dice_val = dice(
+        torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)
+    ).item()
+
+    scale_factor = (attrib_dict["dim"][0] ** 2) / (
+        attrib_dict["transform_resize_dim"][0] ** 2
+    )
+    # print(f"scale factor {scale_factor}")
+    pred_pixel_count = torch.sum(
+        pred_process(torch.from_numpy(pred_vol))
+    ).item()
+    volume_pred = scale_factor * attrib_dict["vox_vol"] * pred_pixel_count
+
+    ground_pixel_count = torch.sum(
+        pred_process(torch.from_numpy(ground_vol))
+    ).item()
+    volume_ground = scale_factor * attrib_dict["vox_vol"] * ground_pixel_count
+
+    attrib_dict.update(
+        {
+            "TKV_GT": volume_ground,
+            "TKV_Pred": volume_pred,
+            "patient_dice": dice_val,
+            "study": attrib_dict["patient"] + attrib_dict["MR"],
+            "scale_factor": scale_factor,
+            "Pred_stdev": pred_std,
+        }
+    )
+
+    return attrib_dict
+
+
 def compute_inference_stats(
     save_dir, output=False, display=False, patient_ID=None
 ):
@@ -294,9 +345,6 @@ def compute_inference_stats(
     all_summaries = defaultdict(list)
 
     pred_process = SigmoidBinarize(thresholds=[0.5])
-    dice = Dice(
-        pred_process=pred_process, use_as_loss=False, power=1, dim=(0, 1, 2, 3)
-    )
 
     for model_dir in tqdm(model_inferences):
         if patient_ID is not None:
@@ -308,21 +356,23 @@ def compute_inference_stats(
         for study_dir in studies:
             imgs = sorted(study_dir.glob("*_img.npy"))
             imgs_np = [np.load(i) for i in imgs]
-
             preds = sorted(study_dir.glob("*_pred.npy"))
             preds_np = [np.load(p) for p in preds]
-
             grounds = sorted(study_dir.glob("*_ground.npy"))
             grounds_np = [np.load(g) for g in grounds]
-
             attribs = sorted(study_dir.glob("*_attrib.json"))
+            attribs_dicts = []
+            for a in attribs:
+                with open(a) as json_file:
+                    attribs_dicts.append(json.load(json_file))
 
             # volumes for a study within one model inference
             img_vol = np.stack(imgs_np)
             pred_vol = np.stack(preds_np)
             ground_vol = np.stack(grounds_np)
 
-            # accumulate volumes across all models for each study
+            # accumulate predictions across all models for each study
+            # using relative study path as a key
             rel_path = study_dir.relative_to(model_dir)
             all_pred_vol[rel_path].append(pred_vol)
             all_ground_vol[rel_path].append(ground_vol)
@@ -330,51 +380,11 @@ def compute_inference_stats(
             if display is True:
                 display_volumes(img_vol, pred_vol, ground_vol)
 
-            dice_val = dice(
-                torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)
-            ).item()
-
-            volume_ground = None
-            volume_pred = None
-            with open(attribs[0]) as json_file:
-                attrib = json.load(json_file)
-
-                scale_factor = (attrib["dim"][0] ** 2) / (
-                    attrib["transform_resize_dim"][0] ** 2
-                )
-                # print(f"scale factor {scale_factor}")
-                pred_pixel_count = torch.sum(
-                    pred_process(torch.from_numpy(pred_vol))
-                ).item()
-                volume_pred = (
-                    scale_factor * attrib["vox_vol"] * pred_pixel_count
+            summary = exam_preds_to_stat(
+                pred_vol, ground_vol, pred_process, attribs_dicts[0]
                 )
 
-                ground_pixel_count = torch.sum(
-                    pred_process(torch.from_numpy(ground_vol))
-                ).item()
-                volume_ground = (
-                    scale_factor * attrib["vox_vol"] * ground_pixel_count
-                )
-
-                # print(f"volume_pred:{volume_pred}  volume_ground:{volume_ground}")
-
-                summary = {
-                    "TKV_GT": volume_ground,
-                    "TKV_Pred": volume_pred,
-                    "sequence": attrib["seq"],
-                    "split": split,
-                    "patient_dice": dice_val,
-                    "study": attrib["patient"] + attrib["MR"],
-                    "scale_factor": scale_factor,
-                    "vox_vol": attrib["vox_vol"],
-                    "dim": attrib["dim"][0],
-                    "transform_resize_dim": attrib["transform_resize_dim"][0],
-                }
-
-                study = attrib["patient"] + attrib["MR"]
-                Metric_data[study] = summary
-
+            Metric_data[summary["study"]] = summary
                 all_summaries[rel_path].append(summary)
 
         df = pd.DataFrame(Metric_data).transpose()
@@ -383,40 +393,24 @@ def compute_inference_stats(
             df.to_csv(f"stats-{model_dir.name}.csv")
 
     for key, value in all_pred_vol.items():
-        all_pred_vol[key] = resized_stack(value)
-        summary = all_summaries[key][0]
+        # uses index 0 to get ground truth and standard voxel attribs
+
+        all_pred_vol[key] = resized_stack(value)  # resizes by index 0
         pred_vol = np.mean(all_pred_vol[key], axis=0)
         pred_std = np.std(all_pred_vol[key])
-
         # move back to slices x 1 x H x W
         pred_vol = np.moveaxis(pred_vol, -1, 0)
         pred_vol = np.expand_dims(pred_vol, axis=1)
 
-        # res.append(pred_vol)
-        # return res
         ground_vol = all_ground_vol[key][0]
 
-        # print(f"scale factor {scale_factor}")
-        pred_pixel_count = torch.sum(
-            pred_process(torch.from_numpy(pred_vol))
-        ).item()
-        scale_factor = summary["scale_factor"]
-        vox_vol = summary["vox_vol"]
-
-        volume_pred = scale_factor * vox_vol * pred_pixel_count
-        ground_pixel_count = torch.sum(
-            pred_process(torch.from_numpy(ground_vol))
-        ).item()
-        volume_ground = scale_factor * vox_vol * ground_pixel_count
-
-        dice_val = dice(
-            torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)
-        ).item()
-
-        summary["TKV_Pred"] = volume_pred
-        summary["TKV_GT"] = volume_ground
-        summary["patient_dice"] = dice_val
-        summary["Pred_stdev"] = pred_std
+        summary = exam_preds_to_stat(
+            pred_vol,
+            ground_vol,
+            pred_process,
+            all_summaries[key][0],
+            pred_std=pred_std,
+        )
 
         Combined_metric_data[summary["study"]] = summary
 
