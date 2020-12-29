@@ -199,25 +199,30 @@ def inference_to_disk(
 # %%
 def resized_stack(numpy_list, dsize=None):
     """resizing lists of array with dimension:
-    slices x 1 x H' x W'.
+    slices x 1 x H x W, where H = W.
 
-    H' x W' default to the first array or dsize
+    Sets output size to first array at idx 0 or dsize
+
+    Args:
+        numpy_list (list): list of numpy arr
+        dsize (int, optional): output dimension. Defaults to None.
+
+    Returns:
+        numpy: stacked numpy lists with same size
     """
     assert numpy_list[0].shape[1] == 1, "dimension check"
-    assert numpy_list[0].shape[2] == numpy_list[0].shape[3], "dimension check"
+    assert numpy_list[0].shape[2] == numpy_list[0].shape[3], "square check"
 
     def reshape(arr):
-        """reshapes to dimension:
-        H x W x slices
-        """
-        arr = np.moveaxis(arr, 0, -1)
-        arr = np.squeeze(arr)
+        """reshapes [slices x 1 x H x W] to [H x W x slices]"""
+        arr = np.moveaxis(arr, 0, -1)  # slices to end
+        arr = np.squeeze(arr)  # remove 1 dimension
         return arr
 
     reshaped = [reshape(arr) for arr in numpy_list]
 
     if dsize is None:
-        dsize = reshaped[0].shape[0:2]
+        dsize = reshaped[0].shape[0:2]  # get H, W from first arr
 
     resized = [
         cv2.resize(src, dsize, interpolation=cv2.INTER_CUBIC)
