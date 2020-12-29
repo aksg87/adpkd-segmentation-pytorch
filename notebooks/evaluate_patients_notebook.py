@@ -232,47 +232,62 @@ def resized_stack(numpy_list, dsize=None):
     return np.stack(resized)
 
 
-def display_volumes(img_vol, pred_vol, ground_vol):
+def display_volumes(
+    img_vol=None, pred_vol=None, ground_vol=None, study_dir=None
+):
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection="3d")
 
-    print(ground_vol.shape)
-    ax.voxels(np.squeeze(ground_vol))
+    # print(ground_vol.shape)
+    # ax.voxels(np.squeeze(ground_vol))
 
-    plt.show()
+    # plt.show()
 
-    # slice1 = 1 * (pred_vol.shape[0] // 6)
-    # slice2 = 2 * (pred_vol.shape[0] // 6)
-    # slice3 = 3 * (pred_vol.shape[0] // 6)
-    # slice4 = 4 * (pred_vol.shape[0] // 6)
-    # slice5 = 5 * (pred_vol.shape[0] // 6)
+    if study_dir is not None:
+        print(f"loading from {study_dir}")
+        study_dir = Path(study_dir)
+        imgs = sorted(study_dir.glob("*_img.npy"))
+        imgs_np = [np.load(i) for i in imgs]
+        preds = sorted(study_dir.glob("*_pred.npy"))
+        preds_np = [np.load(p) for p in preds]
+        grounds = sorted(study_dir.glob("*_ground.npy"))
+        grounds_np = [np.load(g) for g in grounds]
+        img_vol = np.stack(imgs_np)
+        pred_vol = np.stack(preds_np)
+        ground_vol = np.stack(grounds_np)
 
-    # f, ax = plt.subplots(5, 2)
+    slice1 = 1 * (pred_vol.shape[0] // 6)
+    slice2 = 2 * (pred_vol.shape[0] // 6)
+    slice3 = 3 * (pred_vol.shape[0] // 6)
+    slice4 = 4 * (pred_vol.shape[0] // 6)
+    slice5 = 5 * (pred_vol.shape[0] // 6)
 
-    # ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
-    # ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
-    # ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
-    # ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
-    # ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
-    # ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
-    # ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
-    # ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
-    # ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
-    # ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
+    f, ax = plt.subplots(5, 2)
 
-    # ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
-    # ax[0, 1].imshow(ground_vol[slice1, 0], cmap="viridis", alpha=0.3)
-    # ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
-    # ax[1, 1].imshow(ground_vol[slice2, 0], cmap="viridis", alpha=0.3)
-    # ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
-    # ax[2, 1].imshow(ground_vol[slice3, 0], cmap="viridis", alpha=0.3)
-    # ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
-    # ax[3, 1].imshow(ground_vol[slice4, 0], cmap="viridis", alpha=0.3)
-    # ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
-    # ax[4, 1].imshow(ground_vol[slice5, 0], cmap="viridis", alpha=0.3)
+    ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
+    ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
+    ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
+    ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
+    ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
+    ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
+    ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
+    ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
+    ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
+    ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
 
-    # f.tight_layout()
+    ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
+    ax[0, 1].imshow(ground_vol[slice1, 0], cmap="viridis", alpha=0.3)
+    ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
+    ax[1, 1].imshow(ground_vol[slice2, 0], cmap="viridis", alpha=0.3)
+    ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
+    ax[2, 1].imshow(ground_vol[slice3, 0], cmap="viridis", alpha=0.3)
+    ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
+    ax[3, 1].imshow(ground_vol[slice4, 0], cmap="viridis", alpha=0.3)
+    ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
+    ax[4, 1].imshow(ground_vol[slice5, 0], cmap="viridis", alpha=0.3)
+
+    f.tight_layout()
 
 
 def exam_preds_to_stat(
@@ -419,7 +434,9 @@ def compute_inference_stats(
 
 
 # %%
-
+display_volumes(
+    study_dir="saved_inference/26_new_stratified_run_2_long_advprop/WC-ADPKD_AM9-002358/MR1"
+)
 
 # %%
 # Single Experiment
