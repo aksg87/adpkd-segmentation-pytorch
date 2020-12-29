@@ -371,12 +371,6 @@ def compute_inference_stats(
             pred_vol = np.stack(preds_np)
             ground_vol = np.stack(grounds_np)
 
-            # accumulate predictions across all models for each study
-            # using relative study path as a key
-            rel_path = study_dir.relative_to(model_dir)
-            all_pred_vol[rel_path].append(pred_vol)
-            all_ground_vol[rel_path].append(ground_vol)
-
             if display is True:
                 display_volumes(img_vol, pred_vol, ground_vol)
 
@@ -385,7 +379,11 @@ def compute_inference_stats(
                 )
 
             Metric_data[summary["study"]] = summary
-                all_summaries[rel_path].append(summary)
+
+            # accumulate predictions across all models for each study
+            all_pred_vol[summary["study"]].append(pred_vol)
+            all_ground_vol[summary["study"]].append(ground_vol)
+            all_summaries[summary["study"]].append(summary)
 
         df = pd.DataFrame(Metric_data).transpose()
 
