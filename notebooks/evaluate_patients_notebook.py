@@ -478,9 +478,8 @@ paths = [
 
 # %%
 # multi-model inference
-all_loaded_configs = [load_config(config_path=p) for p in paths]
-for loaded_configs in tqdm(all_loaded_configs):
-    *model_args, split = loaded_configs
+for p in tqdm(paths):
+    *model_args, split = load_config(config_path=p)
     inference_to_disk(*model_args)
 
 # %%
