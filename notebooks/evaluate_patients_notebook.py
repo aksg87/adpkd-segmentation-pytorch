@@ -31,6 +31,8 @@ from pathlib import Path
 os.chdir(Path(__file__).resolve().parent.parent)
 
 from adpkd_segmentation.config.config_utils import get_object_instance  # noqa
+from adpkd_segmentation.datasets import dataloader as _dataloader  # noqa
+from adpkd_segmentation.datasets import datasets as _datasets  # noqa
 from adpkd_segmentation.data.link_data import makelinks  # noqa
 from adpkd_segmentation.data.data_utils import display_sample  # noqa
 from adpkd_segmentation.utils.train_utils import load_model_data  # noqa
@@ -254,6 +256,7 @@ def display_volumes(
     ground_vol=None,
     study_dir=None,
     style="pred",
+    plot_error=True,
 ):
 
     if study_dir is not None:
@@ -275,21 +278,22 @@ def display_volumes(
 
     def show(img, label=None, error=None, img_alpha=1, lb_alpha=0.5):
         npimg = img.numpy()
-        plt.imshow(
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.imshow(
             np.transpose(npimg, (1, 2, 0)),
             interpolation="none",
             alpha=img_alpha,
         )
         if label is not None:
             lbimg = label.numpy()
-            plt.imshow(
+            ax.imshow(
                 np.transpose(lbimg, (1, 2, 0)),
                 alpha=lb_alpha,
                 interpolation="none",
             )
         if error is not None:
             erimg = error.numpy()
-            plt.imshow(
+            ax.imshow(
                 np.transpose(erimg, (1, 2, 0)),
                 alpha=lb_alpha,
                 interpolation="none",
@@ -311,23 +315,26 @@ def display_volumes(
         x[torch.isnan(x)] = 0
         return x
 
-    # jet_vol = np.squeeze(y.numpy())
-    cmap_vol = np.apply_along_axis(cm.viridis, 0, y.numpy())
+    cmap_thresh = 0.01
+    cmap_vol = y
+    # cmap_vol = norm_tensor(y)
+    cmap_vol = np.ma.masked_where(cmap_vol < cmap_thresh, cmap_vol)
+    cmap_vol = np.apply_along_axis(cm.inferno, 0, cmap_vol)
     cmap_vol = torch.from_numpy(np.squeeze(cmap_vol))
 
-    error_vol = norm_tensor(torch.from_numpy(pred_vol - ground_vol))
-    error_vol = np.ma.masked_where(error_vol < 0.05, error_vol)
-    error_vol = np.apply_along_axis(cm.brg, 0, error_vol)
-    error_vol = torch.from_numpy(np.squeeze(error_vol))
+    error_vol = None
+    if plot_error:
+        error_vol = norm_tensor(torch.from_numpy(pred_vol - ground_vol))
+        error_vol = np.ma.masked_where(error_vol < 0.01, error_vol)
+        error_vol = np.apply_along_axis(cm.brg, 0, error_vol)
+        error_vol = torch.from_numpy(np.squeeze(error_vol))
+        error_vol = make_grid(error_vol)
 
     print(f"style is: {style}")
-    print(f"counts: {np.unique(error_vol.numpy(), return_counts=True)}")
+    print(f"error is defined as: [prediction - ground]")
 
-    show(make_grid(x), make_grid(error_vol), lb_alpha=1)
+    show(make_grid(x), make_grid(cmap_vol), error_vol, lb_alpha=1)
     plt.show()
-
-    # y_n = y.numpy()[21]
-    # plt.imshow(np.transpose(y_n, (1, 2, 0)), cmap="jet")
 
 
 def exam_preds_to_stat(
@@ -431,7 +438,7 @@ def compute_inference_stats(
 
             summary = exam_preds_to_stat(
                 pred_vol, ground_vol, pred_process, attribs_dicts[0]
-                )
+            )
 
             Metric_data[summary["study"]] = summary
 
@@ -474,12 +481,6 @@ def compute_inference_stats(
 
 
 # %%
-display_volumes(
-    study_dir="saved_inference/26_new_stratified_run_2_long_advprop/WC-ADPKD_AM9-002358/MR1",
-    style="pred",
-)
-
-# %%
 # Single Experiment
 # path = "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml"
 
@@ -501,6 +502,12 @@ paths = [
 # single inference
 # *model_args, split = load_config(config_path=path)
 
+# %%
+display_volumes(
+    study_dir="saved_inference/26_new_stratified_run_2_long_512/WC-ADPKD_HP9-002338/MR1",
+    style="pred",
+    plot_error=True,
+)
 
 # %%
 # multi-model inference
@@ -510,7 +517,9 @@ for p in tqdm(paths):
 
 # %%
 # run calculations on all saved inferences
-compute_inference_stats(save_dir="./saved_inference", output=True)
+compute_inference_stats(
+    save_dir="./saved_inference", display=True, output=True
+)
 
 # %%
 # make plot for all saved stats
