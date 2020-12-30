@@ -141,6 +141,7 @@ def inference_to_disk(
 
         with torch.no_grad():
 
+            # get_verbose returns (sample, dcm_path, attributes dict)
             file_names = [
                 Path(dataset.get_verbose(idx)[1]).stem for idx in idxs_batch
             ]
@@ -148,10 +149,16 @@ def inference_to_disk(
             file_attribs = [dataset.get_verbose(idx)[2] for idx in idxs_batch]
 
             y_batch_hat = model(x_batch)
+            # TODO: support only sigmoid saves
             y_batch_hat_binary = binarize_func(y_batch_hat)
 
-            for file_name, file_attrib, img, pred, ground in zip(
-                file_names, file_attribs, x_batch, y_batch_hat_binary, y_batch
+            for file_name, file_attrib, img, logit, pred, ground in zip(
+                file_names,
+                file_attribs,
+                x_batch,
+                y_batch_hat,
+                y_batch_hat_binary,
+                y_batch,
             ):
                 out_dir = (
                     Path.cwd()
@@ -166,6 +173,7 @@ def inference_to_disk(
                 # print(out_dir)
 
                 np.save(str(out_dir) + "_img", img.cpu().numpy())
+                np.save(str(out_dir) + "_logit", logit.cpu().numpy())
                 np.save(str(out_dir) + "_pred", pred.cpu().numpy())
                 np.save(str(out_dir) + "_ground", ground.cpu().numpy())
 
@@ -251,24 +259,26 @@ def display_volumes(
         study_dir = Path(study_dir)
         imgs = sorted(study_dir.glob("*_img.npy"))
         imgs_np = [np.load(i) for i in imgs]
+        logits = sorted(study_dir.glob("*_logit.npy"))
+        logits_np = [np.load(l) for l in logits]
         preds = sorted(study_dir.glob("*_pred.npy"))
         preds_np = [np.load(p) for p in preds]
         grounds = sorted(study_dir.glob("*_ground.npy"))
         grounds_np = [np.load(g) for g in grounds]
         img_vol = np.stack(imgs_np)
+        logit_vol = np.stack(logits_np)
+        logit_vol = torch.sigmoid(torch.from_numpy(logit_vol)).numpy()
         pred_vol = np.stack(preds_np)
         ground_vol = np.stack(grounds_np)
 
     def show(img, label=None, alpha=0.5):
         npimg = img.numpy()
-        plt.imshow(
-            np.transpose(npimg, (1, 2, 0)), alpha=0.8, interpolation="none"
-        )
+        plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation="none")
         if label is not None:
             lbimg = label.numpy()
             plt.imshow(
                 np.transpose(lbimg, (1, 2, 0)),
-                cmap="spring",
+                cmap="jet",
                 alpha=alpha,
                 interpolation="none",
             )
@@ -277,14 +287,21 @@ def display_volumes(
 
     if style == "pred":
         y = torch.from_numpy(pred_vol)
-    if style == "ground":
+    elif style == "logit":
+        y = torch.from_numpy(logit_vol)
+    elif style == "ground":
         y = torch.from_numpy(ground_vol)
     elif style == "error":
         y = torch.from_numpy(pred_vol) - torch.from_numpy(ground_vol)
 
-    show(make_grid(x), make_grid(y), alpha=0.5)
+    print(f"style is: {style}")
+    print(f"counts: {np.unique(y, return_counts=True)}")
 
+    show(make_grid(x), make_grid(y), alpha=0.5)
     plt.show()
+
+    # y_n = y.numpy()[21]
+    # plt.imshow(np.transpose(y_n, (1, 2, 0)), cmap="jet")
 
 
 def exam_preds_to_stat(
