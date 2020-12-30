@@ -13,10 +13,12 @@ import torch
 import os
 import yaml
 import numpy as np
+import numpy.ma as ma
 import json
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import albumentations
 from torchvision.utils import make_grid
 
@@ -271,15 +273,25 @@ def display_volumes(
         pred_vol = np.stack(preds_np)
         ground_vol = np.stack(grounds_np)
 
-    def show(img, label=None, alpha=0.5):
+    def show(img, label=None, error=None, img_alpha=1, lb_alpha=0.5):
         npimg = img.numpy()
-        plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation="none")
+        plt.imshow(
+            np.transpose(npimg, (1, 2, 0)),
+            interpolation="none",
+            alpha=img_alpha,
+        )
         if label is not None:
             lbimg = label.numpy()
             plt.imshow(
                 np.transpose(lbimg, (1, 2, 0)),
-                cmap="jet",
-                alpha=alpha,
+                alpha=lb_alpha,
+                interpolation="none",
+            )
+        if error is not None:
+            erimg = error.numpy()
+            plt.imshow(
+                np.transpose(erimg, (1, 2, 0)),
+                alpha=lb_alpha,
                 interpolation="none",
             )
 
@@ -294,10 +306,24 @@ def display_volumes(
     elif style == "error":
         y = torch.from_numpy(pred_vol) - torch.from_numpy(ground_vol)
 
-    print(f"style is: {style}")
-    print(f"counts: {np.unique(y, return_counts=True)}")
+    def norm_tensor(x):
+        x = x / x.sum(0).expand_as(x)
+        x[torch.isnan(x)] = 0
+        return x
 
-    show(make_grid(x), make_grid(y), alpha=0.5)
+    # jet_vol = np.squeeze(y.numpy())
+    cmap_vol = np.apply_along_axis(cm.viridis, 0, y.numpy())
+    cmap_vol = torch.from_numpy(np.squeeze(cmap_vol))
+
+    error_vol = norm_tensor(torch.from_numpy(pred_vol - ground_vol))
+    error_vol = np.ma.masked_where(error_vol < 0.05, error_vol)
+    error_vol = np.apply_along_axis(cm.brg, 0, error_vol)
+    error_vol = torch.from_numpy(np.squeeze(error_vol))
+
+    print(f"style is: {style}")
+    print(f"counts: {np.unique(error_vol.numpy(), return_counts=True)}")
+
+    show(make_grid(x), make_grid(error_vol), lb_alpha=1)
     plt.show()
 
     # y_n = y.numpy()[21]
