@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 import albumentations
+from torchvision.utils import make_grid
 
 # from mpl_toolkits.mplot3d import Axes3D
 
@@ -238,16 +239,12 @@ def resized_stack(numpy_list, dsize=None):
 
 
 def display_volumes(
-    img_vol=None, pred_vol=None, ground_vol=None, study_dir=None
+    img_vol=None,
+    pred_vol=None,
+    ground_vol=None,
+    study_dir=None,
+    style="pred",
 ):
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection="3d")
-
-    # print(ground_vol.shape)
-    # ax.voxels(np.squeeze(ground_vol))
-
-    # plt.show()
 
     if study_dir is not None:
         print(f"loading from {study_dir}")
@@ -262,37 +259,32 @@ def display_volumes(
         pred_vol = np.stack(preds_np)
         ground_vol = np.stack(grounds_np)
 
-    slice1 = 1 * (pred_vol.shape[0] // 6)
-    slice2 = 2 * (pred_vol.shape[0] // 6)
-    slice3 = 3 * (pred_vol.shape[0] // 6)
-    slice4 = 4 * (pred_vol.shape[0] // 6)
-    slice5 = 5 * (pred_vol.shape[0] // 6)
+    def show(img, label=None, alpha=0.5):
+        npimg = img.numpy()
+        plt.imshow(
+            np.transpose(npimg, (1, 2, 0)), alpha=0.8, interpolation="none"
+        )
+        if label is not None:
+            lbimg = label.numpy()
+            plt.imshow(
+                np.transpose(lbimg, (1, 2, 0)),
+                cmap="spring",
+                alpha=alpha,
+                interpolation="none",
+            )
 
-    f, ax = plt.subplots(5, 2)
+    x = torch.from_numpy(img_vol)
 
-    ax[0, 0].imshow(img_vol[slice1, 0], cmap="gray")
-    ax[0, 1].imshow(img_vol[slice1, 0], cmap="gray")
-    ax[1, 0].imshow(img_vol[slice2, 0], cmap="gray")
-    ax[1, 1].imshow(img_vol[slice2, 0], cmap="gray")
-    ax[2, 0].imshow(img_vol[slice3, 0], cmap="gray")
-    ax[2, 1].imshow(img_vol[slice3, 0], cmap="gray")
-    ax[3, 0].imshow(img_vol[slice4, 0], cmap="gray")
-    ax[3, 1].imshow(img_vol[slice4, 0], cmap="gray")
-    ax[4, 0].imshow(img_vol[slice5, 0], cmap="gray")
-    ax[4, 1].imshow(img_vol[slice5, 0], cmap="gray")
+    if style == "pred":
+        y = torch.from_numpy(pred_vol)
+    if style == "ground":
+        y = torch.from_numpy(ground_vol)
+    elif style == "error":
+        y = torch.from_numpy(pred_vol) - torch.from_numpy(ground_vol)
 
-    ax[0, 0].imshow(pred_vol[slice1, 0], cmap="viridis", alpha=0.3)
-    ax[0, 1].imshow(ground_vol[slice1, 0], cmap="viridis", alpha=0.3)
-    ax[1, 0].imshow(pred_vol[slice2, 0], cmap="viridis", alpha=0.3)
-    ax[1, 1].imshow(ground_vol[slice2, 0], cmap="viridis", alpha=0.3)
-    ax[2, 0].imshow(pred_vol[slice3, 0], cmap="viridis", alpha=0.3)
-    ax[2, 1].imshow(ground_vol[slice3, 0], cmap="viridis", alpha=0.3)
-    ax[3, 0].imshow(pred_vol[slice4, 0], cmap="viridis", alpha=0.3)
-    ax[3, 1].imshow(ground_vol[slice4, 0], cmap="viridis", alpha=0.3)
-    ax[4, 0].imshow(pred_vol[slice5, 0], cmap="viridis", alpha=0.3)
-    ax[4, 1].imshow(ground_vol[slice5, 0], cmap="viridis", alpha=0.3)
+    show(make_grid(x), make_grid(y), alpha=0.5)
 
-    f.tight_layout()
+    plt.show()
 
 
 def exam_preds_to_stat(
@@ -440,7 +432,8 @@ def compute_inference_stats(
 
 # %%
 display_volumes(
-    study_dir="saved_inference/26_new_stratified_run_2_long_advprop/WC-ADPKD_AM9-002358/MR1"
+    study_dir="saved_inference/26_new_stratified_run_2_long_advprop/WC-ADPKD_AM9-002358/MR1",
+    style="pred",
 )
 
 # %%
