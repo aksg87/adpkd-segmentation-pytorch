@@ -115,7 +115,7 @@ class Dice(nn.Module):
 
     def __init__(
         self,
-        pred_process,
+        pred_process=None,
         epsilon=1e-8,
         power=2,
         dim=(2, 3),
@@ -131,7 +131,10 @@ class Dice(nn.Module):
         self.use_as_loss = use_as_loss
 
     def __call__(self, pred, target):
-        pred = self.pred_process(pred)
+
+        if self.pred_process is not None:
+            pred = self.pred_process(pred)
+
         if self.standardize_func is not None:
             pred = self.standardize_func(pred)
             target = self.standardize_func(target)

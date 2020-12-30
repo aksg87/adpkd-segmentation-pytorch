@@ -75,7 +75,12 @@ def load_config(config_path, run_makelinks=False):
     dataloader = get_object_instance(dataloader_config)()
 
     # TODO: support other metrics as needed
-    binarize_func = SigmoidBinarize(thresholds=[0.5])
+    # binarize_func = SigmoidBinarize(thresholds=[0.5])
+
+    pred_process_config = config["_LOSSES_METRICS_CONFIG"]["criterions_dict"][
+        "dice_metric"
+    ]["pred_process"]
+    pred_process = get_object_instance(pred_process_config)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
@@ -89,7 +94,7 @@ def load_config(config_path, run_makelinks=False):
         dataloader,
         model,
         device,
-        binarize_func,
+        pred_process,
         save_dir,
         model_name,
         split,
