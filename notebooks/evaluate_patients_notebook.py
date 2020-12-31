@@ -251,30 +251,30 @@ def resized_stack(numpy_list, dsize=None):
 
 
 def display_volumes(
-    img_vol=None,
-    pred_vol=None,
-    ground_vol=None,
-    study_dir=None,
-    style="pred",
-    plot_error=True,
+    study_dir,
+    style="prob",
+    plot_error=False,
+    skip_display=True,
 ):
 
-    if study_dir is not None:
         print(f"loading from {study_dir}")
         study_dir = Path(study_dir)
         imgs = sorted(study_dir.glob("*_img.npy"))
         imgs_np = [np.load(i) for i in imgs]
         logits = sorted(study_dir.glob("*_logit.npy"))
-        logits_np = [np.load(l) for l in logits]
+    logits_np = [np.load(logit) for logit in logits]
         preds = sorted(study_dir.glob("*_pred.npy"))
         preds_np = [np.load(p) for p in preds]
         grounds = sorted(study_dir.glob("*_ground.npy"))
         grounds_np = [np.load(g) for g in grounds]
-        img_vol = np.stack(imgs_np)
-        logit_vol = np.stack(logits_np)
-        logit_vol = torch.sigmoid(torch.from_numpy(logit_vol)).numpy()
-        pred_vol = np.stack(preds_np)
-        ground_vol = np.stack(grounds_np)
+
+    vols = {
+        "img": np.stack(imgs_np),
+        "logit": np.stack(logits_np),
+        "pred": np.stack(preds_np),
+        "prob": torch.sigmoid(torch.from_numpy(np.stack(logits_np))).numpy(),
+        "ground": np.stack(grounds_np),
+    }
 
     def show(img, label=None, error=None, img_alpha=1, lb_alpha=0.5):
         npimg = img.numpy()
@@ -299,32 +299,22 @@ def display_volumes(
                 interpolation="none",
             )
 
-    x = torch.from_numpy(img_vol)
-
-    if style == "pred":
-        y = torch.from_numpy(pred_vol)
-    elif style == "logit":
-        y = torch.from_numpy(logit_vol)
-    elif style == "ground":
-        y = torch.from_numpy(ground_vol)
-    elif style == "error":
-        y = torch.from_numpy(pred_vol) - torch.from_numpy(ground_vol)
+    x = torch.from_numpy(vols["img"])
+    y = vols[style]
 
     def norm_tensor(x):
         x = x / x.sum(0).expand_as(x)
         x[torch.isnan(x)] = 0
         return x
 
-    cmap_thresh = 0.01
-    cmap_vol = y
-    # cmap_vol = norm_tensor(y)
-    cmap_vol = np.ma.masked_where(cmap_vol < cmap_thresh, cmap_vol)
+    bkgrd_thresh = 0.01
+    cmap_vol = np.ma.masked_where(y <= bkgrd_thresh, y)
     cmap_vol = np.apply_along_axis(cm.inferno, 0, cmap_vol)
     cmap_vol = torch.from_numpy(np.squeeze(cmap_vol))
 
     error_vol = None
     if plot_error:
-        error_vol = torch.from_numpy(ground_vol - pred_vol)
+        error_vol = torch.from_numpy(vols["ground"] - vols["pred"])
         error_vol = np.ma.masked_where(error_vol == 0, error_vol)
         error_vol = np.apply_along_axis(cm.cool, 0, error_vol)
         error_vol = torch.from_numpy(np.squeeze(error_vol))
@@ -332,9 +322,11 @@ def display_volumes(
 
     print(f"style is: {style}")
     print(f"error is defined as: [prediction - ground]")
-
-    show(make_grid(x), make_grid(cmap_vol), error_vol, lb_alpha=1)
+    print(f"vol stats: min:{y.min()} max:{y.max()} mean:{y.mean()}")
+    if not skip_display:
+        show(make_grid(x), make_grid(cmap_vol), error_vol, lb_alpha=0.5)
     plt.show()
+    return y
 
 
 def exam_preds_to_stat(
@@ -505,10 +497,12 @@ paths = [
 # *model_args, split = load_config(config_path=path)
 
 # %%
-display_volumes(
-    study_dir="saved_inference/26_new_stratified_run_2_long_512/WC-ADPKD_HP9-002338/MR1",
-    style="pred",
+
+y = display_volumes(
+    study_dir="saved_inference/1_new_stratified_run_2_long_advprop_512/WC-ADPKD_AM9-002358/MR1",
+    style="prob",
     plot_error=True,
+    skip_display=False,
 )
 
 # %%
@@ -520,7 +514,7 @@ for p in tqdm(paths):
 # %%
 # run calculations on all saved inferences
 compute_inference_stats(
-    save_dir="./saved_inference", display=True, output=True
+    save_dir="./saved_inference", display=False, output=True
 )
 
 # %%
