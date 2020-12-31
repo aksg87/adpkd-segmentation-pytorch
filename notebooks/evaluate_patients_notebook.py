@@ -491,11 +491,13 @@ paths = [
     # "./experiments/november/25_new_stratified_run_2_long/test/test.yaml", # 32% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2/test/test.yaml", # 22% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long/test/test.yaml", # 41% 1.96 STD
-    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",  # 13% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_512_b6/test/test.yaml", # 30% 1.96 STD
-    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",  # 11% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_batchdice1/test/test.yaml", # 30% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_noisy-student/test/test.yaml", # 42 % 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",  # 13% 1.96 STD
+    # "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",  # 11% 1.96 STD
+    "./experiments/december/1_new_stratified_run_2_long_advprop_512/test/test.yaml",
+    "./experiments/december/1_new_stratified_run_2_long_advprop_640/test/test.yaml",
 ]
 
 # %%
