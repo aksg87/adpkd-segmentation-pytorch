@@ -324,9 +324,9 @@ def display_volumes(
 
     error_vol = None
     if plot_error:
-        error_vol = norm_tensor(torch.from_numpy(pred_vol - ground_vol))
-        error_vol = np.ma.masked_where(error_vol < 0.01, error_vol)
-        error_vol = np.apply_along_axis(cm.brg, 0, error_vol)
+        error_vol = torch.from_numpy(ground_vol - pred_vol)
+        error_vol = np.ma.masked_where(error_vol == 0, error_vol)
+        error_vol = np.apply_along_axis(cm.cool, 0, error_vol)
         error_vol = torch.from_numpy(np.squeeze(error_vol))
         error_vol = make_grid(error_vol)
 
