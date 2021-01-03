@@ -13,7 +13,6 @@ import torch
 import os
 import yaml
 import numpy as np
-import numpy.ma as ma
 import json
 from tqdm import tqdm
 
@@ -42,7 +41,11 @@ from adpkd_segmentation.utils.stats_utils import (  # noqa
     linreg_plot,
 )
 
-from adpkd_segmentation.utils.losses import SigmoidBinarize, Dice  # noqa
+from adpkd_segmentation.utils.losses import (
+    SigmoidBinarize,
+    Dice,
+    binarize_thresholds,
+)  # noqa
 from torch.nn import Sigmoid
 
 # %%
@@ -257,16 +260,16 @@ def display_volumes(
     skip_display=True,
 ):
 
-        print(f"loading from {study_dir}")
-        study_dir = Path(study_dir)
-        imgs = sorted(study_dir.glob("*_img.npy"))
-        imgs_np = [np.load(i) for i in imgs]
-        logits = sorted(study_dir.glob("*_logit.npy"))
+    print(f"loading from {study_dir}")
+    study_dir = Path(study_dir)
+    imgs = sorted(study_dir.glob("*_img.npy"))
+    imgs_np = [np.load(i) for i in imgs]
+    logits = sorted(study_dir.glob("*_logit.npy"))
     logits_np = [np.load(logit) for logit in logits]
-        preds = sorted(study_dir.glob("*_pred.npy"))
-        preds_np = [np.load(p) for p in preds]
-        grounds = sorted(study_dir.glob("*_ground.npy"))
-        grounds_np = [np.load(g) for g in grounds]
+    preds = sorted(study_dir.glob("*_pred.npy"))
+    preds_np = [np.load(p) for p in preds]
+    grounds = sorted(study_dir.glob("*_ground.npy"))
+    grounds_np = [np.load(g) for g in grounds]
 
     vols = {
         "img": np.stack(imgs_np),
@@ -325,7 +328,7 @@ def display_volumes(
     print(f"vol stats: min:{y.min()} max:{y.max()} mean:{y.mean()}")
     if not skip_display:
         show(make_grid(x), make_grid(cmap_vol), error_vol, lb_alpha=0.5)
-    plt.show()
+        plt.show()
     return y
 
 
@@ -394,6 +397,7 @@ def compute_inference_stats(
 
     print(f"calculating model inferences for {formated_list}")
 
+    all_logit_vol = defaultdict(list)
     all_pred_vol = defaultdict(list)
     all_ground_vol = defaultdict(list)
     all_summaries = defaultdict(list)
@@ -410,6 +414,8 @@ def compute_inference_stats(
         for study_dir in studies:
             imgs = sorted(study_dir.glob("*_img.npy"))
             imgs_np = [np.load(i) for i in imgs]
+            logits = sorted(study_dir.glob("*_logit.npy"))
+            logits_np = [np.load(logit) for logit in logits]
             preds = sorted(study_dir.glob("*_pred.npy"))
             preds_np = [np.load(p) for p in preds]
             grounds = sorted(study_dir.glob("*_ground.npy"))
@@ -422,6 +428,7 @@ def compute_inference_stats(
 
             # volumes for a study within one model inference
             img_vol = np.stack(imgs_np)
+            logit_vol = np.stack(logits_np)
             pred_vol = np.stack(preds_np)
             ground_vol = np.stack(grounds_np)
 
@@ -435,6 +442,7 @@ def compute_inference_stats(
             Metric_data[summary["study"]] = summary
 
             # accumulate predictions across all models for each study
+            all_logit_vol[summary["study"]].append(logit_vol)
             all_pred_vol[summary["study"]].append(pred_vol)
             all_ground_vol[summary["study"]].append(ground_vol)
             all_summaries[summary["study"]].append(summary)
@@ -444,16 +452,21 @@ def compute_inference_stats(
         if output is True:
             df.to_csv(f"stats-{model_dir.name}.csv")
 
-    for key, value in all_pred_vol.items():
+    for key, value in all_logit_vol.items():
         # uses index 0 to get ground truth and standard voxel attribs
 
-        all_pred_vol[key] = resized_stack(value)  # resizes by index 0
-        pred_vol = np.mean(all_pred_vol[key], axis=0)
-        pred_std = np.std(all_pred_vol[key])
-        # move back to slices x 1 x H x W
-        pred_vol = np.moveaxis(pred_vol, -1, 0)
-        pred_vol = np.expand_dims(pred_vol, axis=1)
+        def sigmoid(x):
+            return 1 / (1 + np.exp(-x))
 
+        # resizes by index 0
+        prob_vol = resized_stack(value)
+        # prob_vol = sigmoid(prob_vol)
+        prob_vol = np.mean(prob_vol, axis=0)
+        prob_std = np.std(prob_vol)
+
+        prob_vol = np.moveaxis(prob_vol, -1, 0)  # b x (X x Y)
+        prob_vol = np.expand_dims(prob_vol, axis=1)  # b x c x (X x Y)
+        pred_vol = binarize_thresholds(torch.from_numpy(prob_vol)).numpy()
         ground_vol = all_ground_vol[key][0]
 
         summary = exam_preds_to_stat(
@@ -461,7 +474,7 @@ def compute_inference_stats(
             ground_vol,
             pred_process,
             all_summaries[key][0],
-            pred_std=pred_std,
+            pred_std=prob_std,
         )
 
         Combined_metric_data[summary["study"]] = summary
@@ -469,6 +482,7 @@ def compute_inference_stats(
     df = pd.DataFrame(Combined_metric_data).transpose()
 
     if output is True:
+        print("saving combined csv")
         df.to_csv("stats-combined_models.csv")
 
 
@@ -486,8 +500,8 @@ paths = [
     # "./experiments/november/26_new_stratified_run_2_long_512_b6/test/test.yaml", # 30% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_batchdice1/test/test.yaml", # 30% 1.96 STD
     # "./experiments/november/26_new_stratified_run_2_long_noisy-student/test/test.yaml", # 42 % 1.96 STD
-    # "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",  # 13% 1.96 STD
-    # "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",  # 11% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml",  # 13% 1.96 STD
+    "./experiments/november/26_new_stratified_run_2_long_advprop/test/test.yaml",  # 11% 1.96 STD
     "./experiments/december/1_new_stratified_run_2_long_advprop_512/test/test.yaml",
     "./experiments/december/1_new_stratified_run_2_long_advprop_640/test/test.yaml",
 ]
@@ -498,12 +512,12 @@ paths = [
 
 # %%
 
-y = display_volumes(
-    study_dir="saved_inference/1_new_stratified_run_2_long_advprop_512/WC-ADPKD_AM9-002358/MR1",
-    style="prob",
-    plot_error=True,
-    skip_display=False,
-)
+# y = display_volumes(
+#     study_dir="saved_inference/1_new_stratified_run_2_long_advprop_512/WC-ADPKD_AM9-002358/MR1",
+#     style="prob",
+#     plot_error=True,
+#     skip_display=False,
+# )
 
 # %%
 # multi-model inference
