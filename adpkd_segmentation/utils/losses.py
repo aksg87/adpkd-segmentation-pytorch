@@ -13,7 +13,7 @@ from adpkd_segmentation.data.data_utils import (
 
 
 # %%
-def binarize_thresholds(pred, thresholds):
+def binarize_thresholds(pred, thresholds=[0.5]):
     """
     Args:
         pred: model pred tensor with shape b x c x (X x Y)
