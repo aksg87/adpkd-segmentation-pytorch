@@ -121,6 +121,14 @@ class SegmentationDataset(torch.utils.data.Dataset):
         return len(self.dcm_paths)
 
     def get_verbose(self, index):
+        """returns more details than __getitem__()
+
+        Args:
+            index (int): index in dataset
+
+        Returns:
+            tuple: sample, dcm_path, attributes dict
+        """
 
         sample = self[index]
         dcm_path = self.dcm_paths[index]
