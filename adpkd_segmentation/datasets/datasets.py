@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import torch
+from pathlib import Path
 
 from adpkd_segmentation.data.data_utils import (
     get_labeled,
@@ -269,6 +270,135 @@ class JsonDatasetGetter:
             dcm2attribs=self.dcm2attribs,
             patient2dcm=self.patient2dcm,
             patient_IDS=self.patient_IDS,
+            augmentation=self.augmentation,
+            smp_preprocessing=self.smp_preprocessing,
+            normalization=self.normalization,
+            output_idx=self.output_idx,
+            attrib_types=self.attrib_types,
+        )
+
+
+class InferenceDataset(torch.utils.data.Dataset):
+    """Some information about SegmentationDataset"""
+
+    def __init__(
+        self,
+        dcm2attribs,
+        patient2dcm,
+        augmentation=None,
+        smp_preprocessing=None,
+        normalization=None,
+        output_idx=False,
+        attrib_types=None,
+    ):
+
+        super().__init__()
+        self.dcm2attribs = dcm2attribs
+        self.pt2dcm = patient2dcm
+        self.augmentation = augmentation
+        self.smp_preprocessing = smp_preprocessing
+        self.normalization = normalization
+        self.output_idx = output_idx
+        self.attrib_types = attrib_types
+
+        self.patients = list(patient2dcm.keys())
+
+        self.dcm_paths = []
+        for p in self.patients:
+            self.dcm_paths.extend(patient2dcm[p])
+
+    def __getitem__(self, index):
+
+        if isinstance(index, slice):
+            return [self[ii] for ii in range(*index.indices(len(self)))]
+
+        # numpy int16, (H, W)
+        im_path = self.dcm_paths[index]
+        image = path_2dcm_int16(im_path)
+        # image local scaling by default to convert to uint8
+        if self.normalization is None:
+            image = int16_to_uint8(image)
+        else:
+            image = self.normalization(image, self.dcm2attribs[im_path])
+
+        if self.augmentation is not None:
+            sample = self.augmentation(image=image)
+            image = sample["image"]
+
+        # convert to float
+        image = (image / 255).astype(np.float32)
+
+        # smp preprocessing requires (H, W, 3)
+        if self.smp_preprocessing is not None:
+            image = np.repeat(image[..., np.newaxis], 3, axis=-1)
+            image = self.smp_preprocessing(image).astype(np.float32)
+            # get back to (3, H, W)
+            image = image.transpose(2, 0, 1)
+        else:
+            # stack image to (3, H, W)
+            image = np.repeat(image[np.newaxis, ...], 3, axis=0)
+
+        if self.output_idx:
+            return image, index
+
+        return image
+
+    def __len__(self):
+        return len(self.dcm_paths)
+
+    def get_verbose(self, index):
+        """returns more details than __getitem__()
+
+        Args:
+            index (int): index in dataset
+
+        Returns:
+            tuple: sample, dcm_path, attributes dict
+        """
+
+        sample = self[index]
+        dcm_path = self.dcm_paths[index]
+        attribs = self.dcm2attribs[dcm_path]
+
+        return sample, dcm_path, attribs
+
+
+class InferenceDatasetGetter:
+    """Get the dataset from a prepared patient ID split"""
+
+    def __init__(
+        self,
+        inference_path,
+        augmentation=None,
+        smp_preprocessing=None,
+        normalization=None,
+        output_idx=False,
+        attrib_types=None,
+    ):
+        super().__init__()
+
+        self.augmentation = augmentation
+        self.smp_preprocessing = smp_preprocessing
+        self.normalization = normalization
+        self.output_idx = output_idx
+        self.attrib_types = attrib_types
+
+        # dcms_paths = sorted(get_labeled())
+        self.inference_path = Path(inference_path)
+        print("INFERENCE PATH *** ", inference_path)
+        dcms_paths = sorted(self.inference_path.glob("**/*.dcm"))
+        self.dcm2attribs, self.patient2dcm = make_dcmdicts(
+            tuple(dcms_paths), label_status=False, WCM=False
+        )
+
+        if self.normalization is not None:
+            self.normalization.update_dcm2attribs(self.dcm2attribs)
+
+    def __call__(self):
+        print("INFERENCE PATH2 *** ")
+        return InferenceDataset(
+            dcm2attribs=self.dcm2attribs,
+            patient2dcm=self.patient2dcm,
             augmentation=self.augmentation,
             smp_preprocessing=self.smp_preprocessing,
             normalization=self.normalization,

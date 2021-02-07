@@ -170,23 +170,33 @@ def path_2label(fname):
     return np.array(label)
 
 
-def dcm_attributes(dcm):
+def dcm_attributes(dcm, label_status=True, WCM=True):
 
     attribs = {}
-
+    
     # dicom header attribs
     pdcm = pydicom.dcmread(dcm)
     arr_int16 = pdcm.pixel_array
-    attribs[PATIENT] = pdcm.PatientID[:-3]
-    attribs[MR] = pdcm.PatientID[-3:]
-    attribs[SEQUENCE] = pdcm.SeriesDescription
+
+    if WCM is True:
+        attribs[PATIENT] = pdcm.PatientID[:-3]
+        attribs[MR] = pdcm.PatientID[-3:]
+        attribs[SEQUENCE] = pdcm.SeriesDescription
+    else:
+        attribs[PATIENT] = pdcm.PatientID
+        attribs[MR] = pdcm.SeriesDescription
+        attribs[SEQUENCE] = pdcm.SeriesDescription
+
     attribs[MIN_IMAGE_VALUE] = arr_int16.min()
     attribs[MAX_IMAGE_VALUE] = arr_int16.max()
 
     # pixels in mask --> kidney
-    label = np.array(Image.open(get_y_Path(dcm)))
-    pos_pixels = np.sum(label > 0)
-    attribs[KIDNEY_PIXELS] = pos_pixels
+    if label_status is True:
+        label = np.array(Image.open(get_y_Path(dcm)))
+        pos_pixels = np.sum(label > 0)
+        attribs[KIDNEY_PIXELS] = pos_pixels
+    else:
+        attribs[KIDNEY_PIXELS] = None
 
     """
     Volume for pixels in mask = VOXEL_VOLUME * pos_pixels
@@ -202,7 +212,7 @@ def dcm_attributes(dcm):
 
 
 @functools.lru_cache()
-def make_dcmdicts(dcms):
+def make_dcmdicts(dcms, label_status=True, WCM=True):
     """creates two dictionares with dcm attributes
 
     Arguments:
@@ -222,9 +232,12 @@ def make_dcmdicts(dcms):
     patient2dcm = OrderedDict()
 
     for dcm in dcms:
-        attribs = dcm_attributes(dcm)
-        dcm2attribs[dcm] = attribs
-        patient2dcm.setdefault(attribs[PATIENT], []).append(dcm)
+        try:
+            attribs = dcm_attributes(dcm, label_status, WCM=WCM)
+            dcm2attribs[dcm] = attribs
+            patient2dcm.setdefault(attribs[PATIENT], []).append(dcm)
+        except:
+            print(dcm, " failed")
 
     return dcm2attribs, patient2dcm
 
