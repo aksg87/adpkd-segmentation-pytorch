@@ -385,7 +385,6 @@ class InferenceDatasetGetter:
 
         # dcms_paths = sorted(get_labeled())
         self.inference_path = Path(inference_path)
-        print("INFERENCE PATH *** ", inference_path)
         dcms_paths = sorted(self.inference_path.glob("**/*.dcm"))
         self.dcm2attribs, self.patient2dcm = make_dcmdicts(
             tuple(dcms_paths), label_status=False, WCM=False
@@ -395,7 +394,6 @@ class InferenceDatasetGetter:
             self.normalization.update_dcm2attribs(self.dcm2attribs)
 
     def __call__(self):
-        print("INFERENCE PATH2 *** ")
         return InferenceDataset(
             dcm2attribs=self.dcm2attribs,
             patient2dcm=self.patient2dcm,

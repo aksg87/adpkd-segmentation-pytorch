@@ -472,7 +472,7 @@ def compute_inference_stats(
 
 # Ensemble Experiment
 paths = [
-    "./experiments/december_inf/1_new_stratified_run_2_long_advprop_512/test/test.yaml",
+    "adpkd-segmentation/checkpoints/inference.yml",
 ]
 
 # %%
@@ -487,9 +487,9 @@ for p in tqdm(paths):
     inference_to_disk(*model_args)
 
 # %%
-save_dir = 'saved_figs/1010473028_AXIAL T2  TE 180'
+save_dir = "saved_figs/1010473028_AXIAL T2  TE 180"
 y = display_volumes(
-    study_dir="saved_inference/1_new_stratified_run_2_long_advprop_512/1001707280/Axial T2 SS-FSE",
+    study_dir="adpkd-segmentation/saved_inference/adpkd-segmentation/1001707280/Axial T2 SS-FSE",
     style="pred",
     plot_error=True,
     skip_display=False,
@@ -499,12 +499,14 @@ y = display_volumes(
 files = Path("saved_inference").glob("**/*")
 folders = [f.parent for f in files if len(f.parent.parts) == 4]
 folders = list(set(folders))
-saved_folders = [Path("saved_figs") / f"{d.parts[-2]}_{d.parts[-1]}" for d in folders]
+saved_folders = [
+    Path("saved_figs") / f"{d.parts[-2]}_{d.parts[-1]}" for d in folders
+]
 # %%
 
 for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
 
-    try: 
+    try:
         y = display_volumes(
             study_dir=study_dir,
             style="pred",
