@@ -1,0 +1,2 @@
+/adpkd-segmentation/checkpoints/best_val_checkpoint.pth filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
