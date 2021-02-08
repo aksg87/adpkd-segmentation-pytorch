@@ -2,6 +2,9 @@ import json
 import numpy as np
 import torch
 from pathlib import Path
+import pandas as pd
+import pydicom
+from ast import literal_eval
 
 from adpkd_segmentation.data.data_utils import (
     get_labeled,
@@ -306,6 +309,77 @@ class InferenceDataset(torch.utils.data.Dataset):
         self.dcm_paths = []
         for p in self.patients:
             self.dcm_paths.extend(patient2dcm[p])
+
+        # Sorts Studies by Z axis
+        studies = [
+            pydicom.dcmread(path).SeriesDescription for path in self.dcm_paths
+        ]
+        folders = [path.parent.name for path in self.dcm_paths]
+        patients = [pydicom.dcmread(path).PatientID for path in self.dcm_paths]
+        x_dims = [pydicom.dcmread(path).Rows for path in self.dcm_paths]
+        y_dims = [pydicom.dcmread(path).Columns for path in self.dcm_paths]
+        z_pos = [
+            literal_eval(str(pydicom.dcmread(path).ImagePositionPatient))[2]
+            for path in self.dcm_paths
+        ]
+        acc_nums = [
+            pydicom.dcmread(path).AccessionNumber for path in self.dcm_paths
+        ]
+        ser_nums = [
+            pydicom.dcmread(path).SeriesNumber for path in self.dcm_paths
+        ]
+
+        data = {
+            "dcm_paths": self.dcm_paths,
+            "folders": folders,
+            "studies": studies,
+            "patients": patients,
+            "x_dims": x_dims,
+            "y_dims": y_dims,
+            "z_pos": z_pos,
+            "acc_nums": acc_nums,
+            "ser_nums": ser_nums,
+        }
+
+        group_keys = [
+            "folders",
+            "studies",
+            "patients",
+            "x_dims",
+            "y_dims",
+            "acc_nums",
+            "ser_nums",
+        ]
+
+        dataset = pd.DataFrame.from_dict(data)
+        dataset["slice_pos"] = ""
+
+        grouped_dataset = dataset.groupby(group_keys)
+
+        for (name, group) in grouped_dataset:
+            sort_key = "z_pos"
+
+            # handle missing slice position with filename
+            if group[sort_key].isna().any():
+                sort_key = "dcm_paths"
+
+            zs = list(group[sort_key])
+
+            sorted_idxs = np.argsort(zs)
+            slice_map = {
+                zs[idx]: pos for idx, pos in zip(sorted_idxs, range(len(zs)))
+            }
+            zs_slice_pos = group[sort_key].map(slice_map)
+
+            for i in group.index:
+                dataset.at[i, "slice_pos"] = zs_slice_pos.get(i)
+
+        grouped_dataset = dataset.groupby(group_keys)
+        for (name, group) in grouped_dataset:
+            group.sort_values(by="slice_pos", inplace=True)
+
+        self.df = dataset
+        self.dcm_paths = list(dataset["dcm_paths"])
 
     def __getitem__(self, index):
 
