@@ -15,6 +15,7 @@ import yaml
 import numpy as np
 import json
 from tqdm import tqdm
+import nibabel as nib
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -487,7 +488,7 @@ for p in tqdm(paths):
     inference_to_disk(*model_args)
 
 # %%
-save_dir = "saved_figs/1010473028_AXIAL T2  TE 180"
+save_dir = "adpkd-segmentation/saved_inference/adpkd-segmentation/1001707280/Axial T2 SS-FSE"
 y = display_volumes(
     study_dir="adpkd-segmentation/saved_inference/adpkd-segmentation/1001707280/Axial T2 SS-FSE",
     style="pred",
@@ -516,4 +517,26 @@ for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
         )
     except:
         pass
+# %%
+
+saved_inference = "adpkd-segmentation/saved_inference"
+files = list(Path(saved_inference).glob("**/*img.npy"))
+folders = list(set([f.parent for f in files]))
+print(folders)
+
+# %%
+from ast import literal_eval
+import pydicom
+
+
+for folder in folders:
+    imgs = list(folder.glob("*img.npy"))
+    imgs = sorted(imgs)
+    np_imgs = [(np.load(i))[0] for i in imgs]
+    np_vol = np.stack(np_imgs).T
+    print(np_vol.shape)
+    print(f"{folder.name}_img_vol.nii")
+    nifi_vol = nib.Nifti1Image(np_vol, affine=np.eye(4))
+    nib.save(nifi_vol, folder / f"{folder.name}_img_vol.nii")
+
 # %%
