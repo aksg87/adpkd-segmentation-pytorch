@@ -1,6 +1,19 @@
-# adpkd-segmentation
+# ADPKD-segmentation for determining Total Kidney Volume (TKV)
 Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
 
+Implementation by Akshay Goel, MD
+
+
+## Preliminary Results Presented as Abstract SIIM 2020
+
+Convolutional Neural Networks for Automated Segmentation of Autosomal Dominant Polycystic Kidney Disease. Oral presentation at the Society for Imaging Informatics in Medicine 2020, Austin TX
+https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_convolutional_neural_ne.pdf
+
+## Examples of ADPKD MRI Data
+![Example ADPKD MRI Data](adpkd_sample_aksg87.gif)
+
+## Examples Performance on Multi-institute External Data
+![Multi-Insitute External Performance](external-data-performance.png)
 ## Steps to run:
 
 #### 1. Install pip packages from `requirements.txt`.
@@ -35,3 +48,6 @@ For TKV calculations:
 - `multi_train.py` can be used to run multiple training runs in a sequence.
 - `create_eval_configs.py` is a utility script to create evaluation configs from the starting training config.
 Also done automatically inside `train.py`.
+
+## Contact
+- For questions or comments please feel free to email me at <akshay.k.goel@gmail.com>.
