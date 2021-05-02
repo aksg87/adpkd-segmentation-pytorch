@@ -1,16 +1,13 @@
 from pathlib import Path
 
 # adapt the file for actual data locations
-# dataroot_old = Path("data_copy/")
+
 dataroot = Path("data")
+labeled_dirs = [dataroot / "processed"]
 
-# labeled_dirs_old = [
-#     dataroot_old / "training-data-01-60MR",
-#     dataroot_old / "training_data-61-110MR_AX_SSFSE_ABD_PEL_50",
-# ]
-
-labeled_dirs = [dataroot / "processed_studies_nov_2"]
-unlabeled_dirs = [dataroot / "unlabelled_data"]
+unlabeled_dirs = [
+    dataroot / "unlabelled_data"
+]  # unused currently for purely supervised training approach
 
 print(f"making links for {labeled_dirs}")
 
