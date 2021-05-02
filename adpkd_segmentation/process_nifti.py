@@ -12,15 +12,18 @@ from adpkd_segmentation.utils.nifti_utils import process_nifti_dirs
 
 # all study dirs will be processed and copied to a single root target dir
 parser = ArgumentParser()
-parser.add_arguments(
+parser.add_argument(
     "source", type=str, help="Source directory with annotations"
 )
-parser.add_arguments(
+parser.add_argument(
     "target", type=str, help="Target directory for processed studies"
 )
 
 if __name__ == "__main__":
     args = parser.parse_args()
     source_dir = Path(args.source)
-    target_dir = Path(args.source)
+    target_dir = Path(args.target)
+    print(
+        f"Processing studies: \nSource {source_dir},  Target {target_dir}\n\n"
+    )
     process_nifti_dirs(source_dir, target_dir)
