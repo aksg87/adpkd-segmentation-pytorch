@@ -173,7 +173,7 @@ _LOSSES_METRICS_CONFIG:
   requires_extra_info:
     - relative_tkv
     - balanced_tkv_batch_sd_1
-_MODEL_CHECKPOINT: "adpkd-segmentation/checkpoints/best_val_checkpoint.pth"
+_MODEL_CHECKPOINT: "checkpoints/best_val_checkpoint.pth"
 _MODEL_CONFIG:
   _CLASS_INFO:
     _CLASS_NAME: SmpModelGetter
@@ -217,7 +217,7 @@ _TEST_DATALOADER_CONFIG:
             _MODULE_NAME: albumentations
           height: 512
           width: 512
-    inference_path: "select_two/processed"
+    inference_path: inference_input/dicom_data
     normalization: null
     output_idx: true
     smp_preprocessing: null
