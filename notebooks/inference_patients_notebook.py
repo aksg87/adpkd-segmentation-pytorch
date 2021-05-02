@@ -545,24 +545,37 @@ for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
         print(e)
 # %%
 
-saved_inference = "adpkd-segmentation/saved_inference"
-files = list(Path(saved_inference).glob("**/*img.npy"))
-folders = list(set([f.parent for f in files]))
+inference_files = Path("saved_inference").glob("**/*img.npy")
+folders = list(set([f.parent for f in inference_files]))
 print(folders)
 
 # %%
-from ast import literal_eval
-import pydicom
 
 
 for folder in folders:
+    print(f"Folder: {folder}")
     imgs = list(folder.glob("*img.npy"))
     imgs = sorted(imgs)
     np_imgs = [(np.load(i))[0] for i in imgs]
     np_vol = np.stack(np_imgs).T
     print(np_vol.shape)
     print(f"{folder.name}_img_vol.nii")
+
+    dicom_paths = list(folder.glob("*.dcm"))
+    dicom_paths = sorted(dicom_paths)
+    reader = sitk.ImageSeriesReader()
+    reader.SetFileNames([str(path) for path in dicom_paths])
+    errors = []
+    try:
+        image_3d = reader.Execute()
+        sitk.WriteImage(
+            image_3d,
+            str(folder / f"{folder.name}_original.nii"),  # noqa
+        )
+
+    except Exception as e:
+        print(e)
+        errors.append(f"error:{str(e)}\n folder:{folder}")
+
     nifi_vol = nib.Nifti1Image(np_vol, affine=np.eye(4))
     nib.save(nifi_vol, folder / f"{folder.name}_img_vol.nii")
-
-# %%
