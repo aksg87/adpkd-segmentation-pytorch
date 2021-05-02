@@ -1,7 +1,6 @@
 """
-Notebook to explore inference and metrics on patients
+Notebook to run inference and generate figures
 
-The makelinks flag is needed only once to create symbolic links to the data.
 """
 
 # %%
@@ -16,11 +15,14 @@ import numpy as np
 import json
 from tqdm import tqdm
 import nibabel as nib
+from shutil import copy
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import albumentations
 from torchvision.utils import make_grid
+
+import SimpleITK as sitk
 
 # from mpl_toolkits.mplot3d import Axes3D
 
@@ -94,7 +96,7 @@ def load_config(config_path, run_makelinks=False):
     model = model.to(device)
     model.eval()
 
-    model_name = Path(config_path).parts[-3]
+    model_name = Path(config_path).absolute().parts[-3]
 
     save_dir = "./saved_inference"
 
@@ -140,7 +142,11 @@ def inference_to_disk(
         with torch.no_grad():
 
             # get_verbose returns (sample, dcm_path, attributes dict)
-            file_names = [
+            dcm_file_paths = [
+                Path(dataset.get_verbose(idx)[1]) for idx in idxs_batch
+            ]
+
+            dcm_file_names = [
                 Path(dataset.get_verbose(idx)[1]).stem for idx in idxs_batch
             ]
 
@@ -150,8 +156,9 @@ def inference_to_disk(
             # TODO: support only sigmoid saves
             y_batch_hat_binary = binarize_func(y_batch_hat)
 
-            for file_name, file_attrib, img, logit, pred in zip(
-                file_names,
+            for dcm_path, dcm_name, file_attrib, img, logit, pred in zip(
+                dcm_file_paths,
+                dcm_file_names,
                 file_attribs,
                 x_batch,
                 y_batch_hat,
@@ -163,7 +170,7 @@ def inference_to_disk(
                     / model_name
                     / file_attrib["patient"]
                     / file_attrib["MR"]
-                    / file_name
+                    / dcm_name
                 )
 
                 out_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -172,6 +179,7 @@ def inference_to_disk(
                 np.save(str(out_dir) + "_img", img.cpu().numpy())
                 np.save(str(out_dir) + "_logit", logit.cpu().numpy())
                 np.save(str(out_dir) + "_pred", pred.cpu().numpy())
+                copy(dcm_path, out_dir.with_suffix(".dcm"))
 
                 class NpEncoder(json.JSONEncoder):
                     def default(self, obj):
@@ -248,7 +256,21 @@ def display_volumes(
     plot_error=False,
     skip_display=True,
     save_dir=None,
+    output_style="png",
 ):
+    """Displays inference over original image
+
+    Args:
+        study_dir (path): Directory of inferences.
+        style (str, optional): Type of data displayed.
+        Defaults to "prob" for probability.
+        plot_error (bool, optional): Display error. Defaults to False.
+        skip_display (bool, optional): Display console display.
+        save_dir (path, optional): Directory to save figs. Defaults to None.
+
+    Returns:
+        dict: Dictionary of images, logits, predictions, probs
+    """
 
     print(f"loading from {study_dir}")
     study_dir = Path(study_dir)
@@ -299,7 +321,7 @@ def display_volumes(
     print(f"vol stats: min:{y.min()} max:{y.max()} mean:{y.mean()}")
 
     if not skip_display:
-        if style is "img":
+        if style == "img":
             show(make_grid(x), lb_alpha=0.5)
             plt.show()
         else:
@@ -468,46 +490,50 @@ def compute_inference_stats(
 
 
 # %%
-# Single Experiment
-# path = "./experiments/november/26_new_stratified_run_2_long_512/test/test.yaml"
-
-# Ensemble Experiment
+# Load models
 paths = [
-    "adpkd-segmentation/checkpoints/inference.yml",
+    "checkpoints/inference.yml",
 ]
 
 # %%
-# single inference
-# *model_args, split = load_config(config_path=path)
-
-
-# %%
-# multi-model inference
+# Run inferences
 for p in tqdm(paths):
     model_args = load_config(config_path=p)
     inference_to_disk(*model_args)
 
 # %%
-save_dir = "adpkd-segmentation/saved_inference/adpkd-segmentation/1001707280/Axial T2 SS-FSE"
+# Show sample inference
+root_saved_inference = Path("saved_inference")
+study = "adpkd-segmentation/1001707280/Axial T2 SS-FSE"
+
 y = display_volumes(
-    study_dir="adpkd-segmentation/saved_inference/adpkd-segmentation/1001707280/Axial T2 SS-FSE",
+    study_dir=root_saved_inference / study,
     style="pred",
     plot_error=True,
     skip_display=False,
-    save_dir=save_dir,
 )
 # %%
-files = Path("saved_inference").glob("**/*")
-folders = [f.parent for f in files if len(f.parent.parts) == 4]
+# Creating figures for all inferences
+
+# Get all model inferences
+inference_files = Path("saved_inference").glob("**/*")
+
+# Folders are of form 'saved_inference/adpkd-segmentation/{PATIENT-ID}/{SERIES}'
+folders = [f.parent for f in inference_files if len(f.parent.parts) == 4]
 folders = list(set(folders))
+
+IDX_series = -1
+IDX_ID = -2
+
 saved_folders = [
-    Path("saved_figs") / f"{d.parts[-2]}_{d.parts[-1]}" for d in folders
+    Path("saved_figs") / f"{d.parts[IDX_ID]}_{d.parts[IDX_series]}"
+    for d in folders
 ]
 # %%
-
+# Generate figures for all inferences
 for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
-
     try:
+        # Save inference figure to save_dir
         y = display_volumes(
             study_dir=study_dir,
             style="pred",
@@ -515,8 +541,8 @@ for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
             skip_display=False,
             save_dir=save_dir,
         )
-    except:
-        pass
+    except Exception as e:
+        print(e)
 # %%
 
 saved_inference = "adpkd-segmentation/saved_inference"
