@@ -102,6 +102,7 @@ For questions or comments please feel free to email me at <akshay.k.goel@gmail.c
   Year = {2021},
   Publisher = {GitHub},
   Journal = {GitHub repository},
+  Howpublished = {\url{https://github.com/aksg87/adpkd-segmentation-pytorch}}
 }
 ```
 
