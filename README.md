@@ -1,15 +1,17 @@
 # ADPKD-segmentation for determining Total Kidney Volume (TKV)
-Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
+Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in [PyTorch](https://github.com/pytorch/pytorch)
 
-Implementation by Akshay Goel, MD
 
-Please see additional README files for more info on:
+Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/)
+
+
+## See additional README files for more info on:
 * [Training/Validation data](data/README.md)
 * [Inference input data](inference_input/README.md)
 * [Saved inference output files](saved_inference/README.md)
 
 
-## Preliminary Results Presented as Abstract SIIM 2020
+## Preliminary Results Presented as Abstract at SIIM 2020
 
 Convolutional Neural Networks for Automated Segmentation of Autosomal Dominant Polycystic Kidney Disease. Oral presentation at the Society for Imaging Informatics in Medicine 2020, Austin TX
 https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_convolutional_neural_ne.pdf
@@ -56,3 +58,20 @@ Also done automatically inside `train.py`.
 
 ## Contact
 - For questions or comments please feel free to email me at <akshay.k.goel@gmail.com>.
+
+##  Citing
+```
+@misc{Goel:2021,
+  Author = {Akshay Goel},
+  Title = {ADPKD Segmentation in PyTorch},
+  Year = {2021},
+  Publisher = {GitHub},
+  Journal = {GitHub repository},
+}
+```
+
+## License <a name="license"></a>
+Project is distributed under MIT License
+
+## Acknowledgement
+- Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
