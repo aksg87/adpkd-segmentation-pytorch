@@ -1,8 +1,17 @@
-Please see format below to understand how data is processed. 
+## Training/Validation Data
 
-* Dicom files are annotated in ITK-Snap with masks saved as `Untitled.nii.gz` which is the default name.
-* Files are processed using `adpkd_segmentation/process_nifti.py`
-* Path to processed data defined in `adpkd_segmentation/data/data_config.py`
+#### Running command below will launch training and validation based on config files
+
+`python -m adpkd_segmentation.train --config --config path_to_config_yaml --makelinks`
+
+Note: Data source path can be changed in `adpkd_segmentation/data/data_config.py`
+
+### Overview of dataprocessing
+
+* Dicom files are annotated in ITK-Snap with masks saved as `Untitled.nii.gz`. Unprocessed files are stored in `data/unprocessed`.
+* Unprocessed files are processed using `adpkd_segmentation/process_nifti.py`. Processed files are stored in `data/unprocessed`.
+* Path to processed data is defined in `adpkd_segmentation/data/data_config.py`
+
 
 ```
 .

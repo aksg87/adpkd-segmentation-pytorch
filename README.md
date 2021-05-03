@@ -3,6 +3,11 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in PyTorch
 
 Implementation by Akshay Goel, MD
 
+Please see additional README files for more info on:
+* [Training/Validation data](data/README.md)
+* [Inference input data](inference_input/README.md)
+* [Saved inference output files](saved_inference/README.md)
+
 
 ## Preliminary Results Presented as Abstract SIIM 2020
 
@@ -12,7 +17,7 @@ https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_co
 ## Examples of ADPKD MRI Data
 ![Example ADPKD MRI Data](adpkd_sample_aksg87.gif)
 
-## Examples Performance on Multi-institute External Data
+## Examples of Performance on Multi-institute External Data
 ![Multi-Insitute External Performance](external-data-performance.png)
 ## Steps to run:
 
