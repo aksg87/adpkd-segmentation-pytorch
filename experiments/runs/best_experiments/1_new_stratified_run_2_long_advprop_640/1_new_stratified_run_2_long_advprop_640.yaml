@@ -3,7 +3,7 @@ _EXPERIMENT_DATA:
   best_metric_type: high
   num_epochs: 300
   saving_metric: dice_metric
-_EXPERIMENT_DIR: ./experiments/runs/best_experiments1_new_stratified_run_2_long_advprop_640
+_EXPERIMENT_DIR: ./experiments/runs/best_experiments/1_new_stratified_run_2_long_advprop_640
 _LOOKAHEAD_OPTIM:
   params:
     alpha: 0.5
