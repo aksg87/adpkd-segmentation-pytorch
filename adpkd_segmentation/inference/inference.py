@@ -1,26 +1,32 @@
 from pathlib import Path
 from tqdm import tqdm
+from argparse import ArgumentParser
 
 from inference_utils import load_config, inference_to_disk, display_volumes
 
+parser = ArgumentParser()
+parser.add_argument(
+    "--config_path",
+    type=str,
+    help="config_path for inference",
+    default="checkpoints/inference.yml",
+)
+
 
 def run_inference(
-    config_paths=[
-        "checkpoints/inference.yml",
-    ],
+    config_path="checkpoints/inference.yml",
     SAVED_INFERENCE="saved_inference",
     SAVED_FIGS="saved_figs",
 ):
 
     # %%
     # Run inferences
-    for p in tqdm(config_paths):
-        model_args = load_config(config_path=p)
+    model_args = load_config(config_path=config_path)
 
-        # load_config initializes all objects including:
-        # model and datloader for InferenceDataset
+    # load_config initializes all objects including:
+    # model and datloader for InferenceDataset
 
-        inference_to_disk(*model_args)
+    inference_to_disk(*model_args)
 
     # %%
     # Creating figures for all inferences
@@ -56,4 +62,9 @@ def run_inference(
 
 
 if __name__ == "__main__":
-    run_inference()
+    args = parser.parse_args()
+    print("args ", args)
+    config_path = Path(args.config_path)
+    run_inference(
+        config_path=config_path,
+    )
