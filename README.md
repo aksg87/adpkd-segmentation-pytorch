@@ -2,7 +2,7 @@
 Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in [PyTorch](https://github.com/pytorch/pytorch)
 
 
-Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/)
+Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
 
 
 ## See additional README files for more info on:
@@ -27,7 +27,7 @@ https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_co
 #### 1. Install `adpkd-segmentation` package from source.
 `python setup.py install`
 
-#### 2. Select an inference config file. To build the model for our best results use [inference_config_file](checkpoints/inference.yml) and the coresponding [model checkpoint](checkpoints/best_val_checkpoint.pth)
+#### 2. Select an inference config file. To build the model for our best results use [checkpoints/inference.yml](checkpoints/inference.yml) whcih points to coresponding checkpoint [checkpoints/best_val_checkpoint.pth](checkpoints/best_val_checkpoint.pth)
 #### 3. Run inference script:
 
 ```
