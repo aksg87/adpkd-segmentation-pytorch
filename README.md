@@ -27,7 +27,7 @@ https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_co
 #### 1. Install `adpkd-segmentation` package from source.
 `python setup.py install`
 
-#### 2. Select an inference config file. To build the model for our best results use [checkpoints/inference.yml](checkpoints/inference.yml) whcih points to coresponding checkpoint [checkpoints/best_val_checkpoint.pth](checkpoints/best_val_checkpoint.pth)
+#### 2. Select an inference config file. To build the model for our best results use [checkpoints/inference.yml](checkpoints/inference.yml) which points to coresponding checkpoint [checkpoints/best_val_checkpoint.pth](checkpoints/best_val_checkpoint.pth)
 #### 3. Run inference script:
 
 ```
@@ -35,9 +35,11 @@ $ python3 adpkd_segmentation/inference/inference.py --config_path path_to_config
 ```
 
 ## **Training Pipeline**
-#### 1. Install pip packages from `requirements.txt`.
-(inside some virtual env): `pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html`
-
+#### 1. Install pip packages.
+Install from `requirements.txt` (inside some virtual env): 
+```
+pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+```
 #### 2. Set up data as described [here](data/README.md).
 
 Note: Depending on the dataloader you may need to create a train / validation / test json file to indicate splits.
@@ -79,7 +81,7 @@ $ python -m adpkd_segmentation.evaluate_patients --config path_to_config_yaml --
 Also done automatically inside `train.py`.
 
 ## Contact
-- For questions or comments please feel free to email me at <akshay.k.goel@gmail.com>.
+For questions or comments please feel free to email me at <akshay.k.goel@gmail.com>.
 
 ##  Citing
 ```
@@ -96,4 +98,4 @@ Also done automatically inside `train.py`.
 Project is distributed under MIT License
 
 ## Acknowledgement
-- Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
+Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
