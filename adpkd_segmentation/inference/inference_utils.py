@@ -185,7 +185,7 @@ def inference_to_disk(
                 np.save(str(out_dir) + "_img", img.cpu().numpy())
                 np.save(str(out_dir) + "_logit", logit.cpu().numpy())
                 np.save(str(out_dir) + "_pred", pred.cpu().numpy())
-                copy(dcm_path, out_dir.with_suffix(".dcm"))
+                copy(dcm_path, out_dir.parent / (out_dir.name + "_DICOM.dcm"))
 
                 class NpEncoder(json.JSONEncoder):
                     def default(self, obj):
