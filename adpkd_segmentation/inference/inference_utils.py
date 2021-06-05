@@ -241,15 +241,11 @@ def inference_to_nifti(inference_dir, inverse_crop_ratio=640 / 512):
 
     dcms = [pydicom.read_file(p) for p in dcm_paths]
 
-    out_folder = "TESTING_DCM_NIFTI"
+    out_folder = "ITKSNAP_DCM_NIFTI"
 
     # prepare data and sort based on IOP/IPP
     IOPs = [d.ImageOrientationPatient for d in dcms]
     IPPs = [d.ImagePositionPatient for d in dcms]
-
-    print(list(preds), " ****")
-    print("\n\n\n")
-    print(list(dcm_paths), " ****")
 
     data = {"preds": preds, "dcm_paths": dcm_paths, IOP: IOPs, IPP: IPPs}
     sorted_df = IOP_IPP_dicomsort(pd.DataFrame(data))
