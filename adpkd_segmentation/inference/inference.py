@@ -2,7 +2,12 @@ from pathlib import Path
 from tqdm import tqdm
 from argparse import ArgumentParser
 
-from inference_utils import load_config, inference_to_disk, display_volumes
+from inference_utils import (
+    load_config,
+    inference_to_disk,
+    display_volumes,
+    inference_to_nifti,
+)
 
 parser = ArgumentParser()
 parser.add_argument(
@@ -47,7 +52,7 @@ def run_inference(
     ]
     # %%
     # Generate figures for all inferences
-    for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))[17:]):
+    for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))):
         try:
             # Save inference figure to save_dir
             display_volumes(
@@ -57,6 +62,9 @@ def run_inference(
                 skip_display=False,
                 save_dir=save_dir,
             )
+
+            inference_to_nifti(inference_dir=study_dir)
+
         except Exception as e:
             print(e)
 
