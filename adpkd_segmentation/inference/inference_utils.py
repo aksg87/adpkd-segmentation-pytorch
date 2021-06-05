@@ -9,6 +9,11 @@ import numpy as np
 import json
 from tqdm import tqdm
 from shutil import copy
+from ast import literal_eval
+
+import SimpleITK as sitk
+import pydicom
+import nibabel as nib
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -37,6 +42,10 @@ from adpkd_segmentation.utils.losses import (
 from torch.nn import Sigmoid
 
 # %%
+
+IOP = "IOP"
+IPP = "IPP"
+IPP_dist = "IPP_dist"
 
 
 def load_config(config_path, run_makelinks=False):
@@ -209,6 +218,97 @@ def inference_to_disk(
                 f = open(str(out_dir) + "_attrib.json", "w")
                 f.write(attrib_json)
                 f.close()
+
+
+# %%
+def inference_to_nifti(inference_dir, inverse_crop_ratio=640 / 512):
+    """exports directory dicom files to formated nifti volume.
+    calls sorting helper function
+
+    Args:
+        inference_dir (str, optional): inference directory.
+
+    Returns:
+        pd.DataFrame: Dataframe containing sorted values.
+    """
+
+    # get inference paths
+    preds = Path(inference_dir).glob("*_pred.npy")
+    dcm_paths = Path(inference_dir).glob("*.dcm")
+
+    preds = sorted(preds, key=lambda x: x.name)
+    dcm_paths = sorted(dcm_paths, key=lambda x: x.name)
+
+    dcms = [pydicom.read_file(p) for p in dcm_paths]
+
+    out_folder = "TESTING_DCM_NIFTI"
+
+    # prepare data and sort based on IOP/IPP
+    IOPs = [d.ImageOrientationPatient for d in dcms]
+    IPPs = [d.ImagePositionPatient for d in dcms]
+
+    print(list(preds), " ****")
+    print("\n\n\n")
+    print(list(dcm_paths), " ****")
+
+    data = {"preds": preds, "dcm_paths": dcm_paths, IOP: IOPs, IPP: IPPs}
+    sorted_df = IOP_IPP_dicomsort(pd.DataFrame(data))
+
+    # use SITK to generate numpy from dicom header
+    reader = sitk.ImageSeriesReader()
+    sorted_dcms_paths = [str(p) for p in sorted_df["dcm_paths"]]
+    reader.SetFileNames(sorted_dcms_paths)
+    errors = []
+
+    try:
+        image_3d = reader.Execute()
+    except Exception as e:
+        errors.append(f"error:{str(e)}\n path:{dcm_paths[0]}")
+
+    out_dir = dcm_paths[0].parent / out_folder
+    os.makedirs(out_dir, exist_ok=True)
+
+    dcm_save_name = "dicom_vol.nii"
+    pred_save_name = "pred_vol.nii"
+
+    sitk.WriteImage(
+        image_3d,
+        str(out_dir / dcm_save_name),
+    )
+
+    # load saved saved nii volume into nibabel object
+    dcm_nii_vol = nib.load(out_dir / dcm_save_name)
+
+    npy_preds = [np.squeeze(np.load(Path(p))) for p in sorted_df["preds"]]
+
+    # reverse center crop -- use idx 0 to get shape
+    pad_width = (
+        (npy_preds[0].shape[0] * inverse_crop_ratio) - (npy_preds[0].shape[0])
+    ) / 2
+    pad_width = round(pad_width)
+
+    npy_reverse_crops = [np.pad(pred, pad_width) for pred in npy_preds]
+
+    # resize predictions to match dicom
+    x_y_dim = dcm_nii_vol.get_fdata().shape[0:2]  # shape is in x, y, z
+    resized_preds = [
+        cv2.resize(orig, (x_y_dim), interpolation=cv2.INTER_NEAREST)
+        for orig in npy_reverse_crops
+    ]
+
+    corrected_transpose = [np.transpose(r) for r in resized_preds]
+
+    # convert 2d npy to 3d npy volume
+    npy_pred_vol = np.stack(corrected_transpose, axis=-1).astype(np.uint16)
+
+    # create nifti mask for predictions
+    dicom_header = dcm_nii_vol.header.copy()
+    pred_nii_vol = nib.Nifti1Image(npy_pred_vol, None, header=dicom_header)
+    nib.save(pred_nii_vol, out_dir / pred_save_name)
+
+    print(f"Wrote to: {Path(str(out_dir / dcm_save_name))}")
+
+    return pred_nii_vol, dcm_nii_vol, errors
 
 
 # %%
@@ -487,3 +587,53 @@ def compute_inference_stats(
     if output is True:
         print("saving combined csv")
         df.to_csv("stats-combined_models.csv")
+
+
+# %%
+
+
+def crossproduct(cosines):
+    assert len(cosines) == 6, "check for correct dimension"
+
+    normal = [0, 0, 0]
+    # cross product to find normal vector
+    normal[0] = cosines[1] * cosines[5] - cosines[2] * cosines[4]
+    normal[1] = cosines[2] * cosines[3] - cosines[0] * cosines[5]
+    normal[2] = cosines[0] * cosines[4] - cosines[1] * cosines[3]
+
+    return normal
+
+
+def IOP_IPP_dicomsort(df):
+
+    df[IPP_dist] = ""
+
+    try:
+        cosines = [round(x) for x in df[IOP].iloc[0]]
+        normal = crossproduct(cosines)
+
+        for i in df.index:
+            positions = [x for x in literal_eval(str(df.at[i, IPP]))]
+            df.at[i, IPP_dist] = sum(
+                n * p for (n, p) in zip(normal, positions)
+            )
+
+    except ValueError as e:
+        print("sorting error with:", df[IOP].iloc[0])
+        print(e)
+
+    distances = list(df[IPP_dist])
+
+    sorted_idxs = np.argsort(distances)
+    slice_map = {
+        distances[idx]: pos
+        for idx, pos in zip(sorted_idxs, range(len(distances)))
+    }
+    dist_slice_pos = df[IPP_dist].map(slice_map)
+
+    # add correct slice position
+    for i in df.index:
+        df.at[i, "slice_pos"] = dist_slice_pos.get(i)
+
+    df.sort_values("slice_pos", inplace=True)
+    return df
