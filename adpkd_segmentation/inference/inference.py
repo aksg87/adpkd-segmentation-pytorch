@@ -62,7 +62,11 @@ def run_inference(
     inference_files = list(Path(saved_inference).glob("**/*"))
 
     # Folders are of form 'saved_inference/adpkd-segmentation/{PATIENT-ID}/{SERIES}'
-    folders = [f for f in inference_files if f.parts[-4] == "saved_inference"]
+    folders = [
+        f
+        for f in inference_files
+        if len(f.parts) >= 4 and f.parts[-4] == "saved_inference"
+    ]
     folders = list(set(folders))
 
     IDX_series = -1
