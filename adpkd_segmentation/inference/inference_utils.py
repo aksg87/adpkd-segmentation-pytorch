@@ -99,7 +99,16 @@ def load_config(config_path, run_makelinks=False, inference_path=None):
 
     save_dir = "./saved_inference"
 
-    return (dataloader, model, device, pred_process, save_dir, model_name)
+    res = {
+        "dataloader": dataloader,
+        "model": model,
+        "device": device,
+        "binarize_func": pred_process,
+        "save_dir": save_dir,
+        "model_name": model_name,
+    }
+
+    return res
 
 
 def plot_model_results(csv_path, name):

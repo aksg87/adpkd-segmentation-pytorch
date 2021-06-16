@@ -46,7 +46,7 @@ Inference was performed by [checkpoints/inference.yml](checkpoints/inference.yml
 
 ```
 $ python  adpkd_segmentation/inference/inference.py -h
-usage: inference.py [-h] [--config_path CONFIG_PATH] [-i INFERENCE_PATH]
+usage: inference.py [-h] [--config_path CONFIG_PATH] [-i INFERENCE_PATH] [-o OUTPUT_PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -54,6 +54,8 @@ optional arguments:
                         path to config file for inference pipeline
   -i INFERENCE_PATH, --inference_path INFERENCE_PATH
                         path to input dicom data (replaces path in config file)
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        path to output location
 ```
 
 ## **Training Pipeline**

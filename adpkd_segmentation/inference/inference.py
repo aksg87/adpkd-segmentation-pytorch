@@ -21,7 +21,15 @@ parser.add_argument(
     "-i",
     "--inference_path",
     type=str,
-    help="path to input dicom data (replaces path in config)",
+    help="path to input dicom data (replaces path in config file)",
+    default=None,
+)
+
+parser.add_argument(
+    "-o",
+    "--output_path",
+    type=str,
+    help="path to output location",
     default=None,
 )
 
@@ -29,8 +37,8 @@ parser.add_argument(
 def run_inference(
     config_path="checkpoints/inference.yml",
     inference_path=None,
-    SAVED_INFERENCE="saved_inference",
-    SAVED_FIGS="saved_figs",
+    saved_inference="saved_inference",
+    saved_figs="saved_figs",
 ):
 
     # %%
@@ -40,26 +48,28 @@ def run_inference(
         config_path=config_path, inference_path=inference_path
     )
 
+    if saved_inference is not None:
+        model_args["save_dir"] = saved_inference
     # load_config initializes all objects including:
     # model and datloader for InferenceDataset
 
-    inference_to_disk(*model_args)
+    inference_to_disk(**model_args)
 
     # %%
     # Creating figures for all inferences
 
     # Get all model inferences
-    inference_files = Path(SAVED_INFERENCE).glob("**/*")
+    inference_files = list(Path(saved_inference).glob("**/*"))
 
     # Folders are of form 'saved_inference/adpkd-segmentation/{PATIENT-ID}/{SERIES}'
-    folders = [f.parent for f in inference_files if len(f.parent.parts) == 4]
+    folders = [f for f in inference_files if f.parts[-4] == "saved_inference"]
     folders = list(set(folders))
 
     IDX_series = -1
     IDX_ID = -2
 
     saved_folders = [
-        Path(SAVED_FIGS) / f"{d.parts[IDX_ID]}_{d.parts[IDX_series]}"
+        Path(saved_figs) / f"{d.parts[IDX_ID]}_{d.parts[IDX_series]}"
         for d in folders
     ]
     # %%
@@ -86,6 +96,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config_path = Path(args.config_path)
-    inference_path = Path(args.inference_path)
+    inference_path = args.inference_path
+    output_path = args.output_path
 
-    run_inference(config_path=config_path, inference_path=inference_path)
+    saved_inference = "saved_inference"
+    saved_figs = "saved_figs"
+
+    if inference_path is not None:
+        inference_path = Path(inference_path)
+
+    if output_path is not None:
+        # update with output folder path
+        saved_inference = Path(output_path) / saved_inference
+        saved_figs = Path(output_path) / saved_figs
+
+    run_inference(
+        config_path=config_path,
+        inference_path=inference_path,
+        saved_inference=saved_inference,
+        saved_figs=saved_figs,
+    )
