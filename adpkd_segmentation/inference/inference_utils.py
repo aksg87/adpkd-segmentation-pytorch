@@ -38,17 +38,15 @@ from adpkd_segmentation.utils.losses import (
     SigmoidBinarize,
     Dice,
     binarize_thresholds,
-)  # noqa
-from torch.nn import Sigmoid
+)
 
-# %%
 
 IOP = "IOP"
 IPP = "IPP"
 IPP_dist = "IPP_dist"
 
 
-def load_config(config_path, run_makelinks=False):
+def load_config(config_path, run_makelinks=False, inference_path=None):
     """Reads config file and calculates additional dcm attributes such as
     slice volume. Returns a dictionary used for patient wide calculations
     such as TKV.
@@ -69,6 +67,11 @@ def load_config(config_path, run_makelinks=False):
     model_config = config["_MODEL_CONFIG"]
     loader_to_eval = config["_LOADER_TO_EVAL"]
     dataloader_config = config[loader_to_eval]
+
+    # replace inference_path in config if one is provided
+    if inference_path is not None:
+        dataloader_config["dataset"]["inference_path"] = inference_path
+
     saved_checkpoint = config["_MODEL_CHECKPOINT"]
     checkpoint_format = config["_NEW_CKP_FORMAT"]
 
@@ -77,6 +80,8 @@ def load_config(config_path, run_makelinks=False):
         load_model_data(saved_checkpoint, model, new_format=checkpoint_format)
 
     dataloader = get_object_instance(dataloader_config)()
+
+    print(f"Images in inference input= {len(dataloader.dataset)}")
 
     # TODO: support other metrics as needed
     # binarize_func = SigmoidBinarize(thresholds=[0.5])
@@ -304,7 +309,7 @@ def inference_to_nifti(inference_dir, inverse_crop_ratio=640 / 512):
 
     print(f"Wrote to: {Path(str(out_dir / dcm_save_name))}")
 
-    return pred_nii_vol, dcm_nii_vol, errors
+    return pred_nii_vol, dcm_nii_vol
 
 
 # %%

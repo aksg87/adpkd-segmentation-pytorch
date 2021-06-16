@@ -13,20 +13,32 @@ parser = ArgumentParser()
 parser.add_argument(
     "--config_path",
     type=str,
-    help="config_path for inference",
+    help="path to config file for inference pipeline",
     default="checkpoints/inference.yml",
+)
+
+parser.add_argument(
+    "-i",
+    "--inference_path",
+    type=str,
+    help="path to input dicom data (replaces path in config)",
+    default=None,
 )
 
 
 def run_inference(
     config_path="checkpoints/inference.yml",
+    inference_path=None,
     SAVED_INFERENCE="saved_inference",
     SAVED_FIGS="saved_figs",
 ):
 
     # %%
     # Run inferences
-    model_args = load_config(config_path=config_path)
+    print("Enter run inference...")
+    model_args = load_config(
+        config_path=config_path, inference_path=inference_path
+    )
 
     # load_config initializes all objects including:
     # model and datloader for InferenceDataset
@@ -52,6 +64,7 @@ def run_inference(
     ]
     # %%
     # Generate figures for all inferences
+    print("Creating Figures and Nifti outputs...")
     for study_dir, save_dir in tqdm(list(zip(folders, saved_folders))):
         try:
             # Save inference figure to save_dir
@@ -71,8 +84,8 @@ def run_inference(
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    print("args ", args)
+
     config_path = Path(args.config_path)
-    run_inference(
-        config_path=config_path,
-    )
+    inference_path = Path(args.inference_path)
+
+    run_inference(config_path=config_path, inference_path=inference_path)

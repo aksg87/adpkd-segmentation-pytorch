@@ -457,9 +457,18 @@ class InferenceDatasetGetter:
         self.output_idx = output_idx
         self.attrib_types = attrib_types
 
-        # dcms_paths = sorted(get_labeled())
         self.inference_path = Path(inference_path)
-        dcms_paths = sorted(self.inference_path.glob("**/*.dcm"))
+
+        all_paths = set(self.inference_path.glob("**/*"))
+        dcms_paths = []
+        for path in all_paths:
+            if path.is_file():
+                try:
+                    pydicom.filereader.dcmread(path, stop_before_pixels=True)
+                    dcms_paths.append(path)
+                except pydicom.errors.InvalidDicomError:
+                    continue
+
         self.dcm2attribs, self.patient2dcm = make_dcmdicts(
             tuple(dcms_paths), label_status=False, WCM=False
         )

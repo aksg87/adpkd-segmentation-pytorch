@@ -9,8 +9,6 @@ unlabeled_dirs = [
     dataroot / "unlabelled_data"
 ]  # unused currently for purely supervised training approach
 
-print(f"making links for {labeled_dirs}")
-
 # modify for custom symbolic link locations
 LABELED = None
 UNLABELED = None
