@@ -1,0 +1,8 @@
+{
+    "watch_dir" : "ingress/",
+    "ingress_folder" : "ingress/",
+    "structured_ingress" : "structured_ingress.csv",
+    "patient_status" : "patient_status.csv",
+    "inferencePath" : "/opt/pkd-data/akshay-code/adpkd-segmentation-pytorch/adpkd_segmentation/inference/inference.py",
+    "configPath" : "/opt/pkd-data/akshay-code/adpkd-segmentation-pytorch/checkpoints/inference.yml"
+}

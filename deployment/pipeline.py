@@ -4,16 +4,19 @@ from watchdog.events import FileSystemEventHandler
 import os
 import pydicom
 import csv
+import json
 import pandas as pd
 import io
-from constants import (
-    watch_dir,
-    ingress_folder,
-    structured_ingress,
-    patient_status,
-    inferencePath,
-    configPath,
-)
+
+with open("constants.json") as config_file:
+    config = json.load(config_file)
+
+watch_dir = config["watch_dir"]
+ingress_folder = config["ingress_folder"]
+structured_ingress = config["structured_ingress"]
+patient_status = config["patient_status"]
+inferencePath = config["inferencePath"]
+configPath = config["configPath"]
 
 
 def to_structure_db(filename):
@@ -30,45 +33,45 @@ def to_structure_db(filename):
     """
     # get info from dicom
     filename = "ingress/" + filename
-    exp = pydicom.dcmread(filename).SeriesDescription
-    patient = pydicom.dcmread(filename).PatientID
+    ser_desc = pydicom.dcmread(filename).SeriesDescription
+    patient_id = pydicom.dcmread(filename).PatientID
     ser_num = pydicom.dcmread(filename).SeriesNumber
 
     # new file path
-    n_name = "/".join(
+    new_path = "/".join(
         [
-            str(patient).replace(" ", "_"),
+            str(patient_id).replace(" ", "_"),
             str(ser_num).replace(" ", "_"),
-            str(exp).replace(" ", "_"),
+            str(ser_desc).replace(" ", "_"),
             filename.replace("ingress/", ""),
         ]
     )
-    n_name = "structured_ingress/" + n_name
+    new_path = "structured_ingress/" + new_path
 
     # check dir
-    dir_name, _ = os.path.split(n_name)
+    dir_name, _ = os.path.split(new_path)
     os.makedirs(dir_name, exist_ok=True)
 
     # copy the file to new path, old one will still be in in-gress
-    os.system(f"cp {filename} {n_name}")
+    os.system(f"cp {filename} {new_path}")
     print("Done Copying")
 
     # add new item to csv file
     with open(structured_ingress, "a") as f:
-        f.write(",".join([filename, n_name, "uninf"]))
+        f.write(",".join([filename, new_path, "uninf"]))
         f.write("\n")
         f.close()
     print("Added new item")
 
     # update last modified to patient csv
-    data = dict(csv.reader((open(patient_status, "r"))))
-    data[str(patient)] = time.time()
-    print(data)
+    pt_to_status = dict(csv.reader((open(patient_status, "r"))))
+    pt_to_status[str(patient_id)] = time.time()
+    print(pt_to_status)
     with open(patient_status, "w") as f:
-        for key in data.keys():
-            f.write("%s,%s\n" % (key, data[key]))
+        for key in pt_to_status.keys():
+            f.write("%s,%s\n" % (key, pt_to_status[key]))
 
-    return n_name
+    return new_path
 
 
 def checkStatus():
@@ -80,14 +83,14 @@ def checkStatus():
         list: A list of stable patient ids
     """
     with io.open(patient_status, "r") as f:
-        data = dict(csv.reader(f))
+        pt_to_status = dict(csv.reader(f))
 
     stable = set()
-    for i, (patient, last_modified) in enumerate(data.items()):
+    for i, (patient_id, last_modified) in enumerate(pt_to_status.items()):
         if i == 0:
             continue
         if time.time() - float(last_modified) >= 60 * 10:
-            stable.add(patient)
+            stable.add(patient_id)
         else:
             continue
     print("List of stable patient:", list(stable))
@@ -126,7 +129,7 @@ def findFiles():
 
 def callInference():
     """
-    Call Inference, #TODO: might need to pass in temp folder; 
+    Call Inference, #TODO: might need to pass in temp folder;
     """
 
     os.system(f"python3 {inferencePath} --config_path {configPath}")
@@ -135,13 +138,13 @@ def callInference():
 
 
 def updateStatus(update_list):
-    """ 
-    This function will update the status of changed 
+    """
+    This function will update the status of changed
     file in structured_ingress.csv if it has been inferenced
 
     Args:
         update_list ([str]): list of file names to be changed
-    """    
+    """
 
     if len(update_list) == 0:
         return
@@ -200,14 +203,15 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
+
     if not os.path.exists(patient_status):
         with open(patient_status, "w") as f:
-            f.write("patient,last_modified") 
+            f.write("patient,last_modified")
             f.close()
 
     if not os.path.exists(structured_ingress):
         with open(structured_ingress, "w") as f:
-            f.write("filename,path,status") 
+            f.write("filename,path,status")
             f.close()
 
     watch = OnMyWatch()
