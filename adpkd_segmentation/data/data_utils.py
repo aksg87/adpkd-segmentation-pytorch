@@ -173,7 +173,7 @@ def path_2label(fname):
 def dcm_attributes(dcm, label_status=True, WCM=True):
 
     attribs = {}
-    
+
     # dicom header attribs
     pdcm = pydicom.dcmread(dcm)
     arr_int16 = pdcm.pixel_array
@@ -231,13 +231,20 @@ def make_dcmdicts(dcms, label_status=True, WCM=True):
     dcm2attribs = OrderedDict()
     patient2dcm = OrderedDict()
 
+    exceptions = []
     for dcm in dcms:
         try:
             attribs = dcm_attributes(dcm, label_status, WCM=WCM)
             dcm2attribs[dcm] = attribs
             patient2dcm.setdefault(attribs[PATIENT], []).append(dcm)
-        except:
-            print(dcm, " failed")
+        except Exception as e:
+            exceptions.append(f"{e} with dcm:{dcm.name} ")
+
+    if len(exceptions) > 0:
+        print(
+            "\n\nThe following exceptions were encountered: \n"
+            f" {exceptions}\n\n"
+        )
 
     return dcm2attribs, patient2dcm
 

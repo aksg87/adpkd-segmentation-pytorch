@@ -37,6 +37,8 @@ from adpkd_segmentation.utils.losses import (
     binarize_thresholds,
 )
 
+PRED_PROCESS = SigmoidBinarize(thresholds=[0.5])
+
 
 def load_config(config_path, run_makelinks=False):
     """Reads config file and calculates additional dcm attributes such as
@@ -320,7 +322,13 @@ def display_volumes(
 
 
 def exam_preds_to_stat(
-    pred_vol, ground_vol, pred_process, attrib_dict, pred_std=None
+    pred_vol,
+    ground_vol,
+    pred_process=PRED_PROCESS,
+    attrib_dict=None,
+    pred_std=None,
+    vox_vol=None,
+    study=None,
 ):
     """computes stats for a single exam prediction
 
@@ -333,6 +341,7 @@ def exam_preds_to_stat(
     Returns:
         tuple: study key, dictionary of attributes
     """
+
     volume_ground = None
     volume_pred = None
     dice = Dice(
@@ -342,32 +351,50 @@ def exam_preds_to_stat(
         torch.from_numpy(pred_vol), torch.from_numpy(ground_vol)
     ).item()
 
-    scale_factor = (attrib_dict["dim"][0] ** 2) / (
-        attrib_dict["transform_resize_dim"][0] ** 2
-    )
+    if attrib_dict is not None:
+        scale_factor = (attrib_dict["dim"][0] ** 2) / (
+            attrib_dict["transform_resize_dim"][0] ** 2
+        )
+        vox_vol = attrib_dict["vox_vol"]
+
+    else:
+        scale_factor = 1.0
+        assert vox_vol is not None, "no attrib, voxel_vol must be defined"
+        assert study is not None, "no attrib, study must be defined"
+
     # print(f"scale factor {scale_factor}")
     pred_pixel_count = torch.sum(
         pred_process(torch.from_numpy(pred_vol))
     ).item()
-    volume_pred = scale_factor * attrib_dict["vox_vol"] * pred_pixel_count
+    volume_pred = scale_factor * vox_vol * pred_pixel_count
 
     ground_pixel_count = torch.sum(
         pred_process(torch.from_numpy(ground_vol))
     ).item()
-    volume_ground = scale_factor * attrib_dict["vox_vol"] * ground_pixel_count
+    volume_ground = scale_factor * vox_vol * ground_pixel_count
 
-    attrib_dict.update(
-        {
+    if attrib_dict is not None:
+        attrib_dict.update(
+            {
+                "TKV_GT": volume_ground,
+                "TKV_Pred": volume_pred,
+                "patient_dice": dice_val,
+                "study": attrib_dict["patient"] + attrib_dict["MR"],
+                "scale_factor": scale_factor,
+                "Pred_stdev": pred_std,
+            }
+        )
+
+        return attrib_dict
+    else:
+        return {
             "TKV_GT": volume_ground,
             "TKV_Pred": volume_pred,
             "patient_dice": dice_val,
-            "study": attrib_dict["patient"] + attrib_dict["MR"],
+            "study": study,
             "scale_factor": scale_factor,
             "Pred_stdev": pred_std,
         }
-    )
-
-    return attrib_dict
 
 
 def compute_inference_stats(

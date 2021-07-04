@@ -1,7 +1,8 @@
 Running `adpkd_segmentation/inference/inference.py` generates:
 
 * Inference output files in this directory at `adpkd-segmentation/saved_inference`
-
+* Output is currently of format `saved_inference/adpkd-segmentation/{PATIENT-ID}/{SERIES}`
+* TODO: Add `accession` or `time` to prevent conflicts.
 
 ## File types in saved inference
 * `.dcm` files are the raw input dicom files
