@@ -138,3 +138,19 @@ Project is distributed under MIT License
 ## Acknowledgement
 
 Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
+
+## **Linters and Formatters**
+Please apply these prior to any PRs to this repository.
+- Linter `flake8` [link](https://flake8.pycqa.org/en/latest/)
+- Formatter `black --line-length 79` [link](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html)
+
+If you use VSCode you can add these to your settings as follows:
+```
+  "python.formatting.provider": "black",
+  "python.linting.flake8Enabled": true,
+  "python.formatting.blackArgs": [
+    "--experimental-string-processing",    
+    "--line-length",
+    "79",
+  ],
+```
