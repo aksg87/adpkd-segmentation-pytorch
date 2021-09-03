@@ -137,7 +137,7 @@ Project is distributed under MIT License
 
 ## Acknowledgement
 
-Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
+Model architecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
 
 ## **Linters and Formatters**
 Please apply these prior to any PRs to this repository.
