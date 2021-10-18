@@ -1,18 +1,16 @@
 # %%
 from pathlib import Path
-from pyCompare import blandAltman
-import pandas as pd
-import numpy as np
 
 import matplotlib.pyplot as plt
-import matplotlib.transforms as transforms
 import matplotlib.ticker as ticker
+import matplotlib.transforms as transforms
+import numpy as np
+import pandas as pd
+from pyCompare import blandAltman
 
-
-test_path = "/Users/akshay/Desktop/test-results - test-results.csv"
-external_all_path = "/Users/akshay/Desktop/external_all.csv"
-prospective_all_path = "/Users/akshay/Desktop/prospective_all.csv"
-prospective_all_path2 = "/Users/akshay/Desktop/model_assisted_vs_model.csv"
+test_path = "../results/hold-out-test.csv"
+external_all_path = "../results/external-data.csv"
+prospective_all_path = "../results/prospective-data.csv"
 
 figureSize = (4, 4)
 
@@ -84,12 +82,17 @@ def dice_plot(
 # %%
 # external_ds = pd.read_csv(external_path)
 # prospective_ds = pd.read_csv(prospective_path)
-prospective_ds = pd.read_csv(prospective_all_path2)
+prospective_ds = pd.read_csv(prospective_all_path)
+prospective_ds.TKV_Pred /= 1000  # corrects units to mL
+prospective_ds.TKV_GT /= 1000  # corrects units to mL
+
 test_ds = pd.read_csv(test_path)
+test_ds.TKV_GT /= 1000  # corrects units to mL
+test_ds.TKV_Pred /= 1000  # corrects units to mL
 
 
 external_ds = pd.read_csv(external_all_path)
-prospective_ds = pd.read_csv(prospective_all_path)
+# prospective_ds = pd.read_csv(prospective_all_path)
 
 
 # %%
@@ -137,7 +140,7 @@ dice_plot(
 
 
 dice_plot(
-    test_ds.TKV_GT,
+    test_ds.TKV_GT / 1000,
     test_ds.patient_dice,
     title="Dice by TKV - Hold-out-test dataset",
     figureSize=figureSize,
