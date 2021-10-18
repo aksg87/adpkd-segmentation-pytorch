@@ -140,7 +140,7 @@ dice_plot(
 
 
 dice_plot(
-    test_ds.TKV_GT / 1000,
+    test_ds.TKV_GT,
     test_ds.patient_dice,
     title="Dice by TKV - Hold-out-test dataset",
     figureSize=figureSize,
