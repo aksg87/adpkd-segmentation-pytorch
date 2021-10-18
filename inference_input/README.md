@@ -1,6 +1,6 @@
 ## Inference Data
 
-#### Running `adpkd_segmentation/inference/inference.py` will performance inference on `inference_input` files
+#### Running `adpkd_segmentation/inference/inference.py` will perform inference on `inference_input` files
 
 Input dicom files should be kept in this directory (`adpkd-segmentation/inference_input`)
 
