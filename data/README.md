@@ -9,7 +9,7 @@ Note: Data source path can be changed in `adpkd_segmentation/data/data_config.py
 ### Overview of dataprocessing
 
 * Dicom files are annotated in ITK-Snap with masks saved as `Untitled.nii.gz`. Unprocessed files are stored in `data/unprocessed`.
-* Unprocessed files are processed using `adpkd_segmentation/process_nifti.py`. Processed files are stored in `data/unprocessed`.
+* Unprocessed files are processed using `adpkd_segmentation/process_nifti.py`. Processed files are stored in `data/processed`.
 * Path to processed data is defined in `adpkd_segmentation/data/data_config.py`
 
 
