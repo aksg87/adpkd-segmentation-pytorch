@@ -14,13 +14,10 @@ Project design, data management, and implementation by [Akshay Goel, MD](https:/
 
 [Convolutional Neural Networks for Automated Segmentation of Autosomal Dominant Polycystic Kidney Disease. Oral presentation at the Society for Imaging Informatics in Medicine 2020, Austin TX](https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_convolutional_neural_ne.pdf)
 
-## Examples of ADPKD MRI Data
-
-![Example ADPKD MRI Data](adpkd_sample_aksg87.gif)
-
-## Examples of Performance on Multi-institute External Data
-
+## Examples of Performance on Unseen Multi-institute External Data
 Inference was performed by [checkpoints/inference.yml](checkpoints/inference.yml) with checkpoint (checkpoints/best_val_checkpoint.pth)
+![Example ADPKD MRI Data](adpkd_inference_ext_50.gif)
+
 ![Multi-Insitute External Performance](external-data-performance.png)
 
 # Steps to run:
