@@ -1,0 +1,5 @@
+{
+    "Axial": ["/path_to/adpkd-segmentation-pytorch/checkpoints/2021_01_08-inference_kidney_axial_nocrop.yml", "/path_to/liver-segmentation-pytorch/checkpoints/2021_01_12-inference_liver_axial_nocrop.yml","/path_to/spleen-segmentation-pytorch/checkpoints/2021_01_18-inference_spleen_axial_nocrop.yml"],
+    "Coronal": ["/path_to/adpkd-segmentation-pytorch/checkpoints/2022_01_23-inference_kidney_coronal_pretrained_nocrop.yml", "/path_to/liver-segmentation-pytorch/checkpoints/2022_01_25-inference_liver_coronal_pretrained_nocrop.yml", "/path_to/spleen-segmentation-pytorch/checkpoints/2022_01_29-inference_spleen_coronal_pretrained_nocrop.yml"],
+    "Sagittal": ["/path_to/adpkd-segmentation-pytorch/checkpoints/2022_01_23-inference_kidney_coronal_pretrained_nocrop.yml", "/path_to/liver-segmentation-pytorch/checkpoints/2022_01_25-inference_liver_coronal_pretrained_nocrop.yml", "/path_to/spleen-segmentation-pytorch/checkpoints/2022_01_29-inference_spleen_coronal_pretrained_nocrop.yml"]
+}
