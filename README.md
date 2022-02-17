@@ -4,6 +4,12 @@ Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in [PyTorch](h
 
 Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
 
+# Radiology: Artificial Intelligence (RSNA)
+
+Goel A, Shih G, Riyahi S, Jeph S, Dev H, Hu R, et al. Deployed Deep Learning Kidney Segmentation for Polycystic Kidney Disease MRI. Radiology: Artificial Intelligence. p. e210205.
+
+Published Online:Feb 16 2022 https://doi.org/10.1148/ryai.210205
+
 ## See additional README files for more info on:
 
 - [Training/Validation data](data/README.md)
