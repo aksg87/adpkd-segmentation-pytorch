@@ -8,11 +8,6 @@ from inference import run_inference
 from ensemble_utils import get_scan, addition_ensemble
 
 
-# Preliminary Data
-print("Loading system and pipeline configuration...")
-config_path = "adpkd_segmentation/inference/ensemble_config.json"
-with open(config_path, "r") as id_system:
-    system_config = json.loads(id_system.read())
 # Parser Setup
 parser = ArgumentParser()
 parser.add_argument(
@@ -31,8 +26,24 @@ parser.add_argument(
     default=None,
 )
 
+parser.add_argument(
+    "-c",
+    "--config_path",
+    type=str,
+    help="Path that points to the desired configuration file",
+    default="adpkd_segmentation/inference/ensemble_config.json",
+)
 
-def run_addition_ensemble(input_path=None, output_path=None):
+
+def run_addition_ensemble(
+    input_path=None,
+    output_path=None,
+    config_path=None,
+):
+    # Preliminary Data
+    print("Loading system and pipeline configuration...")
+    with open(config_path, "r") as id_system:
+        system_config = json.loads(id_system.read())
     # Individual Organ inference
     pred_load_dir = []
     for idx_organ, name_organ in enumerate(system_config["organ_name"]):
@@ -95,6 +106,7 @@ if __name__ == "__main__":
 
     inference_path = args.inference_path
     output_path = args.output_path
+    config_path = "adpkd_segmentation/inference/ensemble_config.json"
     # Prep the output path
     if inference_path is not None:
         inf_path = inference_path
@@ -102,4 +114,6 @@ if __name__ == "__main__":
     if output_path is not None:
         out_path = output_path
 
-    run_addition_ensemble(input_path=inf_path, output_path=out_path)
+    run_addition_ensemble(
+        input_path=inf_path, output_path=out_path, config_path=config_path
+    )

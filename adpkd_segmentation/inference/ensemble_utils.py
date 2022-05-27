@@ -85,6 +85,6 @@ def addition_ensemble(iter_dict, config):
     overlap_mask = mask_add(iter_dict, config)
     return overlap_mask  # For testing purposes -- v1_002 only
     # Coming soon -- v1_003
-    # process_org_color_mask = overlap_repaint(overlap_mask,config,other_args...)
+    # intermediate_mask = overlap_repaint(overlap_mask,config,other_args...)
     # comb_mask = organ_repaint(process_org_color_mask,config)
     # return comb_mask
