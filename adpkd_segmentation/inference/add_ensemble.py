@@ -1,11 +1,11 @@
-import json
+import yaml
 from argparse import ArgumentParser
 import os
 from pathlib import Path
 import nibabel as nib
 
 from inference import run_inference
-from ensemble_utils import get_scan, addition_ensemble
+from ensemble_utils import get_scan, grab_organ_dirs, addition_ensemble
 
 
 # Parser Setup
@@ -31,25 +31,26 @@ parser.add_argument(
     "--config_path",
     type=str,
     help="Path that points to the desired configuration file",
-    default="adpkd_segmentation/inference/ensemble_config.json",
+    default="adpkd_segmentation/inference/ensemble_config.yml",
 )
 
 
 def run_addition_ensemble(
     input_path=None,
     output_path=None,
-    config_path=None,
+    config_path="adpkd_segmentation/inference/ensemble_config.yml",
 ):
-    # Preliminary Data
+    # Load configuration to dictionary
     print("Loading system and pipeline configuration...")
     with open(config_path, "r") as id_system:
-        system_config = json.loads(id_system.read())
+        try:
+            system_config = yaml.load(id_system, Loader=yaml.FullLoader)
+        except yaml.YAMLError as exc:
+            print(exc)
     # Individual Organ inference
     pred_load_dir = []
     for idx_organ, name_organ in enumerate(system_config["organ_name"]):
-        print(
-            "Run " + str(idx_organ + 1) + ": " + name_organ + " inference...\n"
-        )
+        print(f"Run {idx_organ+1}: {name_organ} inference\n")
         save_path = os.path.join(output_path, name_organ)
         config_path = system_config["model_dir"]["T2"]["Axial"][idx_organ]
         saved_inference = Path(save_path) / system_config["svd_inf"]
@@ -75,11 +76,23 @@ def run_addition_ensemble(
     # Addition Ensemble
     print("Combining the organ segmentations...")
     scan_list = list(pred_load_dir[0].glob(f'**/*{system_config["pred_vol"]}'))
+    mask_load_dict = grab_organ_dirs(
+        organ_paths=pred_load_dir,
+        ensemble_mode=system_config["mode"],
+        organ_name=system_config["organ_name"],
+        pred_filename=system_config["pred_vol"],
+    )
     for idScn, scan in enumerate(scan_list):
-        temp_dict = {"organ_paths": pred_load_dir, "idS": idScn}
-        scan_folder = get_scan(system_config, scan)
-        print(f"Combining for scan {scan_folder}")
-        comb_mask = addition_ensemble(temp_dict, system_config)
+        scan_folder = get_scan(
+            intermediate_folder=system_config["youngest_child"], dir=scan
+        )
+        print(f"Combining for sequence {scan_folder}")
+        comb_mask = addition_ensemble(
+            scan_iter=idScn,
+            mask_directory_dict=mask_load_dict,
+            organ_name=system_config["organ_name"],
+            add_organ_color=system_config["add_organ_color"],
+        )
 
         # Save the output
         save_path = combine_path / scan_folder
@@ -106,7 +119,7 @@ if __name__ == "__main__":
 
     inference_path = args.inference_path
     output_path = args.output_path
-    config_path = "adpkd_segmentation/inference/ensemble_config.json"
+    config_path = "adpkd_segmentation/inference/ensemble_config.yml"
     # Prep the output path
     if inference_path is not None:
         inf_path = inference_path

@@ -1,10 +1,14 @@
+from typing import Union, List
 import os
 from pathlib import Path
 import nibabel as nib
 import numpy as np
 
 
-def get_tail(dir=".", depth=1):
+string_path = Union[str, Path]  # Can be a string or pathlib Path
+
+
+def get_tail(dir: string_path, depth: int) -> str:
     """
     Given a folder path OR directory, return
     the folder given the depth.
@@ -24,47 +28,43 @@ def get_tail(dir=".", depth=1):
     return t_tail  # Tested, good
 
 
-def get_scan(config, dir="."):
-    """This is designed for the output folder pattern in
-    ADPKD-segmentation-pytorch (Goel et al. Radiology AI). At inference, the
-    nifti files are saved in
-    .../saved_inference/repo_name/patient_ID/scan_folder/ITKSNAP_DCM_NIFTI/pred.vol.nii
-    You can find Dr. Goel's repo at:
-    https://github.com/aksg87/adpkd-segmentation-pytorch.git
-    And you can find his deployment:
-    web: https://pubs.rsna.org/doi/10.1148/ryai.210205
-    doi: https://doi.org/10.1148/ryai.210205
-    """
+def get_scan(intermediate_folder: str, dir: string_path) -> str:
     target_depth = 1
-    if get_tail(dir, target_depth) == config["youngest_child"]:
+    if get_tail(dir, target_depth) == intermediate_folder:
         target_depth += 1
     return get_tail(dir, target_depth)
 
 
-def grab_organ_dirs(iter_dict, config):
+def grab_organ_dirs(
+    organ_paths: List[string_path],
+    ensemble_mode: str,
+    organ_name: List[str],
+    pred_filename: str,
+) -> dict:
     """Given the initial parent path,
     we will provide the directories to
     all files + scans"""
     path_dict = {}
-    if config["mode"] == "ensemble addition":
-        for organ, organ_path in zip(
-            config["organ_name"], iter_dict["organ_paths"]
-        ):
+    if ensemble_mode == "ensemble addition":
+        for organ, organ_path in zip(organ_name, organ_paths):
             path_dict[organ] = list(
-                Path(organ_path).glob(f"**/*{config['pred_vol']}")
+                Path(organ_path).glob(f"**/*{pred_filename}")
             )
-        return path_dict  # TEST THIS
-    # To Do: if config['mode'] = "ensemble softmax"
+        return path_dict
 
 
-def mask_add(iter_dict, config):
-    idScan = iter_dict["idS"]  # Scan index
+def mask_add(
+    scan_iter: int,
+    mask_directory_dict: dict,
+    organ_name: List[str],
+    add_organ_color: List[int],
+) -> np.ndarray:
     for idO, organ, add_color in zip(
-        range(len(config["organ_name"])),
-        config["organ_name"],
-        config["add_organ_color"],
+        range(len(organ_name)),
+        organ_name,
+        add_organ_color,
     ):
-        load_dir = iter_dict["mask_directories"][organ][idScan]
+        load_dir = mask_directory_dict[organ][scan_iter]
         tmp_nii = nib.load(load_dir)
         tmp_arr = np.array(tmp_nii.dataobj)
         if idO == 0:
@@ -74,17 +74,18 @@ def mask_add(iter_dict, config):
     return np.uint16(temp_combine)
 
 
-def addition_ensemble(iter_dict, config):
+def addition_ensemble(
+    scan_iter: int,
+    mask_directory_dict: dict,
+    organ_name: List[str],
+    add_organ_color: List[str],
+) -> np.ndarray:
     """Given a dictionary that temporarily holds
     the organ paths and scan index,"""
-    # Current commit: finalize mask_add
-    # Next commit:
-    #   -overlap_repaint
-    #   -organ_repaint
-    iter_dict["mask_directories"] = grab_organ_dirs(iter_dict, config)
-    overlap_mask = mask_add(iter_dict, config)
-    return overlap_mask  # For testing purposes -- v1_002 only
-    # Coming soon -- v1_003
-    # intermediate_mask = overlap_repaint(overlap_mask,config,other_args...)
-    # comb_mask = organ_repaint(process_org_color_mask,config)
-    # return comb_mask
+    overlap_mask = mask_add(
+        scan_iter=scan_iter,
+        mask_directory_dict=mask_directory_dict,
+        organ_name=organ_name,
+        add_organ_color=add_organ_color,
+    )
+    return overlap_mask
