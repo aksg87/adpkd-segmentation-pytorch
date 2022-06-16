@@ -74,11 +74,27 @@ def mask_add(
     return np.uint16(temp_combine)
 
 
+def reassign_color(
+    input_array: np.ndarray,
+    old_colors: List[int],
+    new_colors: List[int],
+) -> np.ndarray:
+    temp_arr = input_array
+    for old_color, new_color in zip(old_colors, new_colors):
+        temp_arr[input_array == old_color] = new_color
+    # end
+    return np.uint16(temp_arr)
+
+
 def addition_ensemble(
     scan_iter: int,
     mask_directory_dict: dict,
     organ_name: List[str],
-    add_organ_color: List[str],
+    add_organ_color: List[int],
+    overlap_colors: List[int],
+    adjudicated_colors: List[int],
+    old_organ_colors: List[int],
+    new_organ_colors: List[int],
 ) -> np.ndarray:
     """Given a dictionary that temporarily holds
     the organ paths and scan index,"""
@@ -88,4 +104,12 @@ def addition_ensemble(
         organ_name=organ_name,
         add_organ_color=add_organ_color,
     )
-    return overlap_mask
+    remap_organs = reassign_color(
+        overlap_mask,
+        old_colors=overlap_colors,
+        new_colors=adjudicated_colors,
+    )
+    output_mask = reassign_color(
+        remap_organs, old_colors=old_organ_colors, new_colors=new_organ_colors
+    )
+    return output_mask

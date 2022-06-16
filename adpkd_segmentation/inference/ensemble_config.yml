@@ -10,13 +10,12 @@ combined_folder: "multiorgan_ensemble"
 combined_pred_filename: "comb_pred_vol.nii"
 add_organ_color: [2, 4, 8]
 add_overlap: [6, 10, 12, 14]
-overlap_recolor: [1, 2, 8, 8]
+overlap_recolor: [2, 2, 8, 8]
 repaint_side: ["right", "all"]
-orig_color: [2, 8]
-view_color: [1, 3]
+orig_color: [8]
+view_color: [3]
 sitk_obj_rl_dim: 0
 organ_name: ["kidney", "liver", "spleen"]
-recolor_spleen: [8, 3]
 inference_ensemble_color: [2, 4, 3]
 model_dir: # Key structure: [sequence][orientation]
   T2:

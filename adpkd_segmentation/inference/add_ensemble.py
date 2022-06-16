@@ -92,6 +92,10 @@ def run_addition_ensemble(
             mask_directory_dict=mask_load_dict,
             organ_name=system_config["organ_name"],
             add_organ_color=system_config["add_organ_color"],
+            overlap_colors=system_config["add_overlap"],
+            adjudicated_colors=system_config["overlap_recolor"],
+            old_organ_colors=system_config["orig_color"],
+            new_organ_colors=system_config["view_color"],
         )
 
         # Save the output
@@ -119,7 +123,7 @@ if __name__ == "__main__":
 
     inference_path = args.inference_path
     output_path = args.output_path
-    config_path = "adpkd_segmentation/inference/ensemble_config.yml"
+    config_path = args.config_path
     # Prep the output path
     if inference_path is not None:
         inf_path = inference_path
