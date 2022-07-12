@@ -86,6 +86,46 @@ def reassign_color(
     return np.uint16(temp_arr)
 
 
+def remap_kidney(
+    affine_path: string_path,
+    input_array: np.ndarray,
+    kidney_side: str,
+    addition_color: int,
+    viewer_color: int,
+) -> np.ndarray:
+    ref_img = nib.load(affine_path)
+    aff = ref_img.affine  # TODO: Look this over before testing
+    F = aff[0:3, 0:3]
+    S = aff[0:3, 3]
+    I, J, K = np.mgrid[
+        0 : input_array.shape[0],
+        0 : input_array.shape[1],
+        0 : input_array.shape[2],
+    ]
+    F_xi = F[0, 0]
+    F_xj = F[0, 1]
+    F_xk = F[0, 2]
+    S_0x = S[0]
+    x = F_xi * I + F_xj * J + F_xk * K + S_0x  # R-L component
+    x_unique = np.unique(x)
+    xmin = min(x_unique)
+    xmax = max(x_unique)
+    xmag = xmax - xmin
+    xhalf = xmin + 0.5 * xmag
+    tmp_img = input_array
+    tmp_half = np.zeros(input_array.shape)
+    if kidney_side == "right":
+        tmp_half[x > xhalf] = 1
+    elif kidney_side == "left":
+        tmp_half[x < xhalf] = 1
+    # end
+    tmp_kidney = np.zeros(input_array.shape)
+    tmp_kidney[input_array == addition_color] = 1
+    tmp_sum = tmp_half + tmp_kidney
+    tmp_img[tmp_sum == 2] = viewer_color
+    return np.uint16(tmp_img)  # TODO: Testing when I can
+
+
 def addition_ensemble(
     scan_iter: int,
     mask_directory_dict: dict,
@@ -95,6 +135,9 @@ def addition_ensemble(
     adjudicated_colors: List[int],
     old_organ_colors: List[int],
     new_organ_colors: List[int],
+    selected_kidney_side: str,
+    kidney_addition_color: int,
+    kidney_viewer_color: int,
 ) -> np.ndarray:
     """Given a dictionary that temporarily holds
     the organ paths and scan index,"""
@@ -109,7 +152,14 @@ def addition_ensemble(
         old_colors=overlap_colors,
         new_colors=adjudicated_colors,
     )
-    output_mask = reassign_color(
+    remap_kidneys = reassign_color(
         remap_organs, old_colors=old_organ_colors, new_colors=new_organ_colors
+    )
+    output_mask = remap_kidney(
+        affine_path=mask_directory_dict[organ_name[0]][scan_iter],
+        input_array=remap_kidneys,
+        kidney_side=selected_kidney_side,
+        addition_color=kidney_addition_color,
+        viewer_color=kidney_viewer_color,
     )
     return output_mask

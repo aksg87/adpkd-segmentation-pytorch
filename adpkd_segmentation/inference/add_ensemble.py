@@ -96,6 +96,9 @@ def run_addition_ensemble(
             adjudicated_colors=system_config["overlap_recolor"],
             old_organ_colors=system_config["orig_color"],
             new_organ_colors=system_config["view_color"],
+            selected_kidney_side=system_config["kidney_side"],
+            kidney_addition_color=system_config["kidney_addition_color"],
+            kidney_viewer_color=system_config["right_kidney_viewer_color"],
         )
 
         # Save the output

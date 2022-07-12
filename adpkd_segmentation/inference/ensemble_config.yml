@@ -11,15 +11,17 @@ combined_pred_filename: "comb_pred_vol.nii"
 add_organ_color: [2, 4, 8]
 add_overlap: [6, 10, 12, 14]
 overlap_recolor: [2, 2, 8, 8]
-repaint_side: ["right", "all"]
 orig_color: [8]
 view_color: [3]
 sitk_obj_rl_dim: 0
 organ_name: ["kidney", "liver", "spleen"]
 inference_ensemble_color: [2, 4, 3]
+kidney_side: "right"
+kidney_addition_color: 2
+right_kidney_viewer_color: 1
 model_dir: # Key structure: [sequence][orientation]
   T2:
     Axial:
       - "checkpoints/kidney_model.yml"
-      - "checkpoints/liver"
-      - "checkpoints/spleen"
+      - "checkpoints/liver_model.yml"
+      - "checkpoints/spleen_model.yml"
