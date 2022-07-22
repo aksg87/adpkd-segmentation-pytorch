@@ -19,6 +19,7 @@ Sharbatdaran A, Romano D, Teichman K, Dev H, Raza SI, Goel A, Moghadam MC, Blume
 - [Training/Validation data](data/README.md)
 - [Inference input data](inference_input/README.md)
 - [Saved inference output files](saved_inference/README.md)
+- [Addition ensemble extension](addition_ensemble/README.md)
 
 ## Preliminary Results Presented as Abstract at SIIM 2020
 
