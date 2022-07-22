@@ -49,6 +49,11 @@ def run_addition_ensemble(
             print(exc)
     # Individual Organ inference
     pred_load_dir = []
+    add_organ_color = list(system_config["add_organ_color"].values())
+    add_overlap = list(system_config["add_overlap"].values())
+    overlap_recolor = list(system_config["overlap_recolor"].values())
+    orig_color = list(system_config["orig_color"].values())
+    view_color = list(system_config["view_color"].values())
     for idx_organ, name_organ in enumerate(system_config["organ_name"]):
         print(f"Run {idx_organ+1}: {name_organ} inference\n")
         save_path = os.path.join(output_path, name_organ)
@@ -91,11 +96,11 @@ def run_addition_ensemble(
             scan_iter=idScn,
             mask_directory_dict=mask_load_dict,
             organ_name=system_config["organ_name"],
-            add_organ_color=system_config["add_organ_color"],
-            overlap_colors=system_config["add_overlap"],
-            adjudicated_colors=system_config["overlap_recolor"],
-            old_organ_colors=system_config["orig_color"],
-            new_organ_colors=system_config["view_color"],
+            add_organ_color=add_organ_color,
+            overlap_colors=add_overlap,
+            adjudicated_colors=overlap_recolor,
+            old_organ_colors=orig_color,
+            new_organ_colors=view_color,
             selected_kidney_side=system_config["kidney_side"],
             kidney_addition_color=system_config["kidney_addition_color"],
             kidney_viewer_color=system_config["right_kidney_viewer_color"],
