@@ -2,7 +2,9 @@
 
 Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in [PyTorch](https://github.com/pytorch/pytorch)
 
-Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
+Project design, data management, and implementation for first version of polycystic kidney work by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
+
+Follow-up work by researchers at Weill Cornell Medicine and Cornell University.
 
 # Published in Radiology: Artificial Intelligence (RSNA) in 2022
 
