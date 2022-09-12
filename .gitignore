@@ -8,4 +8,5 @@ tb_logs/
 /data/data_config.py
 __pycache__/
 /experiments/
+/adpkd_segmentation/inference/test/
 *.csv
