@@ -2,7 +2,19 @@
 
 Autosomal dominant polycystic kidney disease (ADPKD) Segmentation in [PyTorch](https://github.com/pytorch/pytorch)
 
-Project design, data management, and implementation by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
+Project design, data management, and implementation for first version of polycystic kidney work by [Akshay Goel, MD](https://www.linkedin.com/in/akshay-goel-md/).
+
+Follow-up work by researchers at Weill Cornell Medicine and Cornell University.
+
+# Published in Radiology: Artificial Intelligence (RSNA) in 2022
+
+Goel A, Shih G, Riyahi S, Jeph S, Dev H, Hu R, et al. Deployed Deep Learning Kidney Segmentation for Polycystic Kidney Disease MRI. Radiology: Artificial Intelligence. p. e210205.
+
+Published Online:Feb 16 2022 https://doi.org/10.1148/ryai.210205
+
+# Multiorgan Extention Published in Tomography 2022
+
+Sharbatdaran A, Romano D, Teichman K, Dev H, Raza SI, Goel A, Moghadam MC, Blumenfeld JD, Chevalier JM, Shimonov D, Shih G, Wang Y, Prince MR. Deep Learning Automation of Kidney, Liver, and Spleen Segmentation for Organ Volume Measurements in Autosomal Dominant Polycystic Kidney Disease. Tomography. 2022; 8(4):1804-1819. https://doi.org/10.3390/tomography8040152. URL: https://www.mdpi.com/1723226
 
 ## See additional README files for more info on:
 
@@ -14,13 +26,10 @@ Project design, data management, and implementation by [Akshay Goel, MD](https:/
 
 [Convolutional Neural Networks for Automated Segmentation of Autosomal Dominant Polycystic Kidney Disease. Oral presentation at the Society for Imaging Informatics in Medicine 2020, Austin TX](https://cdn.ymaws.com/siim.org/resource/resmgr/siim20/abstracts-research/goel_convolutional_neural_ne.pdf)
 
-## Examples of ADPKD MRI Data
-
-![Example ADPKD MRI Data](adpkd_sample_aksg87.gif)
-
-## Examples of Performance on Multi-institute External Data
-
+## Examples of Performance on Unseen Multi-institute External Data
 Inference was performed by [checkpoints/inference.yml](checkpoints/inference.yml) with checkpoint (checkpoints/best_val_checkpoint.pth)
+![Example ADPKD MRI Data](adpkd_inference_ext_50.gif)
+
 ![Multi-Insitute External Performance](external-data-performance.png)
 
 # Steps to run:
@@ -137,4 +146,20 @@ Project is distributed under MIT License
 
 ## Acknowledgement
 
-Model archiecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
+Model architecture utilized from [Segmentation Models Pytorch](https://github.com/qubvel/segmentation_models.pytorch) by Pavel Yakubovskiy.
+
+## **Linters and Formatters**
+Please apply these prior to any PRs to this repository.
+- Linter `flake8` [link](https://flake8.pycqa.org/en/latest/)
+- Formatter `black --line-length 79` [link](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html)
+
+If you use VSCode you can add these to your settings as follows:
+```
+  "python.formatting.provider": "black",
+  "python.linting.flake8Enabled": true,
+  "python.formatting.blackArgs": [
+    "--experimental-string-processing",    
+    "--line-length",
+    "79",
+  ],
+```
