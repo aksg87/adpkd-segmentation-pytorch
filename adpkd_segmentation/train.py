@@ -222,6 +222,9 @@ def train(config, config_save_name):
         optimizer = Lookahead(optimizer, **lookahead_config["params"])
     lr_scheduler = lr_scheduler_getter(optimizer)
 
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
     model = model.to(device)
     model.train()
     num_epochs = experiment_data["num_epochs"]

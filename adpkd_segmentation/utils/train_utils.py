@@ -36,6 +36,16 @@ def save_model_data(path, model, global_step):
 def load_model_data(path, model, new_format=False):
     print("loading checkpoint {}".format(path))
     checkpoint = torch.load(path, map_location=torch.device('cpu'))
+
+    # This is a HACK to make serialized checkpoints load for training again
+    # Pytorch 1.7.1 + other libraries ?
+    # TODO revist this at some point
+    temp_model_state_dict = checkpoint['model_state_dict'].copy()
+    for k in temp_model_state_dict.keys():
+        v = checkpoint['model_state_dict'].pop(k)
+        n_k = k.replace('module.','')
+        checkpoint['model_state_dict'][n_k] = v
+
     global_step = 0
     if not new_format:
         model.load_state_dict(checkpoint)

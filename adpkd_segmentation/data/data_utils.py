@@ -178,7 +178,9 @@ def dcm_attributes(dcm, label_status=True, WCM=True):
     pdcm = pydicom.dcmread(dcm)
     arr_int16 = pdcm.pixel_array
 
-    if WCM is True:
+    # TODO refactor for this PatientID clause
+    # WCM PatientIDs are of length 10
+    if WCM is True and len(pdcm.PatientID) != 10:
         attribs[PATIENT] = pdcm.PatientID[:-3]
         attribs[MR] = pdcm.PatientID[-3:]
         attribs[SEQUENCE] = pdcm.SeriesDescription
@@ -204,7 +206,14 @@ def dcm_attributes(dcm, label_status=True, WCM=True):
     Note: Dimension (which determines pixel-count) must be normal to calc. TKV
     """
     dX_Y = float(pdcm.PixelSpacing[0])
-    dZ = float(pdcm.SpacingBetweenSlices)
+    dZ = None
+    if 'SpacingBetweenSlices' in pdcm:
+        dZ = float(pdcm.SpacingBetweenSlices)    
+    elif 'SliceThickness' in pdcm:
+        dZ = float(pdcm.SliceThickness)
+    else:
+        raise "dZ not available -- no SpacingBetweenSlices nor SliceThickness"
+
     attribs[VOXEL_VOLUME] = dZ * (dX_Y ** 2)
     attribs[DIMENSION] = arr_int16.shape
 
