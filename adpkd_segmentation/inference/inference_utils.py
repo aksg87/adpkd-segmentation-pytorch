@@ -213,7 +213,8 @@ def inference_to_disk(
                             return super(NpEncoder, self).default(obj)
 
                 # get resize transform within compose object
-                Resize = albumentations.augmentations.transforms.Resize
+                Resize = albumentations.augmentations.geometric.resize.Resize
+                #Resize = albumentations.augmentations.transforms.Resize
                 transform_resize = next(
                     v
                     for v in dataloader.dataset.augmentation.transforms
