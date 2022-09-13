@@ -147,7 +147,6 @@ tifffile==2021.7.2
 timm==0.4.12
 tokenizers==0.8.1rc1
 torch==1.7.1
-torchaudio==0.8.1
 torchvision==0.8.2
 tornado==6.1
 tqdm==4.60.0
