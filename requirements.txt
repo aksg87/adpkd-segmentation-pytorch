@@ -11,7 +11,7 @@ bleach==3.3.0
 blis==0.7.4
 cachetools==4.2.2
 catalogue==1.0.0
-catalyst==21.6
+catalyst==20.08.2
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
