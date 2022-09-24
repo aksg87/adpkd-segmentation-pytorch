@@ -48,6 +48,7 @@ def create_nifti_int_mat(shape):
 
 def nifti_to_png_array(nifti_array):
     shape = nifti_array.shape
+    x, y = shape
     nifti_array = nifti_array[::-1]
     nifti_array = np.rot90(nifti_array, k=3)
 
