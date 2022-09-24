@@ -24,6 +24,7 @@ from collections import OrderedDict
 
 from matplotlib import pyplot as plt
 import torch
+import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
 
