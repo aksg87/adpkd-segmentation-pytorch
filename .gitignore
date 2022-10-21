@@ -2,7 +2,6 @@
 *.png
 *.dcm
 *.npy
-*.pth
 *.json
 tb_logs/
 /data/data_config.py
