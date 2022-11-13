@@ -3,6 +3,8 @@
 *.dcm
 *.npy
 *.pth
+*.swp
+test/
 tb_logs/
 /data/data_config.py
 __pycache__/

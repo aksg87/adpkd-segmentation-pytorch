@@ -3,8 +3,17 @@ import os
 from pathlib import Path
 import nibabel as nib
 import numpy as np
+import shutil
+import torch
+import pydicom
+import pandas as pd
+from inference_utils import IOP_IPP_dicomsort
+import SimpleITK as sitk
+import cv2
 
-
+IOP = "IOP"
+IPP = "IPP"
+IPP_dist = "IPP_dist"
 string_path = Union[str, Path]  # Can be a string or pathlib Path
 
 
@@ -163,3 +172,157 @@ def addition_ensemble(
         viewer_color=kidney_viewer_color,
     )
     return output_mask
+
+
+def argmax_ensemble(
+    scan_list: List[string_path],
+    output_folder: string_path,
+    organ_name: List[str],
+    index_classes: List[int],
+    itk_colors: List[int],
+):
+    # I need: class indeces, output integers
+    for scan in scan_list:
+        _, individual_scan = os.path.split(scan)
+        one_hot = []
+        for i, organ in enumerate(organ_name):
+            organ_path = os.path.join(scan, organ)
+            organ_logits = Path(organ_path).glob("*_logit*")
+            organ_logits = sorted(organ_logits, key=lambda x: x.name)
+            npy_organ_logits = [
+                np.squeeze(np.load(Path(p))) for p in organ_logits
+            ]
+            npy_logit_vol = np.stack(npy_organ_logits, axis=-1)
+
+            if i == 0:
+                one_hot.append(np.zeros(npy_logit_vol.shape))
+                output_scan = output_folder / individual_scan
+                output_scan.mkdir(parents=True, exist_ok=True)
+                print("Copying Dicoms...")
+                dcm_paths = Path(organ_path).glob("*.dcm")
+                for dcm_path in dcm_paths:
+                    shutil.copy2(dcm_path, output_scan)
+                print("Dicoms Copied. Continuing")
+
+            one_hot.append(npy_logit_vol)
+
+        one_hot = np.stack(one_hot, -1)
+        one_hot_dim = len(one_hot.shape) - 1
+        one_hot = torch.tensor(one_hot)
+        softmax_func = torch.nn.Softmax(dim=one_hot_dim)
+        prediction_softmax = softmax_func(one_hot)
+        prediction_map = torch.argmax(prediction_softmax, dim=one_hot_dim)
+        prediction_map = prediction_map.numpy()
+        ref_map = prediction_map
+
+        for max_index, itk_color in zip(index_classes, itk_colors):
+            prediction_map[ref_map == max_index] = itk_color
+
+        dcms = output_scan.glob("*.dcm")
+        dcms = sorted(dcms, key=lambda x: x.name)
+        for i, dcm in enumerate(dcms):
+            pred_slice = np.uint16(prediction_map[:, :, i])
+            file_name = str(dcm).replace("_DICOM.dcm", "")
+            file_name = f"{file_name}_multi_pred"
+            np.save(file_name, pred_slice)
+
+        all_dcms = Path(scan).glob("**/*.dcm", recursive=True)
+        for each_dcm in all_dcms:
+            os.remove(each_dcm)
+        all_dcms = []
+        all_npys = Path(scan).glob("**/*.npy", recursive=True)
+        for each_npy in all_npys:
+            os.remove(each_npy)
+        all_npys = []
+        # Do I need to return anything?
+
+
+def ensemble_to_nifti(
+    output_scan_list: List[string_path],
+    selected_kidney_side: str,
+    kidney_ensemble_color: int,
+    kidney_side_color: int,
+    inverse_crop_ratio=1,
+):
+    for scan in output_scan_list:
+        preds = Path(scan).glob("*multi_red.npy")
+        dcm_paths = Path(scan).glob("*.dcm")
+
+        preds = sorted(preds, key=lambda x: x.name)
+        dcm_paths = sorted(dcm_paths, key=lambda x: x.name)
+
+        dcms = [pydicom.read_file(p) for p in dcm_paths]
+
+        IOPs = [d.ImageOrientationPatient for d in dcms]
+        IPPs = [d.ImagePositionPatient for d in dcms]
+
+        data = {"preds": preds, "dcm_paths": dcm_paths, IOP: IOPs, IPP: IPPs}
+        sorted_df = IOP_IPP_dicomsort(pd.DataFrame(data))
+
+        # Use SITK to generate numpy from dicom header
+        reader = sitk.ImageSeriesReader()
+        sorted_dcm_paths = [str(p) for p in sorted_df["dcm_paths"]]
+        reader.SetFileNames(sorted_dcm_paths)
+        errors = []
+
+        try:
+            image_3d = reader.Execute()
+        except Exception as e:
+            errors.append(f"error:{str(e)}\n path:{dcm_paths[0]}")
+
+        out_dir = dcm_paths[0].parent
+        dcm_save_name = "dicom_vol.nii"
+        pred_save_name = "pred_vol.nii"
+
+        sitk.WriteImage(image_3d, str(out_dir / dcm_save_name))
+
+        # Load saved nii volume into nibabel object
+        dcm_nii_vol = nib.load(out_dir / dcm_save_name)
+
+        npy_preds = [
+            np.squeeze(np.load(Path(p))) for p in sorted_dcm_paths["preds"]
+        ]
+
+        # reverse center crop -- idx 0 to get shape
+        pad_width = (
+            (npy_preds[0].shape[0] * inverse_crop_ratio)
+            - (npy_preds[0].shape[0])
+        ) / 2
+        pad_width = round(pad_width)
+
+        npy_reverse_crops = [np.pad(pred, pad_width) for pred in npy_preds]
+
+        # resize predictions to match dicom
+        x_y_dim = dcm_nii_vol.get_fdata().shape[0:2]  # shape in x,y,z
+        resized_preds = [
+            cv2.resize(orig, (x_y_dim), interpolation=cv2.INTER_NEAREST)
+            for orig in npy_reverse_crops
+        ]
+
+        corrected_transpose = [np.transpose(r) for r in resized_preds]
+
+        # convert 2d npy to 3d npy volume
+        npy_pred_vol = np.stack(corrected_transpose, axis=-1).astype(np.uint16)
+
+        # Recolor the selected kidney
+        dcm_path = str(out_dir / dcm_save_name)
+        npy_pred_vol = remap_kidney(
+            dcm_path,
+            npy_pred_vol,
+            selected_kidney_side,
+            kidney_ensemble_color,
+            kidney_side_color,
+        )
+
+        # create nifti mask for predictions
+        dicom_header = dcm_nii_vol.header.copy()
+        pred_nii_vol = nib.Nifti1Image(npy_pred_vol, None, header=dicom_header)
+        nib.save(pred_nii_vol, out_dir / pred_save_name)
+
+        print(f"Wrote to: {Path(str(out_dir / dcm_save_name))}")
+        print("Deleting dicoms and numpy arrays...")
+        for pred, dcm_path in zip(preds, dcm_paths):
+            os.remove(pred)
+            os.remove(dcm_path)
+
+        return pred_nii_vol, dcm_nii_vol  # may need to comment out
