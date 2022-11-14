@@ -24,6 +24,7 @@ from collections import OrderedDict
 
 from matplotlib import pyplot as plt
 import torch
+import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from catalyst.contrib.nn import Lookahead
 
@@ -221,6 +222,9 @@ def train(config, config_save_name):
     if lookahead_config["use_lookahead"]:
         optimizer = Lookahead(optimizer, **lookahead_config["params"])
     lr_scheduler = lr_scheduler_getter(optimizer)
+
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
 
     model = model.to(device)
     model.train()

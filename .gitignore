@@ -2,9 +2,13 @@
 *.png
 *.dcm
 *.npy
+<<<<<<< HEAD
 *.pth
 *.swp
 test/
+=======
+*.json
+>>>>>>> main
 tb_logs/
 /data/data_config.py
 __pycache__/

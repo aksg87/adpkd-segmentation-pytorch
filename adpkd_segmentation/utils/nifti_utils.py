@@ -48,8 +48,12 @@ def create_nifti_int_mat(shape):
 
 def nifti_to_png_array(nifti_array):
     shape = nifti_array.shape
+    x, y = shape
     nifti_array = nifti_array[::-1]
     nifti_array = np.rot90(nifti_array, k=3)
+
+    if x != y:
+        shape = (y,x)
 
     mask = (nifti_array == create_nifti_int_mat(shape)).astype("uint8")
     png_array = (mask * create_png_int_mat(shape)).sum(axis=0)
