@@ -16,4 +16,3 @@ __pycache__/
 /checkpoints/
 /old_requirements/
 *.csv
-.gitignore
