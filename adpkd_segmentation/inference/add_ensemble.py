@@ -31,14 +31,14 @@ parser.add_argument(
     "--config_path",
     type=str,
     help="Path that points to the desired configuration file",
-    default="adpkd_segmentation/inference/ensemble_config.yml",
+    default="adpkd_segmentation/inference/add_ensemble_config.yml",
 )
 
 
 def run_addition_ensemble(
     input_path=None,
     output_path=None,
-    config_path="adpkd_segmentation/inference/ensemble_config.yml",
+    config_path="adpkd_segmentation/inference/add_ensemble_config.yml",
 ):
     # Load configuration to dictionary
     print("Loading system and pipeline configuration...")
@@ -52,10 +52,14 @@ def run_addition_ensemble(
             overlap_recolor = list(system_config["overlap_recolor"].values())
             orig_color = list(system_config["orig_color"].values())
             view_color = list(system_config["view_color"].values())
-            for idx_organ, name_organ in enumerate(system_config["organ_name"]):
+            for idx_organ, name_organ in enumerate(
+                system_config["organ_name"]
+            ):
                 print(f"Run {idx_organ+1}: {name_organ} inference\n")
                 save_path = os.path.join(output_path, name_organ)
-                config_path = system_config["model_dir"]["T2"]["Axial"][idx_organ]
+                config_path = system_config["model_dir"]["T2"]["Axial"][
+                    idx_organ
+                ]
                 saved_inference = Path(save_path) / system_config["svd_inf"]
                 saved_figs = Path(save_path) / system_config["svd_figs"]
                 run_inference(
@@ -69,7 +73,10 @@ def run_addition_ensemble(
                 #
             # Create ensemble save path
             temp_name = ""
-            if len(system_config["organ_name"]) <= system_config["max_organ_title"]:
+            if (
+                len(system_config["organ_name"])
+                <= system_config["max_organ_title"]
+            ):
                 for name in system_config["organ_name"]:
                     temp_name += f"_{name}"
             else:
@@ -78,7 +85,9 @@ def run_addition_ensemble(
             combine_path = Path(output_path) / combined_folder_name
             # Addition Ensemble
             print("Combining the organ segmentations...")
-            scan_list = list(pred_load_dir[0].glob(f'**/*{system_config["pred_vol"]}'))
+            scan_list = list(
+                pred_load_dir[0].glob(f'**/*{system_config["pred_vol"]}')
+            )
             mask_load_dict = grab_organ_dirs(
                 organ_paths=pred_load_dir,
                 ensemble_mode=system_config["mode"],
@@ -87,7 +96,8 @@ def run_addition_ensemble(
             )
             for idScn, scan in enumerate(scan_list):
                 scan_folder = get_scan(
-                    intermediate_folder=system_config["youngest_child"], dir=scan
+                    intermediate_folder=system_config["youngest_child"],
+                    dir=scan,
                 )
                 print(f"Combining for sequence {scan_folder}")
                 comb_mask = addition_ensemble(
@@ -100,8 +110,12 @@ def run_addition_ensemble(
                     old_organ_colors=orig_color,
                     new_organ_colors=view_color,
                     selected_kidney_side=system_config["kidney_side"],
-                    kidney_addition_color=system_config["kidney_addition_color"],
-                    kidney_viewer_color=system_config["right_kidney_viewer_color"],
+                    kidney_addition_color=system_config[
+                        "kidney_addition_color"
+                    ],
+                    kidney_viewer_color=system_config[
+                        "right_kidney_viewer_color"
+                    ],
                 )
 
                 # Save the output

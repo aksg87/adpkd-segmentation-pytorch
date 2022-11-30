@@ -1,17 +1,19 @@
 .vscode
 *.png
+/adpkd_segmentation.egg-info/
 *.dcm
 *.npy
-<<<<<<< HEAD
 *.pth
 *.swp
+*test.py
 test/
-=======
 *.json
->>>>>>> main
 tb_logs/
 /data/data_config.py
 __pycache__/
 /experiments/
 /adpkd_segmentation/inference/test/
+/checkpoints/
+/old_requirements/
 *.csv
+.gitignore

@@ -1,0 +1,39 @@
+max_organ_title: 4
+mode: "ensemble addition"
+svd_inf: "saved_inference"
+svd_figs: "saved_figs"
+youngest_child: "ITKSNAP_DCM_NIFTI"
+dicom_ext: "dcm"
+pred_vol: "pred_vol.nii"
+dicom_vol: "dicom_vol.nii"
+combined_folder: "multiorgan_ensemble"
+combined_pred_filename: "comb_pred_vol.nii"
+add_organ_color:
+  kidney_add: 2
+  liver_add: 4
+  spleen_add: 8 
+add_overlap:
+  kidney_liver: 6
+  kidney_spleen: 10
+  liver_spleen: 12
+  kidney_liver_spleen: 14
+overlap_recolor:
+  adjudicate_kidney_liver: 2
+  adjudicate_kidney_spleen: 2
+  adjudicate_liver_spleen: 8
+  adjudicate_kidney_liver_spleen: 8
+orig_color: 
+  spleen_addition_color: 8 # See discussion in Readme
+view_color: 
+  spleen_viewer_color: 3 # Desired ITK-SNAP color. See in Readme
+organ_name: ["kidney", "liver", "spleen"]
+inference_ensemble_color: [2, 4, 3]
+kidney_side: "right"
+kidney_addition_color: 2
+right_kidney_viewer_color: 1
+model_dir: # Key structure: [sequence][orientation]
+  T2:
+    Axial:
+      - "checkpoints/ax_T2_kidney_model.yml"
+      - "checkpoints/ax_T2_liver_model.yml"
+      - "checkpoints/ax_T2_spleen_model.yml"

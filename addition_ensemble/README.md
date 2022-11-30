@@ -22,7 +22,7 @@ The key idea is to enable multiorgan segmentation from model weights trained on 
     - May save time and resources for users.
  - Accumulate multiple organ models for inference.
     - Append an organ to the addition ensemble by training for a particular organ of interest
-        - Append the organ to the following keys in `ensemble_config.yml`:
+        - Append the organ to the following keys in `add_ensemble_config.yml`:
             - `add_organ_color`
             - `add_overlap`
             - `overlap_recolor`
@@ -46,7 +46,7 @@ The key idea is to enable multiorgan segmentation from model weights trained on 
         - Map the organ 'addition integer' to the 'viewer integer'
         - Save the result.
 
-This medthodology utilizes addition to bring the masks together. As such, you will want to define key-value pairs in the following dictionaries in `ensemble_config.yml`:
+This medthodology utilizes addition to bring the masks together. As such, you will want to define key-value pairs in the following dictionaries in `add_ensemble_config.yml`:
 - `add_organ_color`
 - `add_overlap`
 - `overlap_recolor`
@@ -71,7 +71,7 @@ During 'addition time' any combination of the three organs are:
 - `kidney+spleen=10`
 - `liver+spleen=12`
 - `kidney+liver+spleen=14`
-Which do not become values of `add_organ_color` under any circumstance. From the above list, you can tell that each case is a key-value pair of the `add_overlap` dictionary. Now at this point, you can simply remap the spleen and one of the kidneys, save the mask and have an ITK-SNAP segmentation with overlaps. However as mentioned in the paper, the radiolgists found it challenging to find the overlaps, so we agreed to hard-code in the recoloring (with their input of course). The recoloring can be found under the `overlap_recolor` key in `ensemble_config.yml`:
+Which do not become values of `add_organ_color` under any circumstance. From the above list, you can tell that each case is a key-value pair of the `add_overlap` dictionary. Now at this point, you can simply remap the spleen and one of the kidneys, save the mask and have an ITK-SNAP segmentation with overlaps. However as mentioned in the paper, the radiolgists found it challenging to find the overlaps, so we agreed to hard-code in the recoloring (with their input of course). The recoloring can be found under the `overlap_recolor` key in `add_ensemble_config.yml`:
 - `adjudicate_kidney_liver: 2 (kidney)`
 - `adjudicate_kidney_spleen: 2 (kidney)`
 - `adjudicate_liver_spleen: 8 (spleen)`
@@ -84,7 +84,7 @@ The same code is used to recolor the spleen, which also brings up the need for `
 
 `added_mask_array[added_mask_array == 8] =3`
 
-Some more remarks are necessary for the above dictionaries. Firstly, make sure that your organ keys have exactly one integer value paired to it, or else the code will error out due to calling a list as an element. Second, you can feel free to name the keys whaterver you like. Actually, name the keys to provide the most clarity possible. This can be done because the dictionaries stored in `add_organ_color`, `add_overlap`, and `overlap_recolor` get converted into lists before they are passed into the relevant functions. Of course, make sure that the number of elements in the lists stored in `organ_name` and `model_dir[CONTRAST_KEY][ORIENTATION_KEY]` match the number of key-value pairs in `add_organ_color`, and vice versa.
+Some more remarks are necessary for the above dictionaries. Firstly, make sure that your organ keys have exactly one integer value paired to it, or else the code will error out due to calling a list as an element. Second, you can feel free to name the keys whaterver you like. Actually, name the keys to provide the most clarity possible. This can be done because the dictionaries stored in `add_organ_color`, `add_overlap`, and `overlap_recolor` get converted into lists before they are passed into the relevant functions. Of course, make sure that the number of elements in the lists stored in `organ_name` and `model_dir[CONTRAST_KEY][ORIENTATION_KEY]` match the number of key-value pairs in `add_organ_color`, and vice versa. A more detailed discussion can be found in the readme for the [Argmax ensemble](argmax_ensemble/README.md). Continue reading to learn about the kidney remapping for both ensemble methods.
 
 Now, all I must discuss in this section is the kidney. As mentioned previously, we segment the left and right kidney at once so we need to convert one of the kidneys to its desired color. In this particular deployment, we chose `2` as the default kidney value for addition, which is the desired classification integer for the `left_kidney`. Then our task is to worry about the `right_kidney`. So how do we find the right kidney? Let's think back to the deep learning inference: it will load the specified DICOMS, perform a slice by slice inference, and save the the medical image and segmentation in their respective `nifti` files. In particular, the image is converted into an ITK image object via the `execute()` method in the `SimpleITK.ImageSeriesReader()` object and then saved as a `nifti` file.
 
