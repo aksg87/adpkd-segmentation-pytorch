@@ -1,4 +1,3 @@
-# TODO: READ OVER ALL CHANGES BEFORE TESTING
 from typing import Union, List, Dict
 import os
 from pathlib import Path
