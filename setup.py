@@ -4,7 +4,7 @@ import platform
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
-if 'win' in platform.platform().lower() ;
+if 'win' in platform.platform().lower():
     with open("requirements.windows.addon.txt") as f:
         requirements += f.read().splitlines()
 
