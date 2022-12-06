@@ -22,6 +22,7 @@ Sharbatdaran A, Romano D, Teichman K, Dev H, Raza SI, Goel A, Moghadam MC, Blume
 - [Inference input data](inference_input/README.md)
 - [Saved inference output files](saved_inference/README.md)
 - [Addition ensemble extension](addition_ensemble/README.md)
+- [Argmax ensemble and multisequence extension](argmax_ensemble/README.md)
 
 ## Preliminary Results Presented as Abstract at SIIM 2020
 
@@ -46,7 +47,37 @@ Inference was performed by [checkpoints/inference.yml](checkpoints/inference.yml
 
 #### 1. Install `requirements.txt` and `adpkd-segmentation` package from source.
 
-`python setup.py install`
+`pip install -e . -f https://download.pytorch.org/whl/torch_stable.html`
+
+#### A sidenote on installation
+- `requirements.txt` and `adpkd-segmentation` is supported for `python 3.8`
+- Specifically, the pipeline has been tested on `python 3.8.4` and `python 3.8.5`
+- For best results, we recommend installing all packages in a `python 3.8` environment.
+- Once `python 3.8.4` or `3.8.5` is installed, create a virtual environment with `virtualenv`
+- You may want to reverence the virtual environment documentation:
+- [Basic Virtual Environment Tutorial](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment) 
+- [Package installation for an environment](https://docs.python.org/3/library/venv.html))
+However, we provide a short example here:
+
+```
+(Windows)
+working_dir>pip install virtualenv
+working_dir>py -3.8.4 -m Drive:\path\to\environment_name\
+
+Powershell Activation:
+working_dir>Drive\path\to\environment_name\Scripts\activate.ps1
+
+Windows Command Line:
+working_dir>Drive\path\to\environment_name\Scripts\activate
+
+working_dir>python setup.py install
+
+(Unix/MacOS)
+$pip install virtualenv
+$python3.8.4 -m venv /path/to/environment_name
+$source /path/to/environment_name/bin/activate
+$python
+```
 
 #### 2. Select an inference config file.
 
@@ -75,7 +106,7 @@ optional arguments:
 Install from `requirements.txt` (inside some virtual env):
 
 ```
-pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+pip install -e . -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 #### 2. Set up data as described [here](data/README.md).

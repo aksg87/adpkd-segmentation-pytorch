@@ -1,4 +1,18 @@
-max_organ_title: 4
+filename_rules:
+  "//": "_"
+  "\\": "_"
+  "/": "_"
+  ":": "--"
+  "*": "x"
+  "?": "-"
+  '"': "--"
+  "'": "-"
+  "<": "_"
+  ">": "_"
+  "|": "_"
+  " ": "_"
+reference_planes: "1 0 0 0 1 0; 1 0 0 0 0 -1; 0 1 0 0 0 1"
+plane_keys: ["Axial", "Coronal", "Sagittal"]
 mode: "ensemble addition"
 svd_inf: "saved_inference"
 svd_figs: "saved_figs"
@@ -8,32 +22,34 @@ pred_vol: "pred_vol.nii"
 dicom_vol: "dicom_vol.nii"
 combined_folder: "multiorgan_ensemble"
 combined_pred_filename: "comb_pred_vol.nii"
-add_organ_color:
-  kidney_add: 2
-  liver_add: 4
-  spleen_add: 8 
-add_overlap:
-  kidney_liver: 6
-  kidney_spleen: 10
-  liver_spleen: 12
-  kidney_liver_spleen: 14
-overlap_recolor:
-  adjudicate_kidney_liver: 2
-  adjudicate_kidney_spleen: 2
-  adjudicate_liver_spleen: 8
-  adjudicate_kidney_liver_spleen: 8
-orig_color: 
-  spleen_addition_color: 8 # See discussion in Readme
-view_color: 
-  spleen_viewer_color: 3 # Desired ITK-SNAP color. See in Readme
 organ_name: ["kidney", "liver", "spleen"]
-inference_ensemble_color: [2, 4, 3]
-kidney_side: "right"
-kidney_addition_color: 2
-right_kidney_viewer_color: 1
+ensemble_index: [0,1,2,3]
+inference_ensemble_color: [0,1,4,3]
+individual_flag: False
+kidney_side: "left"
+kidney_ensemble_color: 1
+kidney_side_color: 2
 model_dir: # Key structure: [sequence][orientation]
   T2:
     Axial:
-      - "checkpoints/kidney_model.yml"
-      - "checkpoints/liver_model.yml"
-      - "checkpoints/spleen_model.yml"
+      - "checkpoints/inference_kidney_axial_t2.yml"
+      - "checkpoints/inference_liver_axial_t2.yml"
+      - "checkpoints/inference_spleen_axial_t2.yml"
+    Coronal:
+      - "checkpoints/inference_kidney_coronal_t2.yml"
+      - "checkpoints/inference_liver_coronal_t2.yml"
+      - "checkpoints/inference_spleen_coronal_t2.yml"
+  SSFP:
+    Axial:
+      - "checkpoints/inference_kidney_axial_ssfp.yml"
+      - "checkpoints/inference_liver_axial_ssfp.yml"
+      - "checkpoints/inference_spleen_axial_ssfp.yml"
+    Coronal:
+      - "checkpoints/inference_kidney_coronal_ssfp.yml"
+      - "checkpoints/inference_liver_coronal_ssfp.yml"
+      - "checkpoints/inference_spleen_coronal_ssfp.yml"
+  T1:
+    Axial:
+      - "checkpoints/inference_kidney_axial_t1.yml"
+      - "checkpoints/inference_liver_axial_t1.yml"
+      - "checkpoints/inference_spleen_axial_t1.yml"
