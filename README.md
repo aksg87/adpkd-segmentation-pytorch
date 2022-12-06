@@ -47,7 +47,7 @@ Inference was performed by [checkpoints/inference.yml](checkpoints/inference.yml
 
 #### 1. Install `requirements.txt` and `adpkd-segmentation` package from source.
 
-`python setup.py install`
+`pip install -e . -f https://download.pytorch.org/whl/torch_stable.html`
 
 #### A sidenote on installation
 - `requirements.txt` and `adpkd-segmentation` is supported for `python 3.8`
@@ -106,7 +106,7 @@ optional arguments:
 Install from `requirements.txt` (inside some virtual env):
 
 ```
-pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+pip install -e . -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 #### 2. Set up data as described [here](data/README.md).
