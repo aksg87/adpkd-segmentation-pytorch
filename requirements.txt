@@ -199,7 +199,7 @@ typing-extensions==3.10.0.0
 tzlocal==2.1
 ujson==5.4.0
 unittest2==1.1.0
-urllib3==1.26.4
+urllib3==1.26.5
 wasabi==0.8.2
 watchdog==2.1.2
 wcwidth==0.2.5
