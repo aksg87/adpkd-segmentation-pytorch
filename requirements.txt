@@ -197,7 +197,7 @@ transformers==3.0.2
 twilio==6.59.0
 typing-extensions==3.10.0.0
 tzlocal==2.1
-ujson==5.1.0
+ujson==5.4.0
 unittest2==1.1.0
 urllib3==1.26.4
 wasabi==0.8.2
