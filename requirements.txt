@@ -31,7 +31,7 @@ charset-normalizer==3.3.1
 click==8.0.1
 colorama==0.4.6
 contourpy==1.0.6
-cryptography==3.4.7
+cryptography==39.0.1
 cssselect==1.1.0
 cssutils==2.3.0
 cycler==0.10.0
