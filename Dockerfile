@@ -13,11 +13,11 @@ COPY requirements.barebones_inference.txt requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -e .
 
-# pre-download model that I don't think is even used
+# pre-download model
 RUN python adpkd_segmentation/inference/inference.py
 
 # remove unused models in ./checkpoints
 RUN rm checkpoints/*nocrop*
 
 # load test data
-COPY inference_input inference_input
+#COPY inference_input inference_input
